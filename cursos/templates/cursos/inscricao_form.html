@@ -1,0 +1,159 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Inscrever Aluno • Curso{% endblock %}
+
+{% block content %}
+
+<style>
+    body {
+        background: #eef1f5 !important;
+        font-family: "Inter", sans-serif;
+        color: #424a57;
+        background-image: radial-gradient(rgba(0,0,0,0.02) 1px, transparent 0);
+        background-size: 18px 18px;
+    }
+
+    .app-card {
+        position: relative;
+        max-width: 600px;
+        margin: 3.2rem auto;
+        padding: 2.4rem;
+        border-radius: 1.3rem;
+        background: #ffffff;
+        border: 1px solid rgba(0,0,0,0.05);
+        box-shadow:
+            0 3px 8px rgba(0,0,0,0.04),
+            0 14px 40px rgba(0,0,0,0.08);
+        animation: fadeSlide 0.45s ease;
+    }
+
+    @keyframes fadeSlide {
+        from { opacity: 0; transform: translateY(16px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    .app-card::before {
+        content: "";
+        position: absolute;
+        top: 0; left: 0; right: 0;
+        height: 3px;
+        background: linear-gradient(90deg,
+            rgba(75,93,255,0.32),
+            rgba(99,114,255,0.12)
+        );
+    }
+
+    .app-card::after {
+        content: "";
+        position: absolute;
+        bottom: 0; left: 0; right: 0;
+        height: 4px;
+        background: #4B5DFF;
+        border-radius: 0 0 1.3rem 1.3rem;
+        opacity: 0.75;
+    }
+
+    .form-title {
+        font-weight: 700;
+        color: #1f2937;
+        text-align: center;
+        margin-bottom: 1.8rem;
+    }
+
+    .form-label {
+        color: #2c3441;
+        font-weight: 600;
+        font-size: 0.95rem;
+        margin-bottom: 0.4rem;
+    }
+
+    .custom-input select {
+        width: 100%;
+        background: #f9fbff;
+        border-radius: 0.75rem;
+        padding: 0.72rem 1rem;
+        border: 1px solid #cfd6e3;
+        transition: border-color .24s, background .24s, box-shadow .24s;
+    }
+
+    .custom-input select:focus {
+        border-color: #4B5DFF !important;
+        background: #ffffff;
+        box-shadow: 0 0 0 3px rgba(75,93,255,0.15);
+    }
+
+    .btn-save {
+        border-radius: 0.75rem;
+        padding: 0.65rem 1.6rem;
+        font-weight: 600;
+        border: none;
+        background: #4B5DFF;
+        color: #ffffff;
+        transition: 0.22s ease;
+    }
+
+    .btn-save:hover {
+        background: #6372ff;
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(75,93,255,0.25);
+    }
+
+    .btn-cancel {
+        border-radius: 0.75rem;
+        padding: 0.65rem 1.6rem;
+        background: #e5e7eb;
+        border: none;
+        font-weight: 600;
+        color: #374151;
+        transition: .22s ease;
+    }
+
+    .btn-cancel:hover {
+        background: #d2d6db;
+        transform: translateY(-2px);
+    }
+</style>
+
+
+<div class="app-card">
+
+    <h2 class="form-title">Inscrever Aluno no Curso</h2>
+
+    <form method="post">
+        {% csrf_token %}
+
+        <div class="mb-3">
+            <label class="form-label">{{ form.aluno.label }}</label>
+            <div class="custom-input">{{ form.aluno }}</div>
+            {% if form.aluno.errors %}
+                <small class="text-danger">{{ form.aluno.errors }}</small>
+            {% endif %}
+        </div>
+
+        <div class="mb-4">
+            <label class="form-label">{{ form.curso.label }}</label>
+            <div class="custom-input">{{ form.curso }}</div>
+            {% if form.curso.errors %}
+                <small class="text-danger">{{ form.curso.errors }}</small>
+            {% endif %}
+        </div>
+
+        <div class="d-flex justify-content-end gap-2">
+
+            {% if curso %}
+                <a href="{% url 'cursos:detalhe_curso' pk=curso.pk %}"
+                   class="btn btn-cancel">Cancelar</a>
+            {% else %}
+                <a href="{% url 'cursos:lista_cursos' %}"
+                   class="btn btn-cancel">Cancelar</a>
+            {% endif %}
+
+            <button type="submit" class="btn btn-save">Inscrever</button>
+        </div>
+
+    </form>
+</div>
+
+
+{% endblock %}

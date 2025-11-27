@@ -1,0 +1,204 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
+
+    body {
+        background-color: #f9fafb;
+        font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+
+    .form-card {
+        border-radius: 16px;
+        background: white;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        border: 1px solid #e2e8f0;
+        overflow: hidden;
+    }
+
+    .form-card .card-header {
+        background: white;
+        border-bottom: 1px solid #e2e8f0;
+        padding: 1.5rem 2rem;
+    }
+
+    .form-title {
+        font-weight: 700;
+        color: #1e293b;
+        margin: 0;
+        font-size: 1.25rem;
+        letter-spacing: -0.025em;
+    }
+
+    .form-label {
+        font-weight: 600;
+        color: #475569;
+        font-size: 0.875rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .custom-input input,
+    .custom-input select {
+        width: 100%;
+        border-radius: 12px !important;
+        padding: 0.75rem 1rem;
+        border: 1px solid #cbd5e1;
+        background: #fff;
+        color: #334155;
+        font-size: 0.95rem;
+        transition: all 0.2s ease;
+    }
+
+    .custom-input input:focus,
+    .custom-input select:focus {
+        border-color: #3b82f6 !important;
+        background: #fff;
+        box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+        outline: none;
+    }
+
+    .custom-input input:hover,
+    .custom-input select:hover {
+        border-color: #94a3b8;
+    }
+
+    .save-btn {
+        border-radius: 12px;
+        background: linear-gradient(135deg, #2563eb, #3b82f6);
+        border: none;
+        padding: 0.75rem 2rem;
+        font-weight: 600;
+        font-size: 0.95rem;
+        color: white;
+        box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.1), 0 2px 4px -1px rgba(37, 99, 235, 0.06);
+        transition: all 0.2s ease;
+    }
+
+    .save-btn:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 10px 15px -3px rgba(37, 99, 235, 0.2), 0 4px 6px -2px rgba(37, 99, 235, 0.1);
+        color: white;
+    }
+
+    .cancel-btn {
+        border-radius: 12px;
+        padding: 0.75rem 1.5rem;
+        font-weight: 600;
+        font-size: 0.95rem;
+        color: #64748b;
+        background: white;
+        border: 1px solid #e2e8f0;
+        transition: all 0.2s ease;
+    }
+
+    .cancel-btn:hover {
+        background: #f8fafc;
+        color: #475569;
+        border-color: #cbd5e1;
+    }
+
+    hr {
+        border-color: #e2e8f0;
+        opacity: 1;
+        margin: 2rem 0;
+    }
+</style>
+
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+
+        <div class="card form-card">
+            <div class="card-header">
+                <h1 class="h3 form-title">{{ title }}</h1>
+            </div>
+
+            <div class="card-body p-4 p-md-5">
+                <form method="post" novalidate>
+                    {% csrf_token %}
+
+                    {% if form.non_field_errors %}
+                    <div class="alert alert-danger rounded-3 mb-4">
+                        {% for error in form.non_field_errors %}
+                        {{ error }}
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+
+                    <div class="mb-4">
+                        {{ form.username.label_tag }}
+                        <div class="custom-input">{{ form.username }}</div>
+                        {% if form.username.errors %}
+                        <div class="invalid-feedback d-block mt-2">{{ form.username.errors.as_text }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-4">
+                            {{ form.first_name.label_tag }}
+                            <div class="custom-input">{{ form.first_name }}</div>
+                            {% if form.first_name.errors %}
+                            <div class="invalid-feedback d-block mt-2">{{ form.first_name.errors.as_text }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6 mb-4">
+                            {{ form.last_name.label_tag }}
+                            <div class="custom-input">{{ form.last_name }}</div>
+                            {% if form.last_name.errors %}
+                            <div class="invalid-feedback d-block mt-2">{{ form.last_name.errors.as_text }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-4">
+                            {{ form.password.label_tag }}
+                            <div class="custom-input">{{ form.password }}</div>
+                            {% if form.password.errors %}
+                            <div class="invalid-feedback d-block mt-2">{{ form.password.errors.as_text }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6 mb-4">
+                            {{ form.password_confirm.label_tag }}
+                            <div class="custom-input">{{ form.password_confirm }}</div>
+                            {% if form.password_confirm.errors %}
+                            <div class="invalid-feedback d-block mt-2">{{ form.password_confirm.errors.as_text }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <hr>
+
+                    <div class="mb-4">
+                        {{ form.escola.label_tag }}
+                        <div class="custom-input">{{ form.escola }}</div>
+                        {% if form.escola.errors %}
+                        <div class="invalid-feedback d-block mt-2">{{ form.escola.errors.as_text }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-4">
+                        {{ form.role.label_tag }}
+                        <div class="custom-input">{{ form.role }}</div>
+                        {% if form.role.errors %}
+                        <div class="invalid-feedback d-block mt-2">{{ form.role.errors.as_text }}</div>
+                        {% endif %}
+                    </div>
+
+                    <hr>
+
+                    <div class="d-flex justify-content-end gap-3">
+                        <a href="{% url 'usuarios:lista_usuarios' %}" class="btn cancel-btn">Cancelar</a>
+                        <button type="submit" class="btn save-btn">Salvar Alterações</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+{% endblock %}

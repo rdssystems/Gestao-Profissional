@@ -1,0 +1,180 @@
+{% extends "base.html" %}
+
+{% block title %}Histórico de Chamadas • {{ curso.nome }}{% endblock %}
+
+{% block content %}
+
+<style>
+    body {
+        background: #eef1f5 !important;
+        font-family: "Inter", sans-serif;
+        color: #424a57;
+        background-image: radial-gradient(rgba(0,0,0,0.02) 1px, transparent 0);
+        background-size: 18px 18px;
+    }
+
+    .page-title {
+        font-weight: 700;
+        color: #1f2937;
+    }
+
+    /* Card Premium */
+    .app-card {
+        position: relative;
+        border-radius: 1.2rem;
+        background: #ffffff;
+        border: 1px solid rgba(0,0,0,0.05);
+        box-shadow:
+            0 3px 8px rgba(0,0,0,0.04),
+            0 14px 40px rgba(0,0,0,0.08);
+        overflow: hidden;
+    }
+
+    .app-card::before {
+        content: "";
+        position: absolute;
+        top: 0; left: 0; right: 0;
+        height: 3px;
+        background: linear-gradient(90deg,
+            rgba(75,93,255,0.32),
+            rgba(99,114,255,0.12)
+        );
+    }
+
+    .app-card::after {
+        content: "";
+        position: absolute;
+        bottom: 0; left: 0; right: 0;
+        height: 4px;
+        background: #4B5DFF;
+        border-radius: 0 0 1.2rem 1.2rem;
+        opacity: .75;
+    }
+
+    /* Tabela */
+    thead {
+        background: #f3f6ff;
+        color: #1e293b;
+        font-weight: 600;
+    }
+
+    tbody tr:hover {
+        background: #f7f9fc;
+    }
+
+    .text-muted {
+        font-size: 0.9rem;
+    }
+
+    /* Botões */
+    .btn-app {
+        border-radius: .7rem;
+        font-weight: 600;
+        padding: .55rem 1.2rem;
+        transition: 0.22s ease;
+    }
+
+    .btn-outline-secondary.btn-app:hover,
+    .btn-outline-primary.btn-app:hover {
+        transform: translateY(-2px);
+    }
+
+    .btn-primary.btn-app {
+        background: #4B5DFF;
+        border: none;
+        color: #fff;
+    }
+
+    .btn-primary.btn-app:hover {
+        background: #6372ff;
+        box-shadow: 0 6px 22px rgba(75,93,255,0.25);
+    }
+</style>
+
+
+<!-- Header -->
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="page-title mb-1">Histórico de Chamadas</h1>
+        <p class="text-muted mb-0">
+            Curso: <strong>{{ curso.nome }}</strong>
+        </p>
+    </div>
+
+    <a href="{% url 'cursos:lista_cursos_chamada' %}"
+       class="btn btn-outline-secondary btn-app">
+        Voltar
+    </a>
+</div>
+
+
+<!-- Tabela -->
+<div class="app-card">
+    <div class="p-0">
+        <div class="table-responsive">
+            <table class="table align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th>Data da Aula</th>
+                        <th>Observações</th>
+                        <th class="text-end">Ações</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {% for registro_aula in registros_aula %}
+                    <tr>
+                        <td>{{ registro_aula.data_aula|date:"d/m/Y" }}</td>
+                        <td>{{ registro_aula.observacoes|default:"—" }}</td>
+
+                        <td class="text-end">
+                            <a href="{% url 'cursos:fazer_chamada_editar' curso_pk=curso.pk registro_aula_pk=registro_aula.pk %}"
+                               class="btn btn-sm btn-outline-primary btn-app">
+                                Ver/Editar
+                            </a>
+                        </td>
+                    </tr>
+
+                    {% empty %}
+                    <tr>
+                        <td colspan="3" class="text-center py-4 text-muted">
+                            Nenhuma aula registrada para este curso.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+
+            </table>
+        </div>
+    </div>
+</div>
+
+
+<!-- Paginação -->
+{% if is_paginated %}
+<nav class="mt-4">
+    <ul class="pagination justify-content-center">
+
+        {% if page_obj.has_previous %}
+        <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Anterior</a>
+        </li>
+        {% endif %}
+
+        {% for i in paginator.page_range %}
+        <li class="page-item {% if page_obj.number == i %}active{% endif %}">
+            <a class="page-link" href="?page={{ i }}">{{ i }}</a>
+        </li>
+        {% endfor %}
+
+        {% if page_obj.has_next %}
+        <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.next_page_number }}">Próxima</a>
+        </li>
+        {% endif %}
+
+    </ul>
+</nav>
+{% endif %}
+
+{% endblock %}

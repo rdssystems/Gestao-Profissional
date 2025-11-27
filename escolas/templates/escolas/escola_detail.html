@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+
+{% block title %}Detalhes da Escola: {{ escola.nome }}{% endblock %}
+
+{% block content %}
+
+<style>
+    .school-header {
+        font-weight: 700;
+        color: #42557A;
+        margin-bottom: 1.5rem;
+    }
+
+    .info-card {
+        border-radius: 1.2rem;
+        border: none;
+        overflow: hidden;
+        box-shadow: 0 12px 28px rgba(0,0,0,0.06);
+    }
+
+    .info-card .card-header {
+        background: linear-gradient(145deg, #4C7DF0, #6A98F7);
+        color: white;
+        padding: 1rem 1.4rem;
+        font-weight: 600;
+    }
+
+    .info-line {
+        padding: 0.45rem 0;
+        font-size: 1.05rem;
+        color: #4C5B7A;
+    }
+
+    .btn-rounded {
+        border-radius: 50px;
+        padding: 0.55rem 1.3rem;
+        font-weight: 500;
+    }
+
+    .btn-action {
+        border-radius: 50px;
+        padding: 0.55rem 1.5rem;
+        font-weight: 600;
+    }
+</style>
+
+
+<h1 class="school-header">{{ escola.nome }}</h1>
+
+<div class="card info-card mb-4">
+    <div class="card-header">
+        Informações da Escola
+    </div>
+
+    <div class="card-body">
+        <p class="info-line"><strong>Endereço:</strong> {{ escola.endereco }}</p>
+        <p class="info-line"><strong>Email:</strong> {{ escola.email }}</p>
+        <p class="info-line"><strong>Telefone:</strong> {{ escola.telefone }}</p>
+
+        <p class="info-line">
+            <strong>Coordenador:</strong>
+            {% if escola.coordenador %}
+                {{ escola.coordenador }}
+            {% else %}
+                <span class="text-muted">Não definido</span>
+            {% endif %}
+        </p>
+    </div>
+</div>
+
+
+<div class="d-flex flex-wrap gap-2 mt-3">
+
+    <a href="{% url 'escolas:cursos_da_escola' escola_id=escola.pk %}" 
+       class="btn btn-primary btn-action">
+        Ver Cursos
+    </a>
+
+    <a href="{% url 'escolas:alunos_da_escola' escola_id=escola.pk %}" 
+       class="btn btn-info btn-action text-white">
+        Ver Alunos
+    </a>
+
+    <a href="{% url 'escolas:lista_escolas' %}" 
+       class="btn btn-secondary btn-rounded">
+        Voltar para a lista
+    </a>
+
+    {% if user.is_superuser %}
+        <a href="{% url 'escolas:editar_escola' pk=escola.pk %}"
+           class="btn btn-warning btn-rounded text-dark">
+            Editar
+        </a>
+
+        <a href="{% url 'escolas:excluir_escola' pk=escola.pk %}"
+           class="btn btn-danger btn-rounded">
+            Excluir
+        </a>
+    {% endif %}
+
+</div>
+
+{% endblock %}

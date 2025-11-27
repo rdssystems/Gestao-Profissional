@@ -1,0 +1,286 @@
+{% extends "base.html" %}
+
+{% block title %}Matrícula Rápida{% endblock %}
+
+{% block content %}
+
+<style>
+    body {
+        background: #eef1f5 !important;
+        font-family: "Inter", sans-serif;
+        color: #424a57;
+        background-image: radial-gradient(rgba(0,0,0,0.02) 1px, transparent 0);
+        background-size: 18px 18px;
+    }
+
+    .page-title {
+        font-weight: 700;
+        color: #1f2937;
+    }
+
+    /* Card Premium */
+    .app-card {
+        position: relative;
+        border-radius: 1.2rem;
+        background: #ffffff;
+        border: 1px solid rgba(0,0,0,0.05);
+        box-shadow:
+            0 3px 8px rgba(0,0,0,0.04),
+            0 14px 40px rgba(0,0,0,0.08);
+        overflow: hidden;
+        transition: .25s ease;
+    }
+
+    .app-card:hover {
+        transform: translateY(-4px);
+    }
+
+    .app-card::before {
+        content: "";
+        position: absolute;
+        top: 0; left: 0; right: 0;
+        height: 3px;
+        background: linear-gradient(90deg,
+            rgba(75,93,255,0.35),
+            rgba(99,114,255,0.12)
+        );
+    }
+
+    .app-card::after {
+        content: "";
+        position: absolute;
+        bottom: 0; left: 0; right: 0;
+        height: 4px;
+        background: #4B5DFF;
+        opacity: .75;
+        border-radius: 0 0 1.2rem 1.2rem;
+    }
+
+    /* Inputs */
+    .form-select-lg {
+        border-radius: .75rem;
+        padding: .75rem 1rem;
+        background: #f9fbff;
+        border: 1px solid #cfd6e3;
+        transition: .22s ease;
+    }
+
+    .form-select-lg:focus {
+        border-color: #4B5DFF;
+        background: #ffffff;
+        box-shadow: 0 0 0 3px rgba(75,93,255,0.15);
+    }
+
+    label {
+        font-weight: 600;
+        color: #1f2937;
+    }
+
+    /* Tabela */
+    thead {
+        background: #f3f6ff;
+        color: #1e293b;
+        font-weight: 600;
+    }
+
+    tbody tr:hover {
+        background: #f7f9fc;
+    }
+
+    th {
+        white-space: nowrap;
+    }
+
+    /* Botões de ações */
+    .btn-app {
+        border-radius: .7rem;
+        font-weight: 600;
+        padding: .45rem .95rem;
+        transition: 0.22s ease;
+    }
+
+    .btn-primary.btn-app {
+        background: #4B5DFF;
+        border: none;
+        color: #ffffff;
+    }
+
+    .btn-primary.btn-app:hover {
+        background: #6372ff;
+        transform: translateY(-2px);
+        box-shadow: 0 6px 22px rgba(75,93,255,0.25);
+    }
+
+    .btn-success.btn-app {
+        background: #3bbf7a;
+        border-color: #3bbf7a;
+        color: #ffffff;
+    }
+
+    .btn-success.btn-app:hover {
+        background: #30a368;
+        transform: translateY(-2px);
+        box-shadow: 0 6px 22px rgba(48,163,104,0.25);
+    }
+
+    .btn-info.btn-app {
+        background: #3bbfff;
+        border: none;
+    }
+
+</style>
+
+<!-- HEADER -->
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="page-title mb-0">Matrícula Rápida</h1>
+</div>
+
+
+<!-- Seletor de Curso -->
+<div class="app-card mb-4">
+    <div class="card-body">
+        <form method="get" action="{% url 'cursos:matricula' %}">
+            <div class="row align-items-end">
+                <div class="col-md-8">
+                    <label class="form-label">Selecione um Curso Aberto</label>
+                    <select name="curso_id" class="form-select form-select-lg">
+                        <option value="">--- Escolha um curso ---</option>
+                        {% for curso in cursos_abertos %}
+                            <option value="{{ curso.pk }}" {% if curso.pk == selected_curso.pk %}selected{% endif %}>
+                                {{ curso.nome }} • {{ curso.get_turno_display }} • {{ curso.horario|date:"H:i" }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-md-4">
+                    <button type="submit"
+                            class="btn btn-primary btn-lg w-100 btn-app">
+                        Carregar
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+
+<!-- Alunos sugeridos -->
+{% if selected_curso %}
+<div class="app-card mb-4">
+    <div class="card-header bg-white py-3">
+        <h4 class="mb-0">Sugestões de Matrícula</h4>
+        <small class="text-muted">
+            Alunos interessados no tipo de curso: {{ selected_curso.tipo_curso.nome }}
+        </small>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead>
+                <tr>
+                    <th>Nome</th>
+                    <th>CPF</th>
+                    <th>Telefone</th>
+                    <th>Score</th>
+                    <th class="text-end">Ação</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                {% for aluno in alunos_sugeridos %}
+                <tr>
+                    <td>
+                        {{ aluno.nome_completo }}
+                        {% if aluno.whatsapp_link %}
+                        <a href="https://wa.me/{{ aluno.whatsapp_link }}" target="_blank" class="text-success ms-1" title="WhatsApp">
+                            <i class="bi bi-whatsapp"></i>
+                        </a>
+                        {% endif %}
+                    </td>
+                    <td>{{ aluno.cpf }}</td>
+                    <td>{{ aluno.telefone_principal }}</td>
+                    <td>{{ aluno.score_total }}</td>
+
+                    <td class="text-end">
+                        <form method="post" action="{% url 'cursos:matricular_aluno_direto' %}">
+                            {% csrf_token %}
+                            <input type="hidden" name="aluno_id" value="{{ aluno.pk }}">
+                            <input type="hidden" name="curso_id" value="{{ selected_curso.pk }}">
+                            <button type="submit"
+                                    class="btn btn-success btn-sm btn-app">
+                                Matricular
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" class="text-center text-muted py-4">
+                        Nenhum interessado localizado.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+
+        </table>
+    </div>
+</div>
+{% endif %}
+
+
+<!-- Alunos já matriculados -->
+{% if selected_curso and alunos_matriculados %}
+<div class="app-card">
+    <div class="card-header bg-white py-3">
+        <h4 class="mb-0">Alunos Matriculados</h4>
+        <small class="text-muted">
+            Curso: {{ selected_curso.nome }}
+        </small>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead>
+                <tr>
+                    <th>Nome</th>
+                    <th>CPF</th>
+                    <th>Telefone</th>
+                    <th>Status</th>
+                    <th class="text-end">Ação</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for inscricao in alunos_matriculados %}
+                <tr>
+                    <td>
+                        {{ inscricao.aluno.nome_completo }}
+                        {% if inscricao.aluno.whatsapp_link %}
+                        <a href="https://wa.me/{{ inscricao.aluno.whatsapp_link }}" target="_blank" class="text-success ms-1" title="WhatsApp">
+                            <i class="bi bi-whatsapp"></i>
+                        </a>
+                        {% endif %}
+                    </td>
+                    <td>{{ inscricao.aluno.cpf }}</td>
+                    <td>{{ inscricao.aluno.telefone_principal }}</td>
+                    <td><span class="badge bg-success">{{ inscricao.get_status_display }}</span></td>
+                    <td class="text-end">
+                        <a href="{% url 'cursos:detalhe_curso' pk=selected_curso.pk %}"
+                           class="btn btn-info btn-sm btn-app">Detalhes</a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" class="text-center text-muted py-4">
+                        Nenhuma matrícula registrada.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+</div>
+{% endif %}
+
+{% endblock %}

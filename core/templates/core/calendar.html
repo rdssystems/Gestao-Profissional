@@ -1,0 +1,259 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Agenda de Cursos{% endblock %}
+
+{% block content %}
+<style>
+    /* Fundo igual ao dashboard */
+    body {
+        background: #eef1f5 !important;
+        font-family: "Inter", sans-serif;
+        color: #424a57;
+        background-image: radial-gradient(rgba(0,0,0,0.02) 1px, transparent 0);
+        background-size: 18px 18px;
+    }
+
+    .page-title {
+        font-weight: 700;
+        color: #1f2937;
+    }
+
+    .smooth {
+        transition: 0.25s ease;
+    }
+
+    /* Cards com padrão premium */
+    .table-card {
+        position: relative;
+        border-radius: 1.2rem;
+        background: #ffffff;
+        border: 1px solid rgba(0,0,0,0.04);
+        box-shadow:
+            0 3px 8px rgba(0,0,0,0.04),
+            0 14px 40px rgba(0,0,0,0.08);
+        overflow: hidden;
+    }
+
+    .table-card:hover {
+        transform: translateY(-4px);
+        box-shadow:
+            0 6px 14px rgba(0,0,0,0.06),
+            0 20px 50px rgba(0,0,0,0.12);
+    }
+
+    .table-card::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: linear-gradient(90deg,
+            rgba(75,93,255,0.35),
+            rgba(99,114,255,0.12)
+        );
+    }
+
+    .table-card::after {
+        content: "";
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: #4B5DFF;
+        border-radius: 0 0 1.2rem 1.2rem;
+        opacity: 0.7;
+    }
+
+    .card-title {
+        color: #1e293b;
+        font-weight: 600;
+    }
+
+    /* Botão principal padrão */
+    .new-btn {
+        background-color: #4B5DFF;
+        border: none;
+        font-weight: 600;
+        border-radius: 0.6rem;
+        color: #fff;
+    }
+
+    .new-btn:hover {
+        background-color: #6372ff;
+        box-shadow: 0 6px 22px rgba(75,93,255,0.25);
+    }
+
+    /* Tabela */
+    .table {
+        color: #2b333d;
+        font-size: 0.93rem;
+    }
+
+    .table thead {
+        background: #f2f4f7;
+        font-weight: 600;
+        color: #1e293b;
+    }
+
+    .table tbody tr:hover {
+        background: #f7f9fc;
+    }
+
+    /* Badges atualizados */
+    .badge {
+        padding: 0.45rem 0.7rem;
+        border-radius: 0.4rem;
+        font-size: 0.78rem;
+        font-weight: 600;
+    }
+
+    .badge.bg-success {
+        background: #3cbf7c !important;
+    }
+
+    .badge.bg-warning {
+        background: #f5c44f !important;
+    }
+
+    .badge.bg-secondary {
+        background: #94a3b8 !important;
+    }
+
+    /* Select estilizado */
+    .form-select {
+        border-radius: 0.6rem;
+    }
+
+    /* Ação da tabela */
+    .btn-outline-primary {
+        border-radius: 0.6rem;
+        font-weight: 500;
+        border-color: #4B5DFF;
+        color: #4B5DFF;
+    }
+
+    .btn-outline-primary:hover {
+        background: #4B5DFF;
+        color: #ffffff;
+    }
+
+</style>
+
+<div class="container-fluid mt-4">
+
+    <h1 class="page-title mb-4">Agenda de Cursos</h1>
+
+    <!-- FILTRO -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card table-card smooth">
+                <div class="card-body">
+                    <h5 class="card-title mb-3">Filtrar Cursos</h5>
+
+                    <form method="GET" action="{% url 'core:agenda' %}" class="row g-3 align-items-end">
+                        <div class="col-md-5">
+                            <label class="form-label">Nome do Curso</label>
+                            <select class="form-select" name="curso_nome">
+                                <option value="">Todos os Cursos</option>
+                                {% for curso_opt in todos_nomes_cursos %}
+                                    <option value="{{ curso_opt }}" {% if curso_opt == curso_nome_filter %}selected{% endif %}>
+                                        {{ curso_opt }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="col-md-5">
+                            <label class="form-label">Unidade (Escola)</label>
+                            <select class="form-select" name="escola_nome">
+                                <option value="">Todas as Unidades</option>
+                                {% for escola_opt in todas_escolas %}
+                                    <option value="{{ escola_opt.nome }}" {% if escola_opt.nome == escola_nome_filter %}selected{% endif %}>
+                                        {{ escola_opt.nome }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="col-md-2 d-grid">
+                            <button type="submit" class="btn new-btn smooth">Filtrar</button>
+                        </div>
+                    </form>
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- LISTAGEM -->
+    <div class="row">
+        <div class="col-12 mb-4">
+            <div class="card table-card smooth">
+                <div class="card-body p-0">
+                    <h5 class="card-title p-3 mb-0">Cursos Listados</h5>
+
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Curso</th>
+                                    <th>Unidade</th>
+                                    <th>Início</th>
+                                    <th>Fim</th>
+                                    <th>Horário</th>
+                                    <th>Status</th>
+                                    <th class="text-end">Ações</th>
+                                </tr>
+                            </thead>
+
+                            <tbody>
+                                {% for curso in cursos %}
+                                <tr>
+                                    <td>{{ curso.nome }}</td>
+                                    <td>{{ curso.escola.nome }}</td>
+                                    <td>{{ curso.data_inicio|date:"d/m/Y" }}</td>
+                                    <td>{{ curso.data_fim|date:"d/m/Y" }}</td>
+                                    <td>{% if curso.horario %}{{ curso.horario|date:"H:i" }}{% else %}N/A{% endif %}</td>
+
+                                    <td>
+                                        {% if curso.status == 'Aberta' %}
+                                            <span class="badge bg-success">{{ curso.status }}</span>
+                                        {% elif curso.status == 'Em Andamento' %}
+                                            <span class="badge bg-warning text-dark">{{ curso.status }}</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">{{ curso.status }}</span>
+                                        {% endif %}
+                                    </td>
+
+                                    <td class="text-end">
+                                        <a href="{% url 'cursos:detalhe_curso' pk=curso.pk %}"
+                                           class="btn btn-sm btn-outline-primary smooth">
+                                            Detalhes
+                                        </a>
+                                    </td>
+                                </tr>
+
+                                {% empty %}
+                                <tr>
+                                    <td colspan="7" class="text-center py-4 text-secondary">
+                                        Nenhum curso encontrado com os filtros aplicados.
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+
+{% endblock %}

@@ -1,0 +1,204 @@
+{% extends "base.html" %}
+
+{% block title %}Histórico de {{ aluno.nome_completo }}{% endblock %}
+
+{% block content %}
+
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
+
+    body {
+        background-color: #f8fafc;
+        font-family: 'Plus Jakarta Sans', sans-serif;
+        color: #1e293b;
+    }
+
+    .page-title {
+        font-weight: 700;
+        color: #0f172a;
+        font-size: 1.75rem;
+        letter-spacing: -0.025em;
+    }
+
+    .info-card {
+        border-radius: 16px;
+        background: white;
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.025);
+        border: 1px solid #e2e8f0;
+        overflow: hidden;
+    }
+
+    .info-card .card-header {
+        background: linear-gradient(135deg, #2563eb, #3b82f6);
+        color: white;
+        padding: 1rem 1.5rem;
+        font-weight: 600;
+        font-size: 1.1rem;
+    }
+
+    .info-card .card-body {
+        padding: 1.5rem;
+    }
+
+    .table-card {
+        border-radius: 16px;
+        background: white;
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.025);
+        border: 1px solid #e2e8f0;
+        overflow: hidden;
+    }
+
+    .table-card .card-header {
+        background: #f1f5f9;
+        border-bottom: 1px solid #e2e8f0;
+        padding: 1rem 1.5rem;
+        font-weight: 600;
+        color: #475569;
+    }
+
+    .table {
+        margin-bottom: 0;
+    }
+
+    .table thead {
+        background: #f8fafc;
+        border-bottom: 1px solid #e2e8f0;
+    }
+
+    .table thead th {
+        color: #64748b;
+        font-weight: 600;
+        font-size: 0.8rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        padding: 1rem 1.5rem;
+        border: none;
+    }
+
+    .table tbody tr {
+        border-bottom: 1px solid #f1f5f9;
+        transition: background-color 0.2s ease;
+    }
+
+    .table tbody tr:last-child {
+        border-bottom: none;
+    }
+
+    .table tbody tr:hover {
+        background-color: #f8fafc !important;
+    }
+
+    .table tbody td {
+        padding: 1rem 1.5rem;
+        color: #334155;
+        font-size: 0.9rem;
+        vertical-align: middle;
+        border: none;
+    }
+
+    .status-badge {
+        border-radius: 8px;
+        padding: 0.35rem 0.75rem;
+        font-weight: 600;
+        font-size: 0.8rem;
+    }
+
+    .back-btn {
+        border-radius: 12px;
+        padding: 0.6rem 1.5rem;
+        font-weight: 600;
+        font-size: 0.9rem;
+        color: #64748b;
+        background: white;
+        border: 1px solid #e2e8f0;
+        transition: all 0.2s ease;
+    }
+
+    .back-btn:hover {
+        background: #f8fafc;
+        color: #475569;
+        border-color: #cbd5e1;
+        transform: translateY(-1px);
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    }
+</style>
+
+
+<h1 class="mb-4 page-title">Histórico de Aluno</h1>
+
+<div class="card info-card mb-4">
+    <div class="card-header">
+        <i class="bi bi-person-badge me-2"></i> {{ aluno.nome_completo }}
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-6">
+                <p class="mb-2 text-muted small text-uppercase fw-bold">CPF</p>
+                <p class="fw-medium text-dark">{{ aluno.cpf }}</p>
+            </div>
+            <div class="col-md-6">
+                <p class="mb-2 text-muted small text-uppercase fw-bold">Escola</p>
+                <p class="fw-medium text-dark">{{ aluno.escola.nome }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card table-card">
+    <div class="card-header">
+        Cursos Matriculados
+    </div>
+
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th scope="col">Curso</th>
+                        <th scope="col">Período</th>
+                        <th scope="col">Frequência</th>
+                        <th scope="col">Status</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {% for inscricao in inscricoes %}
+                    <tr>
+                        <td class="fw-medium">{{ inscricao.curso.nome }}</td>
+                        <td>{{ inscricao.curso.data_inicio|date:"d/m/Y" }} a {{ inscricao.curso.data_fim|date:"d/m/Y" }}</td>
+                        <td class="text-muted">—</td>
+                        <td>
+                            <span class="badge status-badge 
+                                {% if inscricao.status == 'concluido' %}bg-success bg-opacity-10 text-success border border-success border-opacity-10
+                                {% elif inscricao.status == 'desistente' %}bg-danger bg-opacity-10 text-danger border border-danger border-opacity-10
+                                {% else %}bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-10{% endif %}
+                            ">
+                                {{ inscricao.get_status_display }}
+                            </span>
+                        </td>
+                    </tr>
+
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" class="text-center py-5">
+                            <div class="text-muted">
+                                <i class="bi bi-journal-x display-4 d-block mb-3 opacity-25"></i>
+                                O aluno não se inscreveu em nenhum curso.
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="mt-4">
+    <a href="{% url 'alunos:detalhe_aluno' pk=aluno.pk %}" class="btn back-btn">
+        <i class="bi bi-arrow-left me-1"></i> Voltar aos Detalhes
+    </a>
+</div>
+
+{% endblock %}

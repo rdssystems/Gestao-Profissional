@@ -1,0 +1,195 @@
+{% extends "base.html" %}
+
+{% block title %}Configuração de Score{% endblock %}
+
+{% block content %}
+
+<style>
+    .form-card {
+        border-radius: 1.3rem;
+        box-shadow: 0 12px 26px rgba(0,0,0,0.06);
+        border: none;
+        overflow: hidden;
+        margin-bottom: 2rem;
+    }
+    .form-card .card-header {
+        background: #f3f6ff;
+        color: #4C5B7A;
+        font-weight: 600;
+        padding: 1rem 1.5rem;
+        border-bottom: 1px solid #e5e8f1;
+    }
+    .form-row-custom {
+        display: flex;
+        gap: 1rem;
+        align-items: center;
+        margin-bottom: 1rem;
+    }
+    .form-row-custom .form-control {
+        border-radius: 12px;
+    }
+    .form-row-custom .form-label {
+        margin-bottom: .25rem;
+        font-size: .8rem;
+        font-weight: 500;
+    }
+    .form-row-custom .input-group-text {
+        border-radius: 12px 0 0 12px;
+    }
+</style>
+
+<h1 class="mb-4">Configuração de Score</h1>
+
+<form method="post">
+    {% csrf_token %}
+
+    {% for name, form in forms.items %}
+    <div class="card form-card">
+        <div class="card-header">{{ name }}</div>
+        <div class="card-body">
+            {% if form.non_field_errors %}
+                <div class="alert alert-danger">
+                    {% for error in form.non_field_errors %}
+                        <p class="mb-0">{{ error }}</p>
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+            {% if 'Renda' in name %}
+                <div class="form-row-custom">
+                    <div class="flex-grow-1">
+                        <label class="form-label">Se Renda > </label>
+                        {{ form.valor_1 }}
+                        {% for error in form.valor_1.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+                    </div>
+                    <div class="flex-grow-1">
+                        <label class="form-label">Pontos</label>
+                        {{ form.pontos_1 }}
+                        {% for error in form.pontos_1.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+                    </div>
+                </div>
+                <div class="form-row-custom">
+                    <div class="flex-grow-1">
+                        <label class="form-label">Se Renda > </label>
+                        {{ form.valor_2 }}
+                        {% for error in form.valor_2.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+                    </div>
+                    <div class="flex-grow-1">
+                        <label class="form-label">Pontos</label>
+                        {{ form.pontos_2 }}
+                        {% for error in form.pontos_2.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+                    </div>
+                </div>
+                <div class="form-row-custom">
+                    <div class="flex-grow-1">
+                        <label class="form-label">Se Renda > </label>
+                        {{ form.valor_3 }}
+                        {% for error in form.valor_3.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+                    </div>
+                    <div class="flex-grow-1">
+                        <label class="form-label">Pontos</label>
+                        {{ form.pontos_3 }}
+                        {% for error in form.pontos_3.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+                    </div>
+                </div>
+                <div class="form-row-custom">
+                    <div class="flex-grow-1">
+                        <label class="form-label">Se Renda <= Valor 3 (Base)</label>
+                        <input type="text" value="0" class="form-control" readonly>
+                    </div>
+                    <div class="flex-grow-1">
+                        <label class="form-label">Pontos</label>
+                        {{ form.pontos_base }}
+                        {% for error in form.pontos_base.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+                    </div>
+                </div>
+            {% else %}
+                 <div class="form-row-custom">
+                    <div class="flex-grow-1">
+                        <label class="form-label">Se Qtd >= </label>
+                        {{ form.qtd_1 }}
+                        {% for error in form.qtd_1.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+                    </div>
+                    <div class="flex-grow-1">
+                        <label class="form-label">Pontos</label>
+                        {{ form.pontos_1 }}
+                        {% for error in form.pontos_1.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+                    </div>
+                </div>
+                <div class="form-row-custom">
+                    <div class="flex-grow-1">
+                        <label class="form-label">Se Qtd >= </label>
+                        {{ form.qtd_2 }}
+                        {% for error in form.qtd_2.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+                    </div>
+                    <div class="flex-grow-1">
+                        <label class="form-label">Pontos</label>
+                        {{ form.pontos_2 }}
+                        {% for error in form.pontos_2.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+                    </div>
+                </div>
+                <div class="form-row-custom">
+                    <div class="flex-grow-1">
+                        <label class="form-label">Se Qtd >= </label>
+                        {{ form.qtd_3 }}
+                        {% for error in form.qtd_3.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+                    </div>
+                    <div class="flex-grow-1">
+                        <label class="form-label">Pontos</label>
+                        {{ form.pontos_3 }}
+                        {% for error in form.pontos_3.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+                    </div>
+                </div>
+                <div class="form-row-custom">
+                    <div class="flex-grow-1">
+                        <label class="form-label">Se Qtd < Qtd 3 (Base)</label>
+                        <input type="text" value="0" class="form-control" readonly>
+                    </div>
+                    <div class="flex-grow-1">
+                        <label class="form-label">Pontos</label>
+                        {{ form.pontos_base }}
+                        {% for error in form.pontos_base.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+    {% endfor %}
+
+    {% for name, formset in formsets.items %}
+    <div class="card form-card">
+        <div class="card-header">{{ name }}</div>
+        <div class="card-body">
+            {{ formset.management_form }}
+            {% if formset.non_form_errors %}
+                <div class="alert alert-danger">
+                    {% for error in formset.non_form_errors %}
+                        <p class="mb-0">{{ error }}</p>
+                    {% endfor %}
+                </div>
+            {% endif %}
+            {% for form in formset %}
+                <div class="form-row-custom">
+                    {{ form.id }}
+                    <div class="flex-grow-1">
+                        <label class="form-label">Título</label>
+                        {{ form.titulo }}
+                        {% for error in form.titulo.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+                    </div>
+                    <div class="flex-grow-1">
+                        <label class="form-label">Pontos</label>
+                        {{ form.pontos }}
+                        {% for error in form.pontos.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endfor %}
+
+    <div class="d-flex justify-content-end mt-4">
+        <button type="submit" class="btn btn-primary btn-lg">Salvar Todas as Configurações</button>
+    </div>
+</form>
+
+{% endblock %}

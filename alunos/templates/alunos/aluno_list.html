@@ -1,0 +1,295 @@
+{% extends "base.html" %}
+
+{% block title %}Lista de Alunos{% endblock %}
+
+{% block content %}
+
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
+
+    body {
+        background-color: #f8fafc;
+        font-family: 'Plus Jakarta Sans', sans-serif;
+        color: #1e293b;
+    }
+
+    .page-title {
+        font-weight: 700;
+        color: #0f172a;
+        font-size: 1.75rem;
+        letter-spacing: -0.025em;
+    }
+
+    /* Buttons */
+    .new-btn {
+        border-radius: 12px;
+        background: linear-gradient(135deg, #2563eb, #3b82f6);
+        border: none;
+        padding: 0.6rem 1.2rem;
+        font-weight: 600;
+        font-size: 0.9rem;
+        color: white;
+        box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.2), 0 2px 4px -1px rgba(37, 99, 235, 0.1);
+        transition: all 0.2s ease;
+    }
+
+    .new-btn:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 10px 15px -3px rgba(37, 99, 235, 0.3), 0 4px 6px -2px rgba(37, 99, 235, 0.15);
+        color: white;
+    }
+
+    .btn-outline-primary.new-btn {
+        background: white;
+        border: 1px solid #e2e8f0;
+        color: #2563eb;
+        box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    }
+
+    .btn-outline-primary.new-btn:hover {
+        background: #f8fafc;
+        border-color: #cbd5e1;
+        color: #1d4ed8;
+    }
+
+    /* Cards & Table */
+    .table-card {
+        border-radius: 16px;
+        background: white;
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.025);
+        /* Glass-dashboard shadow */
+        border: 1px solid #e2e8f0;
+        overflow: hidden;
+    }
+
+    .table {
+        margin-bottom: 0;
+    }
+
+    .table thead {
+        background: #f1f5f9;
+        border-bottom: 1px solid #e2e8f0;
+    }
+
+    .table thead th {
+        color: #64748b;
+        font-weight: 600;
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        padding: 1rem 1.5rem;
+        border: none;
+    }
+
+    .table tbody tr {
+        border-bottom: 1px solid #f1f5f9;
+        transition: background-color 0.2s ease;
+    }
+
+    .table tbody tr:last-child {
+        border-bottom: none;
+    }
+
+    .table tbody tr:hover {
+        background-color: #f8fafc !important;
+    }
+
+    .table tbody td {
+        padding: 1rem 1.5rem;
+        color: #334155;
+        font-size: 0.9rem;
+        vertical-align: middle;
+        border: none;
+    }
+
+    /* Badges */
+    .badge {
+        font-weight: 500;
+        padding: 0.35em 0.65em;
+        border-radius: 6px;
+    }
+
+    /* Action Buttons */
+    .action-btn {
+        border-radius: 8px;
+        padding: 0.4rem 0.8rem;
+        font-weight: 500;
+        font-size: 0.85rem;
+        transition: all 0.2s;
+        color: #2563eb;
+        border: 1px solid #e2e8f0;
+        background: white;
+    }
+
+    .action-btn:hover {
+        background: #eff6ff;
+        border-color: #bfdbfe;
+        color: #1d4ed8;
+        transform: translateY(-1px);
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    }
+
+    /* Pagination */
+    .pagination .page-link {
+        border: none;
+        color: #64748b;
+        border-radius: 8px;
+        margin: 0 2px;
+        font-weight: 500;
+        padding: 0.5rem 0.75rem;
+        transition: all 0.2s;
+    }
+
+    .pagination .page-item.active .page-link {
+        background: linear-gradient(135deg, #2563eb, #3b82f6);
+        color: white;
+        box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.2);
+    }
+
+    .pagination .page-link:hover {
+        background-color: #f1f5f9;
+        color: #1e293b;
+    }
+
+    /* Form Select */
+    .form-select-sm {
+        border-radius: 8px;
+        border-color: #e2e8f0;
+        color: #475569;
+        font-size: 0.875rem;
+    }
+
+    .form-select-sm:focus {
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+    }
+</style>
+
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="mb-0 page-title">Alunos</h1>
+    <div>
+        {% if user.is_superuser %}
+        <a href="{% url 'alunos:upload_alunos_csv' %}" class="btn btn-outline-primary new-btn me-2">
+            <i class="bi bi-upload me-1"></i> Importar Alunos
+        </a>
+        {% endif %}
+        <a href="{% url 'alunos:criar_aluno' %}" class="btn new-btn">
+            <i class="bi bi-plus-lg me-1"></i> Novo Aluno
+        </a>
+    </div>
+</div>
+
+<div class="card table-card">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table align-middle">
+                <thead>
+                    <tr>
+                        <th scope="col">Nome Completo</th>
+                        <th scope="col">CPF</th>
+                        <th scope="col">Score</th>
+                        <th scope="col">Cursos de Interesse</th>
+                        {% if user.is_superuser %}
+                        <th scope="col">Escola</th>
+                        {% endif %}
+                        <th scope="col" class="text-end">Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for aluno in alunos %}
+                    <tr>
+                        <td class="fw-medium text-dark">
+                            {{ aluno.nome_completo }}
+                            {% if aluno.whatsapp_link %}
+                            <a href="https://wa.me/{{ aluno.whatsapp_link }}" target="_blank" class="text-success ms-1" title="WhatsApp">
+                                <i class="bi bi-whatsapp"></i>
+                            </a>
+                            {% endif %}
+                        </td>
+                        <td>{{ aluno.cpf }}</td>
+                        <td>
+                            <span class="badge bg-light text-dark border">{{ aluno.score_total }}</span>
+                        </td>
+                        <td>
+                            {% for curso in aluno.cursos_interesse.all %}
+                            <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-10">{{ curso.nome }}</span>{% if not forloop.last %} {% endif %}
+                            {% empty %}
+                            <span class="text-muted small">-</span>
+                            {% endfor %}
+                        </td>
+
+                        {% if user.is_superuser %}
+                        <td>{{ aluno.escola.nome }}</td>
+                        {% endif %}
+
+                        <td class="text-end">
+                            <a href="{% url 'alunos:detalhe_aluno' pk=aluno.pk %}"
+                                class="btn btn-sm btn-outline-primary action-btn">
+                                Detalhes
+                            </a>
+                        </td>
+                    </tr>
+
+                    {% empty %}
+                    <tr>
+                        <td colspan="{% if user.is_superuser %}6{% else %}5{% endif %}" class="text-center py-5">
+                            <div class="text-muted">
+                                <i class="bi bi-people display-4 d-block mb-3 opacity-25"></i>
+                                Nenhum aluno cadastrado ainda.
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+{% if is_paginated %}
+<div class="d-flex justify-content-between align-items-center mt-4">
+    <nav aria-label="Page navigation">
+        <ul class="pagination mb-0">
+            {% if page_obj.has_previous %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.previous_page_number }}&page_size={{ view.paginate_by }}"
+                    aria-label="Previous">
+                    <span aria-hidden="true">&laquo;</span>
+                </a>
+            </li>
+            {% endif %}
+
+            {% for i in paginator.page_range %}
+            {% if page_obj.number == i %}
+            <li class="page-item active" aria-current="page"><a class="page-link" href="#">{{ i }}</a></li>
+            {% else %}
+            <li class="page-item"><a class="page-link" href="?page={{ i }}&page_size={{ view.paginate_by }}">{{ i }}</a>
+            </li>
+            {% endif %}
+            {% endfor %}
+
+            {% if page_obj.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.next_page_number }}&page_size={{ view.paginate_by }}"
+                    aria-label="Next">
+                    <span aria-hidden="true">&raquo;</span>
+                </a>
+            </li>
+            {% endif %}
+        </ul>
+    </nav>
+
+    <div class="d-flex align-items-center">
+        <span class="me-2 text-muted small">Exibir:</span>
+        <select class="form-select form-select-sm" style="width: auto;"
+            onchange="window.location.href = '?page=1&page_size=' + this.value;">
+            <option value="20" {% if view.paginate_by == 20 %}selected{% endif %}>20</option>
+            <option value="50" {% if view.paginate_by == 50 %}selected{% endif %}>50</option>
+            <option value="100" {% if view.paginate_by == 100 %}selected{% endif %}>100</option>
+        </select>
+    </div>
+</div>
+{% endif %}
+
+{% endblock %}

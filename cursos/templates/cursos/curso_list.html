@@ -1,0 +1,215 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Cursos{% endblock %}
+
+{% block content %}
+
+<style>
+
+    body {
+        background: #eef1f5 !important;
+        font-family: "Inter", sans-serif;
+        color: #424a57;
+        background-image: radial-gradient(rgba(0,0,0,0.02) 1px, transparent 0);
+        background-size: 18px 18px;
+    }
+
+    .page-title {
+        font-weight: 700;
+        color: #1f2937;
+        margin-bottom: 0.5rem;
+    }
+
+    .btn-primary,
+    .btn-outline-primary,
+    .btn-success {
+        border-radius: 0.55rem;
+        font-weight: 600;
+        padding: 0.4rem 1rem;
+        font-size: 0.85rem;
+        white-space: nowrap;
+    }
+
+    .new-btn {
+        background-color: #4B5DFF !important;
+        color: #fff;
+        border: none;
+    }
+
+    .new-btn:hover {
+        background-color: #6372ff;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 16px rgba(75,93,255,0.25);
+    }
+
+    .btn-outline-primary {
+        border-color: #4B5DFF;
+        color: #4B5DFF;
+    }
+    .btn-outline-primary:hover {
+        background-color: #4B5DFF;
+        color: #ffffff;
+    }
+
+    .table-card {
+        border-radius: 1.2rem;
+        background: #ffffff;
+        border: 1px solid rgba(0,0,0,0.05);
+        box-shadow:
+            0 3px 8px rgba(0,0,0,0.04),
+            0 14px 40px rgba(0,0,0,0.08);
+        overflow: hidden;
+    }
+
+    thead {
+        background: #f3f6ff;
+        color: #1e293b;
+        font-weight: 600;
+    }
+
+    td:first-child {
+        width: 32%;
+    }
+
+    .badge {
+        border-radius: 0.5rem;
+        padding: 0.32rem 0.6rem;
+        font-weight: 600;
+        font-size: 0.75rem;
+        margin-right: 0.25rem;
+    }
+
+    .actions-col {
+        width: 160px;
+        text-align: end;
+        white-space: nowrap;
+        padding-right: 1.2rem !important;
+    }
+
+</style>
+
+<div class="row">
+
+    <!-- Cabeçalho principal -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="page-title">Cursos Abertos</h1>
+
+        <div class="d-flex gap-2">
+            <a href="{% url 'cursos:lista_cursos_chamada' %}" class="btn btn-outline-primary">
+                Chamadas
+            </a>
+            <a href="{% url 'cursos:criar_curso' %}" class="btn new-btn">
+                Novo
+            </a>
+            <a href="{% url 'cursos:lista_tipos_curso' %}" class="btn btn-outline-secondary">
+                Tipos de Curso
+            </a>
+            {% if user.is_superuser %}
+            <a href="{% url 'cursos:upload_cursos_csv' %}" class="btn btn-outline-primary">
+                <i class="bi bi-upload me-1"></i> Upload Cursos
+            </a>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Tabela Cursos Abertos largura total -->
+    <div class="card table-card mb-5">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th>Nome do Curso</th>
+                        {% if user.is_superuser %}<th>Escola</th>{% endif %}
+                        <th>Tipo</th>
+                        <th>Início</th>
+                        <th>Status</th>
+                        <th class="actions-col">Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for curso in cursos_ativos %}
+                    <tr>
+                        <td>
+                            <div class="fw-semibold">{{ curso.nome }}</div>
+                            {% if curso.turno %}
+                                <span class="badge bg-light text-dark">{{ curso.get_turno_display }}</span>
+                            {% endif %}
+                            {% if curso.horario %}
+                                <span class="badge bg-light text-dark">{{ curso.horario|date:"H:i" }}</span>
+                            {% endif %}
+                        </td>
+
+                        {% if user.is_superuser %}
+                        <td>{{ curso.escola.nome }}</td>
+                        {% endif %}
+
+                        <td><span class="badge bg-{{ curso.tipo_curso.cor }}">{{ curso.tipo_curso.nome }}</span></td>
+                        <td>{{ curso.data_inicio|date:"d/m/Y" }}</td>
+                        <td>
+                            <span class="badge 
+                                {% if curso.status == 'Aberta' %}bg-success
+                                {% elif curso.status == 'Em Andamento' %}bg-warning text-dark
+                                {% else %}bg-secondary{% endif %}
+                            ">{{ curso.status }}</span>
+                        </td>
+
+                        <td class="actions-col">
+                            <a href="{% url 'cursos:fazer_chamada' curso_pk=curso.pk %}"
+                               class="btn btn-success btn-sm">Chamada</a>
+
+                            <a href="{% url 'cursos:detalhe_curso' pk=curso.pk %}"
+                               class="btn btn-outline-primary btn-sm">Detalhes</a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="6" class="text-center py-4 text-muted">Nenhum curso ativo.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+
+<!-- Seção Cursos Concluídos -->
+<h2 class="page-title mt-5">Cursos Concluídos</h2>
+
+<div class="card table-card">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead>
+                <tr>
+                    <th>Nome do Curso</th>
+                    {% if user.is_superuser %}<th>Escola</th>{% endif %}
+                    <th>Tipo</th>
+                    <th>Início</th>
+                    <th>Status</th>
+                    <th class="actions-col">Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for curso in cursos_concluidos %}
+                <tr>
+                    <td><div class="fw-semibold">{{ curso.nome }}</div></td>
+                    {% if user.is_superuser %}<td>{{ curso.escola.nome }}</td>{% endif %}
+                    <td><span class="badge bg-{{ curso.tipo_curso.cor }}">{{ curso.tipo_curso.nome }}</span></td>
+                    <td>{{ curso.data_inicio|date:"d/m/Y" }}</td>
+                    <td><span class="badge bg-secondary">{{ curso.status }}</span></td>
+                    <td class="actions-col">
+                        <a href="{% url 'cursos:listar_chamadas_curso' curso_pk=curso.pk %}"
+                           class="btn btn-outline-secondary btn-sm">Chamadas</a>
+
+                        <a href="{% url 'cursos:detalhe_curso' pk=curso.pk %}"
+                           class="btn btn-outline-primary btn-sm">Detalhes</a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="6" class="text-center py-4 text-muted">Nenhum concluído.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% endblock %}

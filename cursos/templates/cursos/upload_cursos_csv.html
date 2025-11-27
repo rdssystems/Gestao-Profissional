@@ -1,0 +1,139 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Upload de Cursos CSV{% endblock %}
+
+{% block content %}
+
+<style>
+    .page-title {
+        font-weight: 700;
+        color: #1f2937;
+    }
+
+    .upload-card {
+        position: relative;
+        border-radius: 1.2rem;
+        background: #ffffff;
+        border: 1px solid rgba(0,0,0,0.05);
+        box-shadow:
+            0 3px 8px rgba(0,0,0,0.04),
+            0 14px 40px rgba(0,0,0,0.08);
+        overflow: hidden;
+        padding: 2rem;
+    }
+
+    .upload-card::before {
+        content: "";
+        position: absolute;
+        top: 0; left: 0; right: 0;
+        height: 3px;
+        background: linear-gradient(90deg,
+            rgba(75,93,255,0.35),
+            rgba(99,114,255,0.12)
+        );
+    }
+
+    .upload-card::after {
+        content: "";
+        position: absolute;
+        bottom: 0; left: 0; right: 0;
+        height: 4px;
+        background: #4B5DFF;
+        border-radius: 0 0 1.2rem 1.2rem;
+        opacity: 0.7;
+    }
+
+    .info-box {
+        background: #eef2ff;
+        border-left: 4px solid #4B5DFF;
+        border-radius: 0.8rem;
+        padding: 1.2rem 1.4rem;
+        font-size: 0.95rem;
+        color: #1f2937;
+    }
+
+    .alert-title {
+        font-weight: 600;
+        margin-bottom: .5rem;
+        display: inline-block;
+        color: #1e2c78;
+    }
+
+    .csv-example {
+        background: #f8f9ff;
+        border: 1px dashed #9aa5ff;
+        padding: .8rem;
+        border-radius: .6rem;
+        font-size: .85rem;
+        overflow-x: auto;
+        color: #0f172a;
+    }
+
+    .form-control {
+        border-radius: .6rem !important;
+        border-color: #d0d8ee;
+    }
+
+    .btn-upload {
+        background-color: #4B5DFF;
+        border: none;
+        font-weight: 600;
+        border-radius: .6rem;
+        color: #fff;
+        padding: .55rem 1.4rem;
+        transition: 0.25s ease;
+    }
+
+    .btn-upload:hover {
+        background-color: #6372ff;
+        transform: translateY(-2px);
+        box-shadow: 0 6px 24px rgba(75,93,255,0.25);
+    }
+
+</style>
+
+
+<div class="container-fluid mt-4">
+
+    <h1 class="page-title mb-4">Upload de Cursos CSV</h1>
+
+    <div class="upload-card">
+        <p class="mb-4">Adicione ou atualize vários cursos de uma só vez com um arquivo CSV.</p>
+
+        <div class="info-box mb-4">
+            <span class="alert-title">Instruções do CSV:</span>
+            <ul class="mt-2 mb-3">
+                <li><code>escola_nome</code> (Texto, obrigatório)</li>
+                <li><code>nome_curso</code> (Texto, obrigatório)</li>
+                <li><code>carga_horaria</code> (Número, obrigatório)</li>
+                <li><code>data_inicio</code> e <code>data_fim</code> (YYYY-MM-DD)</li>
+                <li><code>turno</code> (Manhã, Tarde ou Noite)</li>
+                <li><code>horario</code> (HH:MM)</li>
+                <li><code>tipo_curso_cor</code> (Opcional. Ex: primary, info, success...)</li>
+            </ul>
+
+            <strong>Obs:</strong> Todos os cursos serão importados com status <strong>Aberta</strong>.
+            <br>Se a escola não existir, a linha será ignorada com aviso.
+        </div>
+
+        <p class="fw-bold">Exemplo de CSV:</p>
+        <pre class="csv-example">escola_nome,nome_curso,carga_horaria,data_inicio,data_fim,turno,horario,tipo_curso_cor
+Escola A,Excel Avançado,40,2025-01-10,2025-01-20,Manhã,08:00,info
+Escola B,Photoshop Básico,60,2025-02-01,2025-03-15,,,
+Escola C,Confeitaria Básica,30,2025-03-01,2025-03-10,Tarde,14:00,success</pre>
+
+        <form method="post" enctype="multipart/form-data" class="mt-4">
+            {% csrf_token %}
+            {{ form.as_p }}
+
+            <div class="mt-4 d-flex gap-2">
+                <button type="submit" class="btn btn-upload">Fazer Upload</button>
+                <a href="{% url 'cursos:lista_cursos' %}" class="btn btn-outline-secondary">Cancelar</a>
+            </div>
+        </form>
+    </div>
+
+</div>
+
+{% endblock %}

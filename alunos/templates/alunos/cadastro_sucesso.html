@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+{% block title %}Sucesso{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+            <div class="card text-center shadow-sm border-0 rounded-4">
+                <div class="card-body p-5">
+                    <div class="mb-4 text-success">
+                        <i class="bi bi-check-circle-fill display-1"></i>
+                    </div>
+                    
+                    <h2 class="card-title fw-bold text-dark mb-3">Inscrição Efetuada com Sucesso!</h2>
+                    <p class="card-text text-muted mb-4">
+                        O aluno <strong>{{ aluno.nome_completo }}</strong> foi cadastrado corretamente.
+                    </p>
+
+                    <div class="d-grid gap-3 col-md-8 mx-auto">
+                        
+                        <a href="{% url 'alunos:detalhe_aluno' pk=aluno.pk %}" class="btn btn-outline-primary btn-lg fw-semibold">
+                            <i class="bi bi-printer me-2"></i> Imprimir Ficha
+                        </a>
+
+                        {% if whatsapp_link %}
+                        <a href="{{ whatsapp_link }}" target="_blank" class="btn btn-success btn-lg fw-semibold">
+                            <i class="bi bi-whatsapp me-2"></i> Enviar Mensagem
+                        </a>
+                        {% else %}
+                        <button class="btn btn-secondary btn-lg fw-semibold" disabled title="Aluno sem telefone/WhatsApp cadastrado">
+                            <i class="bi bi-whatsapp me-2"></i> Enviar Mensagem
+                        </button>
+                        {% endif %}
+                        
+                        <a href="{% url 'alunos:lista_alunos' %}" class="btn btn-link text-decoration-none text-muted mt-2">
+                            Voltar para a lista
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

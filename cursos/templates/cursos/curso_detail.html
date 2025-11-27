@@ -1,0 +1,247 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Detalhes do Curso: {{ curso.nome }}{% endblock %}
+
+{% block content %}
+
+<style>
+    body {
+        background: #eef1f5 !important;
+        font-family: "Inter", sans-serif;
+        color: #424a57;
+    }
+
+    .course-title {
+        font-weight: 700;
+        color: #1f2937;
+        margin-bottom: 1.5rem;
+    }
+
+    /* Card premium padrão */
+    .app-card {
+        position: relative;
+        border-radius: 1.2rem;
+        background: #ffffff;
+        border: 1px solid rgba(0,0,0,0.05);
+        box-shadow:
+            0 3px 8px rgba(0,0,0,0.04),
+            0 14px 40px rgba(0,0,0,0.08);
+        overflow: hidden;
+        transition: 0.25s ease;
+    }
+
+    .app-card:hover {
+        transform: translateY(-4px);
+    }
+
+    .app-card::before {
+        content: "";
+        position: absolute;
+        top: 0; left: 0; right: 0;
+        height: 3px;
+        background: linear-gradient(90deg,
+            rgba(75,93,255,0.35),
+            rgba(99,114,255,0.15)
+        );
+    }
+
+    .app-card::after {
+        content: "";
+        position: absolute;
+        bottom: 0; left: 0; right: 0;
+        height: 4px;
+        background: #4B5DFF;
+        border-radius: 0 0 1.2rem 1.2rem;
+        opacity: 0.75;
+    }
+
+    .info-title {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: #1e293b;
+        margin-bottom: 1rem;
+    }
+
+    .info-item strong {
+        color: #1e293b;
+    }
+
+    /* Botões padrão */
+    .btn-app {
+        border-radius: 0.6rem;
+        font-weight: 600;
+        transition: 0.22s ease;
+    }
+
+    .btn-primary.btn-app {
+        background: #4B5DFF;
+        border: none;
+        color: white;
+    }
+    .btn-primary.btn-app:hover {
+        background: #6372ff;
+        box-shadow: 0 6px 22px rgba(75,93,255,0.25);
+    }
+
+    .btn-danger.btn-app {
+        background: #e63946;
+        border: none;
+        color: #fff;
+    }
+
+    .btn-danger.btn-app:hover {
+        background: #d62839;
+        box-shadow: 0 6px 22px rgba(214,40,57,0.25);
+    }
+
+    .student-list .list-group-item {
+        border: none;
+        border-bottom: 1px solid rgba(0,0,0,0.06);
+        padding: 1rem 1.2rem;
+    }
+
+    .student-list .list-group-item:hover {
+        background: #f7f9fc;
+    }
+
+</style>
+
+
+<h1 class="course-title">{{ curso.nome }}</h1>
+
+<!-- Informações do Curso -->
+<div class="app-card mb-4 p-4">
+    
+    <div class="info-title">Informações do Curso</div>
+
+    <div class="info-item"><strong>Escola:</strong> {{ curso.escola.nome }}</div>
+    <div class="info-item"><strong>Tipo de Curso:</strong> {{ curso.tipo_curso.nome }}</div>
+    <div class="info-item"><strong>Carga Horária:</strong> {{ curso.carga_horaria }} horas</div>
+
+    <div class="info-item"><strong>Turno:</strong> {{ curso.turno|default:"Não informado" }}</div>
+    <div class="info-item"><strong>Horário:</strong> {{ curso.horario|date:"H:i"|default:"Não informado" }}</div>
+
+    <div class="info-item"><strong>Início:</strong> {{ curso.data_inicio|date:"d/m/Y" }}</div>
+    <div class="info-item"><strong>Fim:</strong> {{ curso.data_fim|date:"d/m/Y" }}</div>
+
+    <div class="info-item">
+        <strong>Status:</strong>
+        {% if curso.status == 'Aberta' %}
+            <span class="badge bg-success">{{ curso.status }}</span>
+        {% elif curso.status == 'Em Andamento' %}
+            <span class="badge bg-warning text-dark">{{ curso.status }}</span>
+        {% else %}
+            <span class="badge bg-secondary">{{ curso.status }}</span>
+        {% endif %}
+    </div>
+
+</div>
+
+
+<!-- Botões de ações -->
+<div class="mb-4 d-flex flex-wrap gap-2">
+
+    <a href="{% url 'cursos:lista_cursos' %}" class="btn btn-secondary btn-app">Voltar</a>
+
+    {% if user.is_superuser or user.escola_coordenada == curso.escola %}
+
+        <a href="{% url 'cursos:editar_curso' pk=curso.pk %}" class="btn btn-warning btn-app">Editar</a>
+
+        <a href="{% url 'cursos:excluir_curso' pk=curso.pk %}" class="btn btn-danger btn-app">Excluir</a>
+
+        <div class="btn-group">
+            <button type="button" class="btn btn-info btn-app dropdown-toggle" data-bs-toggle="dropdown">
+                Alterar Status
+            </button>
+
+            <ul class="dropdown-menu">
+                <li><form method="post" action="{% url 'cursos:alterar_status_curso' pk=curso.pk %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="status" value="Aberta">
+                    <button class="dropdown-item" type="submit">Inscrições Abertas</button>
+                </form></li>
+
+                <li><form method="post" action="{% url 'cursos:alterar_status_curso' pk=curso.pk %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="status" value="Em Andamento">
+                    <button class="dropdown-item" type="submit">Em Andamento</button>
+                </form></li>
+
+                <li><form method="post" action="{% url 'cursos:alterar_status_curso' pk=curso.pk %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="status" value="Concluído">
+                    <button class="dropdown-item" type="submit">Concluído</button>
+                </form></li>
+            </ul>
+        </div>
+
+        {% if curso.status == 'Aberta' %}
+        <a href="{% url 'cursos:inscrever_aluno' curso_pk=curso.pk %}" class="btn btn-success btn-app">Inscrever Aluno</a>
+        {% endif %}
+    {% endif %}
+
+</div>
+
+
+<!-- Alunos Inscritos -->
+<h3 class="mt-4 mb-3">Alunos Inscritos ({{ curso.inscricao_set.count }})</h3>
+
+{% if curso.inscricao_set.all %}
+    <div class="app-card student-list">
+        <ul class="list-group list-group-flush">
+
+        {% for inscricao in curso.inscricao_set.all %}
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+
+                <div>
+                    {{ inscricao.aluno.nome_completo }}
+                    {% if inscricao.aluno.whatsapp_link %}
+                    <a href="https://wa.me/{{ inscricao.aluno.whatsapp_link }}" target="_blank" class="text-success ms-1" title="WhatsApp">
+                        <i class="bi bi-whatsapp"></i>
+                    </a>
+                    {% endif %}
+                    <span class="badge
+                        {% if inscricao.status == 'concluido' %}bg-success
+                        {% elif inscricao.status == 'desistente' %}bg-danger
+                        {% else %}bg-secondary{% endif %}">
+                        {{ inscricao.get_status_display }}
+                    </span>
+                </div>
+
+                {% if inscricao.status == 'cursando' and perms.cursos.change_inscricao %}
+                <div class="btn-group">
+
+                    <form method="post" action="{% url 'cursos:alterar_status_inscricao' pk=inscricao.pk %}">
+                        {% csrf_token %}
+                        <input type="hidden" name="status" value="concluido">
+                        <button type="submit" class="btn btn-sm btn-success">Concluído</button>
+                    </form>
+
+                    <form method="post" action="{% url 'cursos:alterar_status_inscricao' pk=inscricao.pk %}" class="ms-1">
+                        {% csrf_token %}
+                        <input type="hidden" name="status" value="desistente">
+                        <button type="submit" class="btn btn-sm btn-danger">Desistente</button>
+                    </form>
+
+                    <form method="post" action="{% url 'cursos:excluir_inscricao' pk=inscricao.pk %}" class="ms-1">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-sm btn-outline-danger">
+                            Remover
+                        </button>
+                    </form>
+
+                </div>
+                {% endif %}
+
+            </li>
+        {% endfor %}
+
+        </ul>
+    </div>
+
+{% else %}
+    <p class="text-muted">Nenhum aluno inscrito neste curso.</p>
+{% endif %}
+
+{% endblock %}

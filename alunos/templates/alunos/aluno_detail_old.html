@@ -1,0 +1,263 @@
+{% extends "base.html" %}
+
+{% block title %}Detalhes do Aluno: {{ aluno.nome_completo }}{% endblock %}
+
+{% block content %}
+
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
+
+    body {
+        background-color: #f9fafb;
+        font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+
+    .page-title {
+        font-weight: 700;
+        color: #1e293b;
+        font-size: 1.75rem;
+        letter-spacing: -0.025em;
+    }
+
+    .action-btns .btn {
+        border-radius: 12px;
+        padding: 0.6rem 1.2rem;
+        font-weight: 600;
+        font-size: 0.9rem;
+        margin-left: 8px;
+        transition: all 0.2s ease;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    }
+
+    .action-btns .btn:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .card-section {
+        border-radius: 16px;
+        background: white;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        border: 1px solid #e2e8f0;
+        overflow: hidden;
+    }
+
+    .card-section .card-header {
+        background: #f8fafc;
+        border-bottom: 1px solid #e2e8f0;
+        padding: 1rem 1.5rem;
+        font-weight: 700;
+        color: #1e293b;
+        font-size: 1.05rem;
+    }
+
+    .card-section .card-body {
+        padding: 1.5rem;
+    }
+
+    .info-line {
+        margin-bottom: 0.75rem;
+        color: #334155;
+        font-size: 0.95rem;
+    }
+
+    .info-line strong {
+        color: #475569;
+        font-weight: 600;
+        margin-right: 0.25rem;
+    }
+
+    .btn-secondary {
+        background-color: white;
+        color: #64748b;
+        border: 1px solid #e2e8f0;
+    }
+
+    .btn-secondary:hover {
+        background-color: #f8fafc;
+        color: #475569;
+        border-color: #cbd5e1;
+    }
+
+    .btn-info {
+        background: linear-gradient(135deg, #0ea5e9, #38bdf8);
+        border: none;
+        color: white !important;
+    }
+
+    .btn-warning {
+        background: linear-gradient(135deg, #f59e0b, #fbbf24);
+        border: none;
+        color: white !important;
+    }
+
+    .btn-danger {
+        background: linear-gradient(135deg, #ef4444, #f87171);
+        border: none;
+        color: white;
+    }
+
+    .display-4 {
+        font-weight: 800;
+        color: #2563eb;
+        letter-spacing: -0.05em;
+    }
+</style>
+
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="page-title mb-0">Detalhes do Aluno</h1>
+
+    <div class="action-btns d-flex">
+        <a href="{% url 'alunos:lista_alunos' %}" class="btn btn-secondary">
+            <i class="bi bi-arrow-left me-1"></i> Voltar
+        </a>
+        <a href="{% url 'alunos:historico_aluno' pk=aluno.pk %}" class="btn btn-info">
+            <i class="bi bi-clock-history me-1"></i> Histórico
+        </a>
+        <a href="{% url 'alunos:editar_aluno' pk=aluno.pk %}" class="btn btn-warning">
+            <i class="bi bi-pencil me-1"></i> Editar
+        </a>
+        {% if perms.alunos.delete_aluno %}
+        <a href="{% url 'alunos:excluir_aluno' pk=aluno.pk %}" class="btn btn-danger">
+            <i class="bi bi-trash me-1"></i> Excluir
+        </a>
+        {% endif %}
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+
+        <div class="card card-section mb-4">
+            <div class="card-header">Identificação</div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <p class="info-line"><strong>Nome:</strong> {{ aluno.nome_completo }}</p>
+                        <p class="info-line"><strong>CPF:</strong> {{ aluno.cpf }}</p>
+                        <p class="info-line"><strong>RG:</strong> {{ aluno.rg|default:"Não informado" }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <p class="info-line"><strong>Órgão Expedidor:</strong> {{ aluno.orgao_exp|default:"Não
+                            informado" }}</p>
+                        <p class="info-line"><strong>Data de Emissão:</strong> {{
+                            aluno.data_emissao|date:"d/m/Y"|default:"Não informado" }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card card-section mb-4">
+            <div class="card-header">Informações Pessoais</div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <p class="info-line"><strong>Data de Nascimento:</strong> {{ aluno.data_nascimento|date:"d/m/Y"
+                            }} ({{ aluno.idade }} anos)</p>
+                        <p class="info-line"><strong>Sexo:</strong> {{ aluno.get_sexo_display }}</p>
+                        <p class="info-line"><strong>Estado Civil:</strong> {{ aluno.get_estado_civil_display }}</p>
+                        <p class="info-line"><strong>Cor/Raça:</strong> {{ aluno.get_cor_raca_display|default:"Não
+                            informado" }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <p class="info-line"><strong>Nome da Mãe:</strong> {{ aluno.nome_mae|default:"Não informado" }}
+                        </p>
+                        <p class="info-line"><strong>Naturalidade:</strong> {{ aluno.naturalidade|default:"Não
+                            informado" }} - {{ aluno.uf_naturalidade|default:"N/A" }}</p>
+                        <p class="info-line"><strong>Deficiência:</strong> {% if aluno.deficiencia %}Sim{% else %}Não{%
+                            endif %}</p>
+                        <p class="info-line"><strong>Escolaridade:</strong> {{
+                            aluno.get_escolaridade_display|default:"Não informado" }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card card-section mb-4">
+            <div class="card-header">Endereço</div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <p class="info-line"><strong>CEP:</strong> {{ aluno.endereco_cep }}</p>
+                        <p class="info-line"><strong>Endereço:</strong> {{ aluno.endereco_rua }}, {{
+                            aluno.endereco_numero }}</p>
+                        <p class="info-line"><strong>Bairro:</strong> {{ aluno.endereco_bairro }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <p class="info-line"><strong>Cidade/Estado:</strong> {{ aluno.endereco_cidade }} / {{
+                            aluno.endereco_estado }}</p>
+                        <p class="info-line"><strong>Tempo de Moradia:</strong> {{
+                            aluno.get_tempo_moradia_display|default:"Não informado" }}</p>
+                        <p class="info-line"><strong>Tipo de Moradia:</strong> {{
+                            aluno.get_tipo_moradia_display|default:"Não informado" }}</p>
+                        <p class="info-line"><strong>Valor da Moradia:</strong> R$ {{ aluno.valor_moradia|default:"0,00"
+                            }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="col-lg-4">
+
+        <div class="card card-section mb-4">
+            <div class="card-header">Contato</div>
+            <div class="card-body">
+                <p class="info-line"><strong>Email:</strong> {{ aluno.email_principal }}</p>
+                <p class="info-line"><strong>WhatsApp:</strong> {{ aluno.whatsapp|default:"Não informado" }}</p>
+                <p class="info-line"><strong>Telefone:</strong> {{ aluno.telefone_principal }}</p>
+            </div>
+        </div>
+
+        <div class="card card-section mb-4">
+            <div class="card-header">Dados Socioeconômicos</div>
+            <div class="card-body">
+                <div class="text-center mb-4 p-3 bg-light rounded-3 border border-light">
+                    <h6 class="mb-1 text-uppercase text-muted fw-bold" style="font-size: 0.75rem;">Score Total</h6>
+                    <p class="display-4 fw-bold mb-0">{{ aluno.score_total }}</p>
+                </div>
+
+                <p class="info-line"><strong>Situação Profissional:</strong> {{
+                    aluno.get_situacao_profissional_display|default:"Não informado" }}</p>
+                <p class="info-line"><strong>Renda Individual:</strong> R$ {{ aluno.renda_individual|default:"0,00" }}
+                </p>
+
+                <hr class="my-3 opacity-25">
+
+                <p class="info-line"><strong>Nº de Moradores:</strong> {{ aluno.num_moradores|default:"N/A" }}</p>
+                <p class="info-line"><strong>Quantos Trabalham:</strong> {{ aluno.quantos_trabalham|default:"N/A" }}</p>
+                <p class="info-line"><strong>Renda (outros):</strong> R$ {{ aluno.renda_moradores|default:"0,00" }}</p>
+                <p class="info-line"><strong>Renda Familiar:</strong> R$ {{ aluno.renda_familiar }}</p>
+                <p class="info-line"><strong>Renda Per Capita:</strong> R$ {{ aluno.renda_per_capita|floatformat:2 }}
+                </p>
+            </div>
+        </div>
+
+        <div class="card card-section mb-4">
+            <div class="card-header">Inscrição e Interesses</div>
+            <div class="card-body">
+                <p class="info-line"><strong>Escola de Origem:</strong> {{ aluno.escola.nome }}</p>
+                <p class="info-line"><strong>Como Soube:</strong> {{ aluno.get_como_soube_display|default:"Não
+                    informado" }}</p>
+
+                <hr class="my-3 opacity-25">
+
+                <p class="info-line mb-2"><strong>Cursos de Interesse:</strong></p>
+                <div class="d-flex flex-wrap gap-2">
+                    {% for tipo in aluno.cursos_interesse.all %}
+                    <span
+                        class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-10">{{
+                        tipo.nome }}</span>
+                    {% empty %}
+                    <span class="text-muted small">Nenhum interesse cadastrado.</span>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+{% endblock %}

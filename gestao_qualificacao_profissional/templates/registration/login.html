@@ -1,0 +1,215 @@
+{% extends "simple_base.html" %}
+{% load static %}
+
+{% block title %}Login - Diretoria de Qualificação Profissional{% endblock %}
+
+{% block content %}
+<!-- Dependências Visuais -->
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap"
+    rel="stylesheet" />
+<link rel="stylesheet"
+    href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,0,0" />
+
+<script>
+    tailwind.config = {
+        theme: {
+            extend: {
+                fontFamily: {
+                    sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+                },
+                colors: {
+                    brand: {
+                        50: '#eff6ff',
+                        100: '#dbeafe',
+                        500: '#3b82f6',
+                        600: '#2563eb',
+                        700: '#1d4ed8',
+                        900: '#1e3a8a',
+                    }
+                },
+                animation: {
+                    'blob': 'blob 7s infinite',
+                    'fade-up': 'fadeUp 0.5s ease-out forwards',
+                },
+                keyframes: {
+                    blob: {
+                        '0%': { transform: 'translate(0px, 0px) scale(1)' },
+                        '33%': { transform: 'translate(30px, -50px) scale(1.1)' },
+                        '66%': { transform: 'translate(-20px, 20px) scale(0.9)' },
+                        '100%': { transform: 'translate(0px, 0px) scale(1)' },
+                    },
+                    fadeUp: {
+                        '0%': { opacity: '0', transform: 'translateY(20px)' },
+                        '100%': { opacity: '1', transform: 'translateY(0)' },
+                    }
+                }
+            },
+        },
+    };
+</script>
+
+<style>
+    /* Estilo para garantir preenchimento total */
+    body,
+    html {
+        height: 100%;
+        margin: 0;
+    }
+
+    /* Efeito de Vidro (Glassmorphism) */
+    .glass-card {
+        background: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    /* Remove autofill background color do Chrome */
+    input:-webkit-autofill,
+    input:-webkit-autofill:hover,
+    input:-webkit-autofill:focus,
+    input:-webkit-autofill:active {
+        -webkit-box-shadow: 0 0 0 30px white inset !important;
+        transition: background-color 5000s ease-in-out 0s;
+    }
+</style>
+
+<div class="min-h-screen w-full flex overflow-hidden font-sans bg-gray-50">
+
+    <!-- Lado Esquerdo: Visual & Branding (Oculto em Mobile) -->
+    <div class="hidden lg:flex w-1/2 bg-brand-900 relative items-center justify-center overflow-hidden">
+
+        <!-- Elementos de Fundo Animados -->
+        <div
+            class="absolute top-0 -left-4 w-72 h-72 bg-purple-500 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob">
+        </div>
+        <div
+            class="absolute top-0 -right-4 w-72 h-72 bg-blue-500 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-2000">
+        </div>
+        <div
+            class="absolute -bottom-8 left-20 w-72 h-72 bg-indigo-500 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-4000">
+        </div>
+
+        <!-- Gradiente Overlay -->
+        <div class="absolute inset-0 bg-gradient-to-t from-brand-900/90 to-brand-800/40"></div>
+
+        <!-- Conteúdo Visual -->
+        <div class="relative z-10 p-12 text-center max-w-lg">
+            <div class="glass-card rounded-2xl p-8 shadow-2xl animate-fade-up">
+                <img src="{% static 'core/logologin.jpg' %}" alt="Logo"
+                    class="h-20 mx-auto mb-6 drop-shadow-lg brightness-0 invert opacity-90">
+                <h2 class="text-3xl font-bold text-white mb-4 tracking-tight">Gestão Qualificação Profissional</h2>
+                <p class="text-blue-100 text-lg leading-relaxed">
+                    Sistema de gestão completo de cursos.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lado Direito: Formulário de Login -->
+    <div class="w-full lg:w-1/2 flex items-center justify-center p-8 bg-white relative">
+        <div class="w-full max-w-md animate-fade-up" style="animation-delay: 0.1s;">
+
+            <!-- Mobile Header (Só aparece em telas pequenas) -->
+            <div class="lg:hidden text-center mb-8">
+                <img src="{% static 'core/logologin.png' %}" alt="Logo" class="h-16 mx-auto mb-4">
+                <h1 class="text-2xl font-bold text-gray-900">Portal do Servidor</h1>
+            </div>
+
+            <div class="mb-10">
+                <h1 class="text-3xl font-bold text-gray-900 mb-2">Login</h1>
+                <p class="text-gray-500">Por favor, insira suas credenciais para continuar.</p>
+            </div>
+
+            <form method="post" novalidate class="space-y-6">
+                {% csrf_token %}
+
+                <!-- Campo Usuário -->
+                <div class="group">
+                    <label
+                        class="block text-sm font-semibold text-gray-700 mb-1.5 ml-1 transition-colors group-focus-within:text-brand-600"
+                        for="{{ form.username.id_for_label }}">
+                        {{ form.username.label }}
+                    </label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <span
+                                class="material-symbols-rounded text-gray-400 group-focus-within:text-brand-500 transition-colors">person</span>
+                        </div>
+                        {{ form.username }}
+                    </div>
+                    {% if form.username.errors %}
+                    <p class="mt-1 text-sm text-red-500 flex items-center gap-1">
+                        <span class="material-symbols-rounded text-sm">error</span>
+                        {{ form.username.errors|striptags }}
+                    </p>
+                    {% endif %}
+                </div>
+
+                <!-- Campo Senha -->
+                <div class="group">
+                    <div class="flex items-center justify-between mb-1.5 ml-1">
+                        <label
+                            class="block text-sm font-semibold text-gray-700 transition-colors group-focus-within:text-brand-600"
+                            for="{{ form.password.id_for_label }}">
+                            {{ form.password.label }}
+                        </label>
+                        <a href="{% url 'password_reset' %}"
+                            class="text-sm font-medium text-brand-600 hover:text-brand-700 hover:underline transition-all">
+                            Esqueceu a senha?
+                        </a>
+                    </div>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <span
+                                class="material-symbols-rounded text-gray-400 group-focus-within:text-brand-500 transition-colors">lock</span>
+                        </div>
+                        {{ form.password }}
+                    </div>
+                    {% if form.password.errors %}
+                    <p class="mt-1 text-sm text-red-500 flex items-center gap-1">
+                        <span class="material-symbols-rounded text-sm">error</span>
+                        {{ form.password.errors|striptags }}
+                    </p>
+                    {% endif %}
+                </div>
+
+                <!-- Botão -->
+                <button type="submit"
+                    class="w-full flex justify-center py-3.5 px-4 border border-transparent rounded-xl shadow-lg shadow-brand-500/30 text-sm font-bold text-white bg-gradient-to-r from-brand-600 to-brand-500 hover:from-brand-700 hover:to-brand-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500 transition-all duration-300 transform hover:-translate-y-0.5">
+                    Acessar Sistema
+                </button>
+            </form>
+
+            <div class="mt-8 text-center">
+                <p class="text-xs text-gray-400">
+                    &copy; 2025 Diretoria de Qualificação Profissional. <br>Todos os direitos reservados.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Script para injetar classes nos inputs do Django -->
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        // Estilo base dos inputs
+        const baseClasses = "block w-full pl-10 pr-3 py-3 border border-gray-200 rounded-xl leading-5 bg-gray-50 text-gray-900 placeholder-gray-400 focus:outline-none focus:bg-white focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all duration-200 sm:text-sm shadow-sm";
+
+        // Mapeia os IDs dos campos gerados pelo Django
+        const fields = [
+            document.getElementById('{{ form.username.id_for_label }}'),
+            document.getElementById('{{ form.password.id_for_label }}')
+        ];
+
+        fields.forEach(field => {
+            if (field) {
+                field.className = baseClasses;
+                field.placeholder = field.name === 'username' ? 'Digite seu usuário' : 'Digite sua senha';
+            }
+        });
+    });
+</script>
+
+{% endblock %}

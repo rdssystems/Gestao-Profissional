@@ -1,0 +1,188 @@
+{% extends "base.html" %}
+
+{% block title %}Cursos para Chamada{% endblock %}
+
+{% block content %}
+
+<style>
+    body {
+        background: #eef1f5 !important;
+        font-family: "Inter", sans-serif;
+        color: #424a57;
+        background-image: radial-gradient(rgba(0,0,0,0.02) 1px, transparent 0);
+        background-size: 18px 18px;
+    }
+
+    .page-title {
+        font-weight: 700;
+        color: #1f2937;
+    }
+
+    /* Card premium */
+    .app-card {
+        position: relative;
+        border-radius: 1.2rem;
+        background: #ffffff;
+        border: 1px solid rgba(0,0,0,0.05);
+        box-shadow:
+            0 3px 8px rgba(0,0,0,0.04),
+            0 14px 40px rgba(0,0,0,0.08);
+        overflow: hidden;
+        transition: 0.25s ease;
+    }
+
+    .app-card:hover {
+        transform: translateY(-4px);
+        box-shadow:
+            0 6px 14px rgba(0,0,0,0.06),
+            0 20px 50px rgba(0,0,0,0.12);
+    }
+
+    .app-card::before {
+        content: "";
+        position: absolute;
+        top: 0; left: 0; right: 0;
+        height: 3px;
+        background: linear-gradient(90deg,
+            rgba(75,93,255,0.35),
+            rgba(99,114,255,0.12)
+        );
+    }
+
+    .app-card::after {
+        content: "";
+        position: absolute;
+        bottom: 0; left: 0; right: 0;
+        height: 4px;
+        background: #4B5DFF;
+        opacity: .75;
+        border-radius: 0 0 1.2rem 1.2rem;
+    }
+
+    /* Tabela */
+    thead {
+        background: #f3f6ff;
+        color: #1e293b;
+        font-weight: 600;
+    }
+
+    .table-hover tbody tr:hover {
+        background: #f7f9fc;
+    }
+
+    th {
+        white-space: nowrap;
+    }
+
+    /* Botões */
+    .btn-app {
+        border-radius: .7rem;
+        font-weight: 600;
+        padding: .45rem .9rem;
+        transition: 0.22s ease;
+    }
+
+    .btn-outline-primary.btn-app {
+        border-color: #4B5DFF;
+        color: #4B5DFF;
+    }
+
+    .btn-outline-primary.btn-app:hover {
+        background: #4B5DFF;
+        color: #ffffff;
+        box-shadow: 0 6px 16px rgba(75,93,255,0.25);
+        transform: translateY(-2px);
+    }
+
+    .btn-outline-secondary.btn-app {
+        border-color: #9aa2b7;
+        color: #4a5160;
+    }
+
+    .btn-outline-secondary.btn-app:hover {
+        background: #e0e4ea;
+        color: #1f2937;
+        transform: translateY(-2px);
+    }
+
+</style>
+
+
+<!-- Header -->
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="page-title mb-0">
+        Cursos Ativos para Chamada
+    </h1>
+</div>
+
+
+<!-- Lista de Cursos -->
+<div class="app-card">
+    <div class="p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th>Curso</th>
+                        <th>Tipo</th>
+                        <th>Turno</th>
+                        <th>Horário</th>
+                        <th>Status</th>
+                        {% if user.is_superuser %}
+                        <th>Escola</th>
+                        {% endif %}
+                        <th class="text-end">Ações</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {% for curso in cursos_para_chamada %}
+                    <tr>
+                        <td>{{ curso.nome }}</td>
+                        <td>{{ curso.tipo_curso.nome|default:"N/A" }}</td>
+                        <td>{{ curso.get_turno_display|default:"N/A" }}</td>
+                        <td>{{ curso.horario|date:"H:i"|default:"N/A" }}</td>
+
+                        <td>
+                            {% if curso.status == 'Aberta' %}
+                                <span class="badge bg-success">{{ curso.status }}</span>
+                            {% elif curso.status == 'Em Andamento' %}
+                                <span class="badge bg-warning text-dark">{{ curso.status }}</span>
+                            {% else %}
+                                <span class="badge bg-secondary">{{ curso.status }}</span>
+                            {% endif %}
+                        </td>
+
+                        {% if user.is_superuser %}
+                        <td>{{ curso.escola.nome }}</td>
+                        {% endif %}
+
+                        <td class="text-end">
+                            <a href="{% url 'cursos:fazer_chamada' curso_pk=curso.pk %}"
+                               class="btn btn-sm btn-outline-primary btn-app me-2">
+                                Chamada
+                            </a>
+
+                            <a href="{% url 'cursos:listar_chamadas_curso' curso_pk=curso.pk %}"
+                               class="btn btn-sm btn-outline-secondary btn-app">
+                                Ver Chamadas
+                            </a>
+                        </td>
+                    </tr>
+
+                    {% empty %}
+                    <tr>
+                        <td colspan="{% if user.is_superuser %}7{% else %}6{% endif %}" 
+                            class="text-center py-4 text-muted">
+                            Nenhum curso ativo para chamadas.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+
+            </table>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

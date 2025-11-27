@@ -1,0 +1,202 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Chamada • {{ curso.nome }}{% endblock %}
+
+{% block content %}
+
+<style>
+    body {
+        background: #eef1f5 !important;
+        font-family: "Inter", sans-serif;
+        color: #424a57;
+        background-image: radial-gradient(rgba(0,0,0,0.02) 1px, transparent 0);
+        background-size: 18px 18px;
+    }
+
+    .page-title {
+        font-weight: 700;
+        color: #1f2937;
+    }
+
+    /* Card Premium */
+    .app-card {
+        position: relative;
+        border-radius: 1.2rem;
+        background: #ffffff;
+        border: 1px solid rgba(0,0,0,0.05);
+        box-shadow:
+            0 3px 8px rgba(0,0,0,0.04),
+            0 14px 40px rgba(0,0,0,0.08);
+        padding: 2rem;
+    }
+
+    .app-card::before {
+        content: "";
+        position: absolute;
+        top: 0; left: 0; right: 0;
+        height: 3px;
+        background: linear-gradient(90deg,
+            rgba(75,93,255,0.32),
+            rgba(99,114,255,0.12)
+        );
+    }
+
+    .app-card::after {
+        content: "";
+        position: absolute;
+        bottom: 0; left: 0; right: 0;
+        height: 4px;
+        background: #4B5DFF;
+        border-radius: 0 0 1.2rem 1.2rem;
+        opacity: .75;
+    }
+
+    /* Form inputs */
+    .form-control, .form-select {
+        border-radius: .7rem;
+        background-color: #fbfcff;
+        border: 1px solid #d3d8e3;
+    }
+
+    .form-control:focus,
+    .form-select:focus {
+        border-color: #4B5DFF;
+        background: #fff;
+        box-shadow: 0 0 0 3px rgba(75,93,255,0.20);
+    }
+
+    /* Tabela de Presença */
+    thead {
+        background: #f3f6ff;
+        color: #1e293b;
+        font-weight: 600;
+    }
+
+    tbody tr:hover {
+        background: #f7f9fc;
+    }
+
+    td {
+        vertical-align: middle;
+    }
+
+    /* Botões */
+    .btn-app {
+        border-radius: .7rem;
+        font-weight: 600;
+        padding: .55rem 1.2rem;
+        transition: 0.22s ease;
+    }
+
+    .btn-primary.btn-app {
+        background: #4B5DFF;
+        border: none;
+        color: white;
+    }
+    .btn-primary.btn-app:hover {
+        background: #6372ff;
+        transform: translateY(-2px);
+        box-shadow: 0 6px 22px rgba(75,93,255,0.25);
+    }
+
+    .btn-outline-secondary.btn-app:hover {
+        transform: translateY(-2px);
+    }
+
+</style>
+
+
+<!-- Header -->
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="page-title mb-1">Chamada</h1>
+        <p class="text-muted small">
+            Curso: <strong>{{ curso.nome }}</strong> | {{ curso.get_turno_display }} • {{ curso.horario|date:"H:i" }}
+        </p>
+    </div>
+
+    <a href="{% url 'cursos:lista_cursos_chamada' %}"
+       class="btn btn-outline-secondary btn-app">
+        Voltar
+    </a>
+</div>
+
+
+<!-- Card Principal -->
+<div class="app-card">
+
+    <form method="post">
+        {% csrf_token %}
+
+        <h5 class="mb-3">Detalhes da Aula</h5>
+
+        <div class="row">
+            {% for field in form %}
+            <div class="col-md-4 mb-3">
+                <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
+                {{ field }}
+                {% if field.errors %}
+                <div class="text-danger mt-1 small">{{ field.errors|join:", " }}</div>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+
+        <hr class="mt-4 mb-4">
+
+        <h5 class="mb-3">Presença dos Alunos</h5>
+
+        {{ formset.management_form }}
+
+        <div class="table-responsive">
+            <table class="table align-middle">
+                <thead>
+                    <tr>
+                        <th>Aluno</th>
+                        <th class="text-center">Status</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {% for form_chamada in formset %}
+                    <tr>
+                        <td>
+                            {{ form_chamada.id }}
+                            {{ form_chamada.inscricao }}
+                            {{ form_chamada.aluno_nome }}
+                            {% if registro_aula and form_chamada.instance.pk and form_chamada.instance.inscricao.aluno.whatsapp_link %}
+                            <a href="https://wa.me/{{ form_chamada.instance.inscricao.aluno.whatsapp_link }}" target="_blank" class="text-success ms-1" title="WhatsApp">
+                                <i class="bi bi-whatsapp"></i>
+                            </a>
+                            {% endif %}
+                            {% for hidden in form_chamada.hidden_fields %}
+                                {{ hidden }}
+                            {% endfor %}
+                        </td>
+
+                        <td class="text-center" style="width: 200px;">
+                            {{ form_chamada.status_presenca }}
+                            {% if form_chamada.status_presenca.errors %}
+                            <span class="text-danger small mt-1 d-block">
+                                {{ form_chamada.status_presenca.errors|join:", " }}
+                            </span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+
+            </table>
+        </div>
+
+        <div class="text-end mt-4">
+            <button type="submit" class="btn btn-primary btn-app px-4">
+                Salvar Chamada
+            </button>
+        </div>
+    </form>
+
+</div>
+
+{% endblock %}

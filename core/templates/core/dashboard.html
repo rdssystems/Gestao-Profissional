@@ -1,0 +1,124 @@
+{% extends "simple_base.html" %}
+{% load static %}
+
+{% block title %}Dashboard - Diretoria de Qualificação Profissional{% endblock %}
+
+{% block content %}
+
+<!-- Dependências Visuais -->
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap"
+    rel="stylesheet" />
+<link rel="stylesheet"
+    href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,0,0" />
+
+<script>
+    tailwind.config = {
+        theme: {
+            extend: {
+                fontFamily: {
+                    sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+                },
+                colors: {
+                    brand: {
+                        50: '#eff6ff',
+                        100: '#dbeafe',
+                        500: '#3b82f6',
+                        600: '#2563eb',
+                        700: '#1d4ed8',
+                        900: '#1e3a8a',
+                    }
+                },
+                boxShadow: {
+                    'soft': '0 18px 45px rgba(15,23,42,0.10)',
+                }
+            },
+        },
+    };
+</script>
+
+<div class="min-h-screen w-full bg-gray-50 font-sans">
+    <div class="max-w-6xl mx-auto px-4 py-10">
+
+        <!-- Cabeçalho -->
+        <div class="mb-8 flex items-center justify-between gap-4">
+            <div>
+                <h1 class="text-3xl md:text-4xl font-bold text-slate-900 tracking-tight">
+                    Dashboard
+                </h1>
+                <p class="text-sm text-slate-500 mt-1">
+                    Visão geral dos cursos e alunos da Diretoria de Qualificação Profissional.
+                </p>
+            </div>
+        </div>
+
+        <!-- Cards KPI -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+
+            <!-- Total de Cursos -->
+            <div class="relative overflow-hidden rounded-2xl bg-white shadow-soft p-5 flex flex-col gap-2">
+                <div class="absolute inset-y-0 left-0 w-1 bg-gradient-to-b from-brand-500 to-brand-700"></div>
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                        Total de Cursos
+                    </span>
+                    <span class="material-symbols-rounded text-brand-500 text-xl">menu_book</span>
+                </div>
+                <p class="text-3xl font-bold text-slate-900 mt-1">
+                    {{ total_cursos }}
+                </p>
+            </div>
+
+            <!-- Total de Alunos -->
+            <div class="relative overflow-hidden rounded-2xl bg-white shadow-soft p-5 flex flex-col gap-2">
+                <div class="absolute inset-y-0 left-0 w-1 bg-gradient-to-b from-emerald-400 to-emerald-600"></div>
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                        Total de Alunos
+                    </span>
+                    <span class="material-symbols-rounded text-emerald-500 text-xl">groups</span>
+                </div>
+                <p class="text-3xl font-bold text-slate-900 mt-1">
+                    {{ total_alunos }}
+                </p>
+            </div>
+
+            <!-- Cursos Ativos -->
+            <div class="relative overflow-hidden rounded-2xl bg-white shadow-soft p-5 flex flex-col gap-2">
+                <div class="absolute inset-y-0 left-0 w-1 bg-gradient-to-b from-amber-400 to-orange-500"></div>
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                        Cursos Ativos
+                    </span>
+                    <span class="material-symbols-rounded text-amber-500 text-xl">play_circle</span>
+                </div>
+                <p class="text-3xl font-bold text-slate-900 mt-1">
+                    {{ cursos_ativos }}
+                </p>
+            </div>
+
+            <!-- Cursos Concluídos -->
+            <div class="relative overflow-hidden rounded-2xl bg-white shadow-soft p-5 flex flex-col gap-2">
+                <div class="absolute inset-y-0 left-0 w-1 bg-gradient-to-b from-slate-400 to-slate-600"></div>
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                        Cursos Concluídos
+                    </span>
+                    <span class="material-symbols-rounded text-slate-500 text-xl">check_circle</span>
+                </div>
+                <p class="text-3xl font-bold text-slate-900 mt-1">
+                    {{ cursos_concluidos }}
+                </p>
+            </div>
+
+        </div>
+
+        {# Espaço para futuros gráficos e tabelas #}
+        <div class="mt-10">
+            <!-- Conteúdo adicional do dashboard aqui -->
+        </div>
+
+    </div>
+</div>
+
+{% endblock %}

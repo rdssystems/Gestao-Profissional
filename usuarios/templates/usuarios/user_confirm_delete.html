@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+
+{% block title %}Confirmar Exclusão de Usuário{% endblock %}
+
+{% block content %}
+
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
+
+    body {
+        background-color: #f9fafb;
+        font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+
+    .delete-card {
+        max-width: 480px;
+        margin: 4rem auto;
+        padding: 3rem;
+        border-radius: 24px;
+        background: white;
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        border: 1px solid #e2e8f0;
+        animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        text-align: center;
+    }
+
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .delete-icon {
+        width: 72px;
+        opacity: 0.9;
+        margin-bottom: 1.5rem;
+        filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1));
+    }
+
+    .delete-title {
+        font-weight: 700;
+        color: #1e293b;
+        font-size: 1.5rem;
+        letter-spacing: -0.025em;
+        margin-bottom: 1rem;
+    }
+
+    .delete-text {
+        color: #64748b;
+        font-size: 1rem;
+        line-height: 1.6;
+        margin-bottom: 2.5rem;
+    }
+
+    .delete-text strong {
+        color: #0f172a;
+        font-weight: 600;
+    }
+
+    .btn-delete {
+        border-radius: 12px;
+        padding: 0.75rem 2rem;
+        background: linear-gradient(135deg, #ef4444, #dc2626);
+        font-weight: 600;
+        font-size: 0.95rem;
+        border: none;
+        color: white;
+        box-shadow: 0 4px 6px -1px rgba(239, 68, 68, 0.1), 0 2px 4px -1px rgba(239, 68, 68, 0.06);
+        transition: all 0.2s ease;
+    }
+
+    .btn-delete:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 10px 15px -3px rgba(239, 68, 68, 0.2), 0 4px 6px -2px rgba(239, 68, 68, 0.1);
+        color: white;
+    }
+
+    .btn-cancel {
+        border-radius: 12px;
+        padding: 0.75rem 2rem;
+        font-weight: 600;
+        font-size: 0.95rem;
+        color: #64748b;
+        background: white;
+        border: 1px solid #e2e8f0;
+        transition: all 0.2s ease;
+    }
+
+    .btn-cancel:hover {
+        background: #f8fafc;
+        color: #475569;
+        border-color: #cbd5e1;
+    }
+</style>
+
+
+<div class="delete-card">
+
+    <img src="https://cdn-icons-png.flaticon.com/512/6861/6861362.png" class="delete-icon" alt="Excluir">
+
+    <h1 class="delete-title">Confirmar Exclusão</h1>
+
+    <p class="delete-text">
+        Tem certeza de que deseja remover o usuário<br>
+        <strong>{{ user.username }}</strong>?
+    </p>
+
+    <form method="post">
+        {% csrf_token %}
+        <div class="d-flex justify-content-center gap-3">
+            <button type="submit" class="btn btn-delete">Sim, excluir</button>
+            <a href="{% url 'usuarios:lista_usuarios' %}" class="btn btn-cancel">Cancelar</a>
+        </div>
+    </form>
+
+</div>
+
+{% endblock %}

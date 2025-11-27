@@ -1,0 +1,244 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{% if object %}Editar Curso{% else %}Novo Curso{% endif %}{% endblock %}
+
+{% block content %}
+
+<style>
+    body {
+        background: #eef1f5 !important;
+        font-family: "Inter", sans-serif;
+        color: #424a57;
+        background-image: radial-gradient(rgba(0,0,0,0.02) 1px, transparent 0);
+        background-size: 18px 18px;
+    }
+
+    .page-title {
+        font-weight: 700;
+        color: #1f2937;
+        margin-bottom: 1.8rem;
+    }
+
+    /* Card padrão premium */
+    .app-card {
+        position: relative;
+        border-radius: 1.2rem;
+        background: #ffffff;
+        border: 1px solid rgba(0,0,0,0.05);
+        box-shadow:
+            0 3px 8px rgba(0,0,0,0.04),
+            0 14px 40px rgba(0,0,0,0.08);
+        overflow: hidden;
+        transition: 0.25s ease;
+    }
+
+    .app-card:hover {
+        transform: translateY(-4px);
+    }
+
+    .app-card::before {
+        content: "";
+        position: absolute;
+        top: 0; left: 0; right: 0;
+        height: 3px;
+        background: linear-gradient(90deg,
+            rgba(75,93,255,0.28),
+            rgba(99,114,255,0.12)
+        );
+    }
+
+    .app-card::after {
+        content: "";
+        position: absolute;
+        bottom: 0; left: 0; right: 0;
+        height: 4px;
+        background: #4B5DFF;
+        border-radius: 0 0 1.2rem 1.2rem;
+        opacity: 0.75;
+    }
+
+    /* Labels & Inputs */
+    .form-label {
+        font-weight: 600;
+        color: #1f2937;
+        font-size: .96rem;
+    }
+
+    .custom-input input,
+    .custom-input select {
+        width: 100%;
+        border-radius: .7rem;
+        padding: 0.7rem 1rem;
+        border: 1px solid #d2d8e3;
+        background: #fbfcff;
+        transition: 0.25s ease;
+        font-size: .92rem;
+    }
+
+    .custom-input input:focus,
+    .custom-input select:focus {
+        border-color: #4B5DFF;
+        background: #ffffff;
+        box-shadow: 0 0 0 3px rgba(75,93,255,0.18);
+    }
+
+    /* Botões premium */
+    .btn-app {
+        border-radius: .7rem;
+        padding: .65rem 1.7rem;
+        font-weight: 600;
+        transition: 0.22s ease;
+    }
+
+    .btn-primary.btn-app {
+        background: #4B5DFF;
+        border: none;
+        color: white;
+    }
+
+    .btn-primary.btn-app:hover {
+        background: #6372ff;
+        transform: translateY(-2px);
+        box-shadow: 0 6px 22px rgba(75,93,255,0.25);
+    }
+
+    .btn-secondary.btn-app:hover {
+        transform: translateY(-2px);
+        background: #9aa2b0 !important;
+    }
+</style>
+
+
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+
+        <h1 class="page-title">
+            {% if object %}Editar Curso{% else %}Novo Curso{% endif %}
+        </h1>
+
+        <div class="app-card p-4">
+
+            <form method="post">
+                {% csrf_token %}
+
+                {% if form.non_field_errors %}
+                    <div class="alert alert-danger mb-4">
+                        {% for error in form.non_field_errors %}
+                            {{ error }}
+                        {% endfor %}
+                    </div>
+                {% endif %}
+
+                <div class="mb-3">
+                    <label class="form-label">{{ form.tipo_curso.label }}</label>
+                    <div class="custom-input">{{ form.tipo_curso }}</div>
+                    {% if form.tipo_curso.errors %}
+                        <div class="invalid-feedback d-block">{{ form.tipo_curso.errors }}</div>
+                    {% endif %}
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">{{ form.nome.label }}</label>
+                        <div class="custom-input">{{ form.nome }}</div>
+                        {% if form.nome.errors %}
+                            <div class="invalid-feedback d-block">{{ form.nome.errors }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">{{ form.carga_horaria.label }}</label>
+                        <div class="custom-input">{{ form.carga_horaria }}</div>
+                        {% if form.carga_horaria.errors %}
+                            <div class="invalid-feedback d-block">{{ form.carga_horaria.errors }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">{{ form.escola.label }}</label>
+                    <div class="custom-input">{{ form.escola }}</div>
+                    {% if form.escola.errors %}
+                        <div class="invalid-feedback d-block">{{ form.escola.errors }}</div>
+                    {% endif %}
+                </div>
+
+
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">{{ form.data_inicio.label }}</label>
+                        <div class="custom-input">{{ form.data_inicio }}</div>
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">{{ form.data_fim.label }}</label>
+                        <div class="custom-input">{{ form.data_fim }}</div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">{{ form.turno.label }}</label>
+                        <div class="custom-input">{{ form.turno }}</div>
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">{{ form.horario.label }}</label>
+                        <div class="custom-input">{{ form.horario }}</div>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">{{ form.status.label }}</label>
+                    <div class="custom-input">{{ form.status }}</div>
+                </div>
+
+                <hr class="my-4">
+
+                <div class="d-flex justify-content-end gap-2">
+                    <a href="{% url 'cursos:lista_cursos' %}"
+                    class="btn btn-secondary btn-app">Cancelar</a>
+
+                    <button type="submit"
+                    class="btn btn-primary btn-app">
+                        Salvar
+                    </button>
+                </div>
+
+            </form>
+
+        </div>
+
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const tipoCursoSelect = document.getElementById('id_tipo_curso');
+        const nomeInput = document.getElementById('id_nome');
+
+        if (tipoCursoSelect && nomeInput) {
+            tipoCursoSelect.addEventListener('change', function() {
+                const selectedOption = tipoCursoSelect.options[tipoCursoSelect.selectedIndex];
+                if (selectedOption && selectedOption.text && selectedOption.value) {
+                    // Remove o sufixo da escola que aparece no select (ex: "Curso A (Escola X)")
+                    // O formato padrão do __str__ do TipoCurso é: f"{self.nome} ({self.escola.nome})"
+                    // Vamos tentar extrair apenas o nome do curso.
+                    let nomeCurso = selectedOption.text;
+                    
+                    // Expressão regular para remover o parênteses final com o nome da escola
+                    // Procura por " (" seguido de qualquer coisa exceto ")" seguido de ")" no final da string
+                    const regexEscola = / \([^\)]+\)$/;
+                    
+                    // Se encontrar o padrão, substitui por vazio
+                    nomeCurso = nomeCurso.replace(regexEscola, '');
+                    
+                    nomeInput.value = nomeCurso;
+                }
+            });
+        }
+    });
+</script>
+
+{% endblock %}

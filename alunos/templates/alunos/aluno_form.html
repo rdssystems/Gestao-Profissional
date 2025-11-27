@@ -1,0 +1,487 @@
+{% extends "base.html" %}
+
+{% block title %}{% if object %}Editar Aluno{% else %}Novo Aluno{% endif %}{% endblock %}
+
+{% block content %}
+
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
+
+    body {
+        background-color: #f8fafc;
+        font-family: 'Plus Jakarta Sans', sans-serif;
+        color: #1e293b;
+    }
+
+    .form-card {
+        border-radius: 16px;
+        background: white;
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.025);
+        border: 1px solid #e2e8f0;
+        overflow: hidden;
+        margin-bottom: 2.5rem;
+    }
+
+    .form-card .card-header {
+        background: #ffffff;
+        border-bottom: 1px solid #e2e8f0;
+        padding: 1.1rem 1.6rem;
+        font-weight: 700;
+        color: #0f172a;
+        font-size: 1.05rem;
+    }
+
+    .form-card label {
+        font-weight: 600;
+        color: #475569;
+        font-size: 0.875rem;
+        margin-bottom: 0.45rem;
+        display: inline-block;
+    }
+
+    .custom-input input,
+    .custom-input select,
+    .custom-input textarea {
+        width: 100%;
+        border-radius: 12px !important;
+        padding: 0.7rem 1rem;
+        border: 1px solid #cbd5e1;
+        background: #fff;
+        color: #334155;
+        font-size: 0.95rem;
+        transition: all 0.2s ease;
+    }
+
+    .custom-input input:focus,
+    .custom-input select:focus,
+    .custom-input textarea:focus {
+        border-color: #4B5DFF !important;
+        background: #fff;
+        box-shadow: 0 0 0 4px rgba(75, 93, 255, 0.12);
+        outline: none;
+    }
+
+    .invalid-feedback {
+        font-size: 0.85rem;
+        font-weight: 500;
+        margin-top: .3rem;
+    }
+
+    .cancel-btn {
+        border-radius: 10px;
+        padding: 0.65rem 1.6rem;
+        font-weight: 600;
+        font-size: 0.95rem;
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        color: #475569;
+        transition: .2s ease;
+    }
+
+    .cancel-btn:hover {
+        background: #f8fafc;
+        transform: translateY(-1px);
+        box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    }
+
+    .submit-btn {
+        border-radius: 10px;
+        padding: 0.65rem 1.9rem;
+        font-weight: 600;
+        font-size: 0.95rem;
+        border: none;
+        color: #fff;
+        background: #4B5DFF;
+        transition: .25s ease;
+    }
+
+    .submit-btn:hover {
+        background: #6372ff;
+        transform: translateY(-2px);
+        box-shadow: 0 8px 18px rgba(75,93,255,0.25);
+    }
+</style>
+
+
+<div class="row justify-content-center">
+    <div class="col-lg-10">
+
+        {% if form.non_field_errors %}
+        <div class="alert alert-danger mb-4">
+            {% for error in form.non_field_errors %}
+            <div>{{ error }}</div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <form method="post" novalidate>
+            {% csrf_token %}
+
+            <!-- Identificação -->
+            <div class="card form-card">
+                <div class="card-header">Identificação</div>
+                <div class="card-body p-4">
+
+                    <div class="row">
+                        <div class="col-md-12 mb-4">
+                            {{ form.nome_completo.label_tag }}
+                            <div class="custom-input">{{ form.nome_completo }}</div>
+                            {% if form.nome_completo.errors %}
+                                <div class="invalid-feedback d-block">{{ form.nome_completo.errors }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="col-md-4 mb-4">
+                            {{ form.cpf.label_tag }}
+                            <div class="custom-input">{{ form.cpf }}</div>
+                            {% if form.cpf.errors %}
+                                <div class="invalid-feedback d-block">{{ form.cpf.errors }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="col-md-4 mb-4">
+                            {{ form.rg.label_tag }}
+                            <div class="custom-input">{{ form.rg }}</div>
+                            {% if form.rg.errors %}
+                                <div class="invalid-feedback d-block">{{ form.rg.errors }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="col-md-4 mb-4">
+                            {{ form.orgao_exp.label_tag }}
+                            <div class="custom-input">{{ form.orgao_exp }}</div>
+                            {% if form.orgao_exp.errors %}
+                                <div class="invalid-feedback d-block">{{ form.orgao_exp.errors }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="col-md-4 mb-4">
+                            {{ form.data_emissao.label_tag }}
+                            <div class="custom-input">{{ form.data_emissao }}</div>
+                            {% if form.data_emissao.errors %}
+                                <div class="invalid-feedback d-block">{{ form.data_emissao.errors }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+            <!-- Informações Pessoais -->
+            <div class="card form-card">
+                <div class="card-header">Informações Pessoais</div>
+                <div class="card-body p-4">
+
+                    <div class="row">
+                        <div class="col-md-4 mb-4">
+                            {{ form.data_nascimento.label_tag }}
+                            <div class="custom-input">{{ form.data_nascimento }}</div>
+                            {% if form.data_nascimento.errors %}
+                                <div class="invalid-feedback d-block">{{ form.data_nascimento.errors }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="col-md-4 mb-4">
+                            {{ form.sexo.label_tag }}
+                            <div class="custom-input">{{ form.sexo }}</div>
+                            {% if form.sexo.errors %}
+                                <div class="invalid-feedback d-block">{{ form.sexo.errors }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="col-md-4 mb-4">
+                            {{ form.estado_civil.label_tag }}
+                            <div class="custom-input">{{ form.estado_civil }}</div>
+                            {% if form.estado_civil.errors %}
+                                <div class="invalid-feedback d-block">{{ form.estado_civil.errors }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="col-md-4 mb-4">
+                            {{ form.cor_raca.label_tag }}
+                            <div class="custom-input">{{ form.cor_raca }}</div>
+                            {% if form.cor_raca.errors %}
+                                <div class="invalid-feedback d-block">{{ form.cor_raca.errors }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="col-md-8 mb-4">
+                            {{ form.nome_mae.label_tag }}
+                            <div class="custom-input">{{ form.nome_mae }}</div>
+                            {% if form.nome_mae.errors %}
+                                <div class="invalid-feedback d-block">{{ form.nome_mae.errors }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="col-md-4 mb-4">
+                            {{ form.naturalidade.label_tag }}
+                            <div class="custom-input">{{ form.naturalidade }}</div>
+                            {% if form.naturalidade.errors %}
+                                <div class="invalid-feedback d-block">{{ form.naturalidade.errors }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="col-md-2 mb-4">
+                            {{ form.uf_naturalidade.label_tag }}
+                            <div class="custom-input">{{ form.uf_naturalidade }}</div>
+                            {% if form.uf_naturalidade.errors %}
+                                <div class="invalid-feedback d-block">{{ form.uf_naturalidade.errors }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="col-md-6 mb-4">
+                            {{ form.escolaridade.label_tag }}
+                            <div class="custom-input">{{ form.escolaridade }}</div>
+                            {% if form.escolaridade.errors %}
+                                <div class="invalid-feedback d-block">{{ form.escolaridade.errors }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="col-md-12 mb-4 form-check ps-4">
+                            {{ form.deficiencia }}
+                            {{ form.deficiencia.label_tag }}
+                            {% if form.deficiencia.errors %}
+                                <div class="invalid-feedback d-block">{{ form.deficiencia.errors }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- Contato e Endereço -->
+            <div class="card form-card">
+                <div class="card-header">Contato e Endereço</div>
+                <div class="card-body p-4">
+
+                    <div class="row">
+                        <div class="col-md-4 mb-4">
+                            {{ form.email_principal.label_tag }}
+                            <div class="custom-input">{{ form.email_principal }}</div>
+                            {% if form.email_principal.errors %}
+                                <div class="invalid-feedback d-block">{{ form.email_principal.errors }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="col-md-4 mb-4">
+                            {{ form.whatsapp.label_tag }}
+                            <div class="custom-input">{{ form.whatsapp }}</div>
+                            {% if form.whatsapp.errors %}
+                                <div class="invalid-feedback d-block">{{ form.whatsapp.errors }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="col-md-4 mb-4">
+                            {{ form.telefone_principal.label_tag }}
+                            <div class="custom-input">{{ form.telefone_principal }}</div>
+                            {% if form.telefone_principal.errors %}
+                                <div class="invalid-feedback d-block">{{ form.telefone_principal.errors }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <hr class="my-4 text-muted opacity-25">
+
+                    <div class="row">
+                        <div class="col-md-3 mb-4">
+                            {{ form.endereco_cep.label_tag }}
+                            <div class="custom-input">{{ form.endereco_cep }}</div>
+                            {% if form.endereco_cep.errors %}
+                                <div class="invalid-feedback d-block">{{ form.endereco_cep.errors }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="col-md-9 mb-4">
+                            {{ form.endereco_rua.label_tag }}
+                            <div class="custom-input">{{ form.endereco_rua }}</div>
+                            {% if form.endereco_rua.errors %}
+                                <div class="invalid-feedback d-block">{{ form.endereco_rua.errors }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="col-md-3 mb-4">
+                            {{ form.endereco_numero.label_tag }}
+                            <div class="custom-input">{{ form.endereco_numero }}</div>
+                            {% if form.endereco_numero.errors %}
+                                <div class="invalid-feedback d-block">{{ form.endereco_numero.errors }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="col-md-9 mb-4">
+                            {{ form.endereco_bairro.label_tag }}
+                            <div class="custom-input">{{ form.endereco_bairro }}</div>
+                            {% if form.endereco_bairro.errors %}
+                                <div class="invalid-feedback d-block">{{ form.endereco_bairro.errors }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="col-md-6 mb-4">
+                            {{ form.endereco_cidade.label_tag }}
+                            <div class="custom-input">{{ form.endereco_cidade }}</div>
+                            {% if form.endereco_cidade.errors %}
+                                <div class="invalid-feedback d-block">{{ form.endereco_cidade.errors }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="col-md-6 mb-4">
+                            {{ form.endereco_estado.label_tag }}
+                            <div class="custom-input">{{ form.endereco_estado }}</div>
+                            {% if form.endereco_estado.errors %}
+                                <div class="invalid-feedback d-block">{{ form.endereco_estado.errors }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="col-md-4 mb-4">
+                            {{ form.tempo_moradia.label_tag }}
+                            <div class="custom-input">{{ form.tempo_moradia }}</div>
+                            {% if form.tempo_moradia.errors %}
+                                <div class="invalid-feedback d-block">{{ form.tempo_moradia.errors }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="col-md-4 mb-4">
+                            {{ form.tipo_moradia.label_tag }}
+                            <div class="custom-input">{{ form.tipo_moradia }}</div>
+                            {% if form.tipo_moradia.errors %}
+                                <div class="invalid-feedback d-block">{{ form.tipo_moradia.errors }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="col-md-4 mb-4">
+                            {{ form.valor_moradia.label_tag }}
+                            <div class="custom-input">{{ form.valor_moradia }}</div>
+                            {% if form.valor_moradia.errors %}
+                                <div class="invalid-feedback d-block">{{ form.valor_moradia.errors }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+            <!-- Dados Profissionais e Familiares -->
+            <div class="card form-card">
+                <div class="card-header">Dados Profissionais e Familiares</div>
+                <div class="card-body p-4">
+                    <div class="row">
+                        <div class="col-md-6 mb-4">
+                            {{ form.situacao_profissional.label_tag }}
+                            <div class="custom-input">{{ form.situacao_profissional }}</div>
+                            {% if form.situacao_profissional.errors %}
+                                <div class="invalid-feedback d-block">{{ form.situacao_profissional.errors }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="col-md-6 mb-4">
+                            {{ form.renda_individual.label_tag }}
+                            <div class="custom-input">{{ form.renda_individual }}</div>
+                            {% if form.renda_individual.errors %}
+                                <div class="invalid-feedback d-block">{{ form.renda_individual.errors }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <hr class="my-4 text-muted opacity-25">
+
+                    <div class="row">
+                        <div class="col-md-4 mb-4">
+                            {{ form.num_moradores.label_tag }}
+                            <div class="custom-input">{{ form.num_moradores }}</div>
+                            {% if form.num_moradores.errors %}
+                                <div class="invalid-feedback d-block">{{ form.num_moradores.errors }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="col-md-4 mb-4">
+                            {{ form.quantos_trabalham.label_tag }}
+                            <div class="custom-input">{{ form.quantos_trabalham }}</div>
+                            {% if form.quantos_trabalham.errors %}
+                                <div class="invalid-feedback d-block">{{ form.quantos_trabalham.errors }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="col-md-4 mb-4">
+                            {{ form.renda_moradores.label_tag }}
+                            <div class="custom-input">{{ form.renda_moradores }}</div>
+                            {% if form.renda_moradores.errors %}
+                                <div class="invalid-feedback d-block">{{ form.renda_moradores.errors }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Inscrição e Interesses -->
+            <div class="card form-card mb-4">
+                <div class="card-header">Inscrição e Interesses</div>
+                <div class="card-body p-4">
+
+                    <div class="mb-4">
+                        {{ form.como_soube.label_tag }}
+                        <div class="custom-input">{{ form.como_soube }}</div>
+                        {% if form.como_soube.errors %}
+                            <div class="invalid-feedback d-block">{{ form.como_soube.errors }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-4">
+                        {{ form.escola.label_tag }}
+                        <div class="custom-input">{{ form.escola }}</div>
+                        {% if form.escola.errors %}
+                            <div class="invalid-feedback d-block">{{ form.escola.errors }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-4">
+                        {{ form.cursos_interesse.label_tag }}
+                        <div class="scroll-box">{{ form.cursos_interesse }}</div>
+                        {% if form.cursos_interesse.errors %}
+                            <div class="invalid-feedback d-block">{{ form.cursos_interesse.errors }}</div>
+                        {% endif %}
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- Botões finais -->
+            <div class="d-flex justify-content-end mb-5 gap-3">
+                <a href="{% url 'alunos:lista_alunos' %}" class="cancel-btn btn">Cancelar</a>
+                <button type="submit" class="submit-btn btn">
+                    {% if form.instance.pk %}Salvar Alterações{% else %}Cadastrar Aluno{% endif %}
+                </button>
+            </div>
+
+        </form>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const cepInput = document.getElementById('{{ form.endereco_cep.id_for_label }}');
+        const ruaInput = document.getElementById('{{ form.endereco_rua.id_for_label }}');
+        const bairroInput = document.getElementById('{{ form.endereco_bairro.id_for_label }}');
+        const cidadeInput = document.getElementById('{{ form.endereco_cidade.id_for_label }}');
+        const estadoInput = document.getElementById('{{ form.endereco_estado.id_for_label }}');
+
+        if (cepInput) {
+            cepInput.addEventListener('blur', function () {
+                const cep = this.value.replace(/\D/g, '');
+                if (cep.length === 8) {
+                    fetch(`https://viacep.com.br/ws/${cep}/json/`)
+                        .then(response => response.json())
+                        .then(data => {
+                            if (!data.erro) {
+                                ruaInput.value = data.logradouro;
+                                bairroInput.value = data.bairro;
+                                cidadeInput.value = data.localidade || '';
+                                estadoInput.value = data.uf || '';
+                            }
+                        })
+                        .catch(error => console.error('Erro ao buscar CEP:', error));
+                }
+            });
+        }
+    });
+</script>
+{% endblock %}
+
+{% endblock %}

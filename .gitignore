@@ -1,0 +1,45 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.pyc
+*.pyd
+*.pyo
+*.egg-info/
+.pytest_cache/
+
+# Distributions
+dist/
+build/
+*.egg
+*.whl
+
+# C extensions
+*.so
+
+# Environments
+.env
+.venv
+venv/
+env/
+
+# Django stuff:
+*.log
+*.pot
+*.mo
+*.sqlite3
+db.sqlite3
+/htmlcov/
+.DS_Store
+
+# IDEs
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS-specific
+.DS_Store
+Thumbs.db
+
+# My custom files
+*.csv
+*.xlsx

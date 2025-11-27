@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+
+{% block title %}Confirmar Exclusão{% endblock %}
+
+{% block content %}
+
+<style>
+    .delete-card {
+        max-width: 520px;
+        margin: 4rem auto;
+        padding: 2.5rem;
+        border-radius: 1.4rem;
+        background: white;
+        box-shadow: 0 12px 28px rgba(0,0,0,0.08);
+        animation: fadeIn 0.5s ease-out;
+        text-align: center;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(18px); }
+        to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .delete-icon {
+        width: 80px;
+        opacity: 0.92;
+        margin-bottom: 1.4rem;
+    }
+
+    .delete-title {
+        font-weight: 700;
+        color: #42557A;
+        margin-bottom: 1rem;
+    }
+
+    .delete-text {
+        color: #56627A;
+        font-size: 1.05rem;
+        margin-bottom: 2rem;
+    }
+
+    .btn-delete {
+        border-radius: 50px;
+        padding: 0.6rem 2rem;
+        background: linear-gradient(145deg, #e84242, #ff6262);
+        font-weight: 600;
+        border: none;
+        color: white;
+        transition: 0.2s ease;
+    }
+
+    .btn-delete:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 18px rgba(255,50,50,0.35);
+    }
+
+    .btn-cancel {
+        border-radius: 50px;
+        padding: 0.6rem 2rem;
+        font-weight: 500;
+    }
+</style>
+
+
+<div class="delete-card">
+
+    <img src="https://cdn-icons-png.flaticon.com/512/6861/6861362.png"
+         class="delete-icon"
+         alt="Excluir">
+
+    <h2 class="delete-title">Confirmar Exclusão</h2>
+
+    <p class="delete-text">
+        Tem certeza de que deseja excluir a escola  
+        <strong>{{ object.nome }}</strong>?
+    </p>
+
+    <form method="post">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-delete me-2">Excluir</button>
+
+        <a href="{% url 'escolas:detalhe_escola' pk=object.pk %}" 
+           class="btn btn-secondary btn-cancel">
+            Cancelar
+        </a>
+    </form>
+
+</div>
+
+{% endblock %}

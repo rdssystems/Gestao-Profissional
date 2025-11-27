@@ -1,0 +1,147 @@
+{% extends "base.html" %}
+
+{% block title %}{% if object %}Editar Escola{% else %}Nova Escola{% endif %}{% endblock %}
+
+{% block content %}
+
+<style>
+    .form-wrapper {
+        max-width: 700px;
+        margin: 3rem auto;
+        padding: 2.5rem;
+        border-radius: 1.3rem;
+        background: white;
+        box-shadow: 0 12px 26px rgba(0,0,0,0.06);
+        animation: fadeIn 0.4s ease-out;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(18px); }
+        to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .form-title {
+        font-weight: 700;
+        color: #42557A;
+        text-align: center;
+        margin-bottom: 2rem;
+    }
+
+    .form-label {
+        font-weight: 500;
+        color: #42557A;
+    }
+
+    .custom-field input,
+    .custom-field select,
+    .custom-field textarea {
+        width: 100%;
+        border-radius: 14px !important;
+        padding: 0.8rem 1rem;
+        border: 1px solid #d5dff0;
+        background: #f9fbff;
+        transition: all 0.25s ease;
+    }
+
+    .custom-field input:focus,
+    .custom-field select:focus,
+    .custom-field textarea:focus {
+        border-color: #4C7DF0 !important;
+        background: #ffffff;
+        box-shadow: 0 0 8px rgba(76,125,240,0.25);
+    }
+
+    .btn-save {
+        border-radius: 50px;
+        padding: 0.65rem 2.2rem;
+        background: linear-gradient(145deg, #4C7DF0, #6A98F7);
+        border: none;
+        font-weight: 600;
+        color: white;
+        transition: 0.25s ease;
+    }
+
+    .btn-save:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 18px rgba(76,125,240,0.35);
+    }
+
+    .btn-cancel {
+        border-radius: 50px;
+        padding: 0.65rem 2rem;
+        font-weight: 500;
+    }
+</style>
+
+
+<div class="form-wrapper">
+
+    <h1 class="form-title">
+        {% if object %}Editar Escola{% else %}Nova Escola{% endif %}
+    </h1>
+
+    <form method="post">
+        {% csrf_token %}
+
+        <div class="mb-3">
+            {{ form.nome.label_tag }}
+            <div class="custom-field">
+                {{ form.nome }}
+            </div>
+            {% if form.nome.errors %}
+                <div class="invalid-feedback d-block">{{ form.nome.errors }}</div>
+            {% endif %}
+        </div>
+
+        <div class="mb-3">
+            {{ form.endereco.label_tag }}
+            <div class="custom-field">
+                {{ form.endereco }}
+            </div>
+            {% if form.endereco.errors %}
+                <div class="invalid-feedback d-block">{{ form.endereco.errors }}</div>
+            {% endif %}
+        </div>
+
+        <div class="mb-3">
+            {{ form.email.label_tag }}
+            <div class="custom-field">
+                {{ form.email }}
+            </div>
+            {% if form.email.errors %}
+                <div class="invalid-feedback d-block">{{ form.email.errors }}</div>
+            {% endif %}
+        </div>
+
+        <div class="mb-3">
+            {{ form.coordenador_user.label_tag }}
+            <div class="custom-field">
+                {{ form.coordenador_user }}
+            </div>
+            {% if form.coordenador_user.errors %}
+                <div class="invalid-feedback d-block">{{ form.coordenador_user.errors }}</div>
+            {% endif %}
+        </div>
+
+
+
+        <div class="mb-3">
+            {{ form.telefone.label_tag }}
+            <div class="custom-field">
+                {{ form.telefone }}
+            </div>
+            {% if form.telefone.errors %}
+                <div class="invalid-feedback d-block">{{ form.telefone.errors }}</div>
+            {% endif %}
+        </div>
+
+        <div class="d-flex justify-content-end mt-4">
+            <a href="{% url 'escolas:lista_escolas' %}" class="btn btn-secondary btn-cancel me-2">Cancelar</a>
+            <button type="submit" class="btn btn-save">Salvar</button>
+        </div>
+
+    </form>
+
+</div>
+
+{% endblock %}

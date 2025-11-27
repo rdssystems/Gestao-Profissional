@@ -1,0 +1,42 @@
+from django.core.exceptions import ValidationError
+from .models import Inscricao, Curso, TipoCurso # Importar modelos necessários
+
+def validar_conflito_matricula(aluno, novo_curso):
+    """
+    Valida se um aluno pode ser matriculado em um novo curso, verificando conflitos.
+    Retorna True se não houver conflitos, levanta ValidationError caso contrário.
+    """
+    # Obter todas as inscrições ATIVAS do aluno (status 'cursando')
+    # Excluímos a inscrição atual (se for uma atualização) para não comparar consigo mesma
+    inscricoes_existente_aluno = Inscricao.objects.filter(aluno=aluno, status='cursando')
+
+    for inscricao_existente in inscricoes_existente_aluno:
+        curso_existente = inscricao_existente.curso
+
+        # Regra 1: Não pode se inscrever em outro curso com a mesma tag (TipoCurso)
+        if novo_curso.tipo_curso == curso_existente.tipo_curso:
+            raise ValidationError(
+                f'O aluno já está inscrito em um curso do tipo "{novo_curso.tipo_curso.nome}" ({curso_existente.nome}).'
+            )
+
+        # Regra 2: Para tags diferentes, verificar turno e sobreposição de datas
+        # Um curso pode não ter turno ou horário definidos, então verificamos se eles existem.
+        if novo_curso.tipo_curso != curso_existente.tipo_curso:
+            conflito_turno = (
+                novo_curso.turno and curso_existente.turno and novo_curso.turno == curso_existente.turno
+            )
+            
+            # Verifica sobreposição de datas
+            # Assumimos que data_inicio e data_fim sempre estarão preenchidos para Curso
+            conflito_data = (
+                (novo_curso.data_inicio <= curso_existente.data_fim) and
+                (novo_curso.data_fim >= curso_existente.data_inicio)
+            )
+
+            if conflito_turno and conflito_data:
+                raise ValidationError(
+                    f'Conflito de horário/data: O aluno já está inscrito no curso "{curso_existente.nome}" '
+                    f'({curso_existente.get_turno_display()} - {curso_existente.data_inicio} a {curso_existente.data_fim}), '
+                    f'que coincide com o turno e período do curso "{novo_curso.nome}".'
+                )
+    return True # Se chegou até aqui, não há conflitos
