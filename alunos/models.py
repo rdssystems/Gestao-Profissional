@@ -10,10 +10,13 @@ class Aluno(models.Model):
 
     # Identificação
     nome_completo = models.CharField(max_length=255, verbose_name="Nome Completo")
-    cpf = models.CharField(max_length=14, unique=True, verbose_name="CPF")
+    cpf = models.CharField(max_length=14, verbose_name="CPF")
     rg = models.CharField(max_length=20, blank=True, null=True, verbose_name="RG")
     orgao_exp = models.CharField(max_length=20, blank=True, null=True, verbose_name="Órgão Expedidor")
     data_emissao = models.DateField(blank=True, null=True, verbose_name="Data de Emissão")
+
+    class Meta:
+        unique_together = ('escola', 'cpf')
 
     # Nascimento
     data_nascimento = models.DateField(verbose_name="Data de Nascimento")
@@ -51,7 +54,7 @@ class Aluno(models.Model):
     escolaridade = models.CharField(max_length=50, choices=ESCOLARIDADE_CHOICES, blank=True, null=True, verbose_name="Escolaridade")
 
     # Contato
-    email_principal = models.EmailField(unique=True, verbose_name="Email Principal")
+    email_principal = models.EmailField(verbose_name="Email Principal")
     whatsapp = models.CharField(max_length=20, blank=True, null=True, verbose_name="WhatsApp")
     telefone_principal = models.CharField(max_length=20, verbose_name="Telefone Principal")
 

@@ -4,6 +4,7 @@ import openpyxl
 from datetime import datetime
 from urllib.parse import quote
 
+from django.db.models import Q
 from django.views.generic import ListView, DetailView, View
 from django.views.generic.edit import CreateView, UpdateView, DeleteView
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
@@ -14,7 +15,7 @@ from django.core.exceptions import ValidationError
 from django.http import HttpResponse
 
 from .models import Aluno
-from .forms import AlunoForm, AuxiliarAlunoForm, AlunoCSVUploadForm
+from .forms import AlunoForm, AuxiliarAlunoForm, AlunoCSVUploadForm, VerificarCPFForm
 from core.mixins import StaffRequiredMixin
 from escolas.models import Escola
 from cursos.models import TipoCurso # Para cursos de interesse, se for o caso
@@ -47,6 +48,121 @@ class SuperuserRequiredMixin(UserPassesTestMixin):
     def test_func(self):
         return self.request.user.is_superuser
 
+class AlunoVerificarCPFView(StaffRequiredMixin, View):
+    template_name = 'alunos/verificar_cpf.html'
+    
+    def get(self, request):
+        form = VerificarCPFForm()
+        return render(request, self.template_name, {'form': form})
+    
+    def post(self, request):
+        form = VerificarCPFForm(request.POST)
+        if form.is_valid():
+            cpf = form.cleaned_data['cpf']
+            user = request.user
+            
+            if user.is_superuser:
+                # Superuser creates for any school? Usually superuser flow is different, 
+                # but let's assume they can proceed to create.
+                # For simplicity, superuser just goes to create view with CPF
+                return redirect(f"{reverse_lazy('alunos:criar_aluno')}?cpf={cpf}")
+
+            if not hasattr(user, 'profile') or not user.profile.escola:
+                messages.error(request, "Você não está vinculado a nenhuma escola.")
+                return redirect('home')
+
+            escola_atual = user.profile.escola
+
+            # Check if exists in current school
+            if Aluno.objects.filter(escola=escola_atual, cpf=cpf).exists():
+                messages.error(request, f"O Aluno com CPF {cpf} já está cadastrado nesta escola ({escola_atual.nome}).")
+                return render(request, self.template_name, {'form': form})
+            
+            # Check if exists in ANY other school
+            aluno_existente = Aluno.objects.filter(cpf=cpf).first()
+            if aluno_existente:
+                # Found in another school -> Offer to clone
+                return render(request, self.template_name, {
+                    'form': form,
+                    'aluno_existente': aluno_existente,
+                    'mostrar_opcao_clonar': True
+                })
+            
+            # Not found anywhere -> Redirect to Create with CPF pre-filled
+            return redirect(f"{reverse_lazy('alunos:criar_aluno')}?cpf={cpf}")
+            
+        return render(request, self.template_name, {'form': form})
+
+class AlunoClonarView(StaffRequiredMixin, View):
+    def post(self, request, pk):
+        # Get original student
+        aluno_original = get_object_or_404(Aluno, pk=pk)
+        
+        user = request.user
+        if not hasattr(user, 'profile') or not user.profile.escola:
+             messages.error(request, "Você não está vinculado a nenhuma escola para importar o aluno.")
+             return redirect('alunos:verificar_cpf')
+
+        escola_destino = user.profile.escola
+        
+        # Double check if already exists (prevent race condition)
+        if Aluno.objects.filter(escola=escola_destino, cpf=aluno_original.cpf).exists():
+            messages.warning(request, "Este aluno já foi importado ou cadastrado nesta escola.")
+            # Find the one that exists to redirect to it? Or just list?
+            # Let's redirect to list for safety
+            return redirect('alunos:lista_alunos')
+
+        # Clone data
+        novo_aluno = Aluno(
+            escola=escola_destino,
+            nome_completo=aluno_original.nome_completo,
+            cpf=aluno_original.cpf,
+            rg=aluno_original.rg,
+            orgao_exp=aluno_original.orgao_exp,
+            data_emissao=aluno_original.data_emissao,
+            data_nascimento=aluno_original.data_nascimento,
+            sexo=aluno_original.sexo,
+            estado_civil=aluno_original.estado_civil,
+            cor_raca=aluno_original.cor_raca,
+            nome_mae=aluno_original.nome_mae,
+            naturalidade=aluno_original.naturalidade,
+            uf_naturalidade=aluno_original.uf_naturalidade,
+            deficiencia=aluno_original.deficiencia,
+            escolaridade=aluno_original.escolaridade,
+            email_principal=aluno_original.email_principal, # Note: Emails are unique=True in model? 
+            # Wait, email_principal is unique=True in model. 
+            # If we clone, we will have duplicate email error!
+            # Logic adjustment needed below.
+            whatsapp=aluno_original.whatsapp,
+            telefone_principal=aluno_original.telefone_principal,
+            endereco_cep=aluno_original.endereco_cep,
+            endereco_rua=aluno_original.endereco_rua,
+            endereco_numero=aluno_original.endereco_numero,
+            endereco_bairro=aluno_original.endereco_bairro,
+            endereco_cidade=aluno_original.endereco_cidade,
+            endereco_estado=aluno_original.endereco_estado,
+            tempo_moradia=aluno_original.tempo_moradia,
+            tipo_moradia=aluno_original.tipo_moradia,
+            valor_moradia=aluno_original.valor_moradia,
+            situacao_profissional=aluno_original.situacao_profissional,
+            renda_individual=aluno_original.renda_individual,
+            num_moradores=aluno_original.num_moradores,
+            quantos_trabalham=aluno_original.quantos_trabalham,
+            renda_moradores=aluno_original.renda_moradores,
+            como_soube=aluno_original.como_soube
+        )
+        
+        # Handle Email Uniqueness for Cloning
+        # Email is no longer unique globally, so we can copy it directly.
+        
+        try:
+            novo_aluno.save()
+            messages.success(request, f"Aluno {novo_aluno.nome_completo} importado com sucesso! Verifique os dados e matricule nos cursos.")
+            return redirect('alunos:editar_aluno', pk=novo_aluno.pk)
+        except Exception as e:
+            messages.error(request, f"Erro ao importar aluno: {e}")
+            return redirect('alunos:verificar_cpf')
+
 
 class AlunoListView(LoginRequiredMixin, ListView):
     model = Aluno
@@ -59,11 +175,21 @@ class AlunoListView(LoginRequiredMixin, ListView):
         queryset = Aluno.objects.all().order_by('-data_criacao', 'nome_completo') # Order by enrollment date/time
 
         if user.is_superuser:
-            pass # Superusers see all
+            escola_filter = self.request.GET.get('escola')
+            if escola_filter:
+                queryset = queryset.filter(escola__id=escola_filter)
         elif hasattr(user, 'profile') and user.profile.escola:
             queryset = queryset.filter(escola=user.profile.escola)
         else:
             return Aluno.objects.none()
+
+        # Search functionality
+        search_query = self.request.GET.get('search')
+        if search_query:
+            queryset = queryset.filter(
+                Q(nome_completo__icontains=search_query) | 
+                Q(cpf__icontains=search_query)
+            )
         
         # Implement dynamic pagination
         page_size = self.request.GET.get('page_size', self.paginate_by)
@@ -73,6 +199,13 @@ class AlunoListView(LoginRequiredMixin, ListView):
             self.paginate_by = 20 # Fallback to default if invalid
             
         return queryset
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        if self.request.user.is_superuser:
+            context['todas_escolas'] = Escola.objects.all().order_by('nome')
+            context['escola_selecionada'] = self.request.GET.get('escola', '')
+        return context
 
 class AlunoDetailView(StaffRequiredMixin, DetailView):
     model = Aluno
@@ -91,6 +224,13 @@ class AlunoCreateView(StaffRequiredMixin, CreateView):
         kwargs = super().get_form_kwargs()
         kwargs['user'] = self.request.user
         return kwargs
+    
+    def get_initial(self):
+        initial = super().get_initial()
+        cpf = self.request.GET.get('cpf')
+        if cpf:
+            initial['cpf'] = cpf
+        return initial
 
     def form_valid(self, form):
         if not self.request.user.is_superuser:

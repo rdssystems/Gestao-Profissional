@@ -46,6 +46,19 @@ class Curso(models.Model):
     )
     turno = models.CharField(max_length=10, choices=TURNOS_CHOICES, blank=True, null=True)
     horario = models.TimeField(blank=True, null=True)
+    horario_fim = models.TimeField(blank=True, null=True)
+
+    DIAS_SEMANA_CHOICES = (
+        ('Segunda', 'Segunda-feira'),
+        ('Terça', 'Terça-feira'),
+        ('Quarta', 'Quarta-feira'),
+        ('Quinta', 'Quinta-feira'),
+        ('Sexta', 'Sexta-feira'),
+        ('Sábado', 'Sábado'),
+        ('Domingo', 'Domingo'),
+    )
+    dia_inicio_semana = models.CharField(max_length=20, choices=DIAS_SEMANA_CHOICES, blank=True, null=True)
+    dia_fim_semana = models.CharField(max_length=20, choices=DIAS_SEMANA_CHOICES, blank=True, null=True)
 
     status = models.CharField(max_length=20, choices=STATUS_CHOICES)
 

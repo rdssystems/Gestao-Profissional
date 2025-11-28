@@ -148,12 +148,16 @@ class AlunoForm(forms.ModelForm):
 
         if user and not user.is_superuser:
             if hasattr(user, 'profile') and user.profile.escola:
-                self.fields['escola'].queryset = Escola.objects.filter(pk=user.profile.escola.pk)
+                if 'escola' in self.fields:
+                    self.fields['escola'].queryset = Escola.objects.filter(pk=user.profile.escola.pk)
                 # Filter cursos_interesse by the user's school
-                self.fields['cursos_interesse'].queryset = TipoCurso.objects.filter(escola=user.profile.escola)
+                if 'cursos_interesse' in self.fields:
+                    self.fields['cursos_interesse'].queryset = TipoCurso.objects.filter(escola=user.profile.escola)
             else:
-                self.fields['escola'].queryset = Escola.objects.none()
-                self.fields['cursos_interesse'].queryset = TipoCurso.objects.none()
+                if 'escola' in self.fields:
+                    self.fields['escola'].queryset = Escola.objects.none()
+                if 'cursos_interesse' in self.fields:
+                    self.fields['cursos_interesse'].queryset = TipoCurso.objects.none()
 
         required_fields = [
             'whatsapp', 'renda_individual', 'num_moradores', 
@@ -184,56 +188,46 @@ class AlunoForm(forms.ModelForm):
         return cep
 
 # Existing AuxiliarAlunoForm
-class AuxiliarAlunoForm(forms.ModelForm):
+class AuxiliarAlunoForm(AlunoForm):
     """
-    Formulário para o Auxiliar Administrativo, permitindo editar apenas
-    campos de contato e endereço.
+    Formulário para o Auxiliar Administrativo.
+    Permite editar todos os dados, EXCETO Identificação (Nome, CPF, RG, etc.) e Escola.
     """
-    class Meta:
+    class Meta(AlunoForm.Meta):
         model = Aluno
+        # Listamos explicitamente os campos permitidos para garantir a exclusão dos de identificação
         fields = [
+            'cursos_interesse',
+            'sexo', 'estado_civil', 'cor_raca', 'nome_mae', 'naturalidade', 'uf_naturalidade',
+            'deficiencia', 'escolaridade',
             'email_principal', 'whatsapp', 'telefone_principal',
             'endereco_cep', 'endereco_rua', 'endereco_numero', 'endereco_bairro',
-            'endereco_cidade', 'endereco_estado'
+            'endereco_cidade', 'endereco_estado',
+            'tempo_moradia', 'tipo_moradia', 'valor_moradia',
+            'situacao_profissional', 'renda_individual', 
+            'num_moradores', 'quantos_trabalham', 'renda_moradores',
+            'como_soube'
         ]
-        widgets = {
-            'email_principal': forms.EmailInput(attrs={'class': 'form-control'}),
-            'whatsapp': forms.TextInput(attrs={'class': 'form-control'}),
-            'telefone_principal': forms.TextInput(attrs={'class': 'form-control'}),
-            'endereco_cep': forms.TextInput(attrs={'class': 'form-control'}),
-            'endereco_rua': forms.TextInput(attrs={'class': 'form-control'}),
-            'endereco_numero': forms.TextInput(attrs={'class': 'form-control'}),
-            'endereco_bairro': forms.TextInput(attrs={'class': 'form-control'}),
-            'endereco_cidade': forms.TextInput(attrs={'class': 'form-control'}),
-            'endereco_estado': forms.TextInput(attrs={'class': 'form-control'}),
-        }
-        labels = {
-            'email_principal': _("Email Principal"),
-            'whatsapp': _("WhatsApp"),
-            'telefone_principal': _("Telefone Principal"),
-            'endereco_cep': _("CEP"),
-            'endereco_rua': _("Rua"),
-            'endereco_numero': _("Número"),
-            'endereco_bairro': _("Bairro"),
-            'endereco_cidade': _("Cidade"),
-            'endereco_estado': _("Estado"),
-        }
-        error_messages = {
-            'email_principal': {'required': _("Este Campo é Obrigatório")},
-            'whatsapp': {'required': _("Este Campo é Obrigatório")},
-            'telefone_principal': {'required': _("Este Campo é Obrigatório")},
-            'endereco_cep': {'required': _("Este Campo é Obrigatório")},
-            'endereco_rua': {'required': _("Este Campo é Obrigatório")},
-            'endereco_numero': {'required': _("Este Campo é Obrigatório")},
-            'endereco_bairro': {'required': _("Este Campo é Obrigatório")},
-            'endereco_cidade': {'required': _("Este Campo é Obrigatório")},
-            'endereco_estado': {'required': _("Este Campo é Obrigatório")},
-        }
+        # Widgets e Labels são herdados de AlunoForm.Meta
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        if 'whatsapp' in self.fields:
-            self.fields['whatsapp'].required = True
+    # __init__ é herdado de AlunoForm, mantendo a lógica de user e filtering.
+
+class VerificarCPFForm(forms.Form):
+    cpf = forms.CharField(
+        label="CPF do Aluno",
+        max_length=14,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control form-control-lg', 
+            'placeholder': '000.000.000-00',
+            'autofocus': 'autofocus'
+        })
+    )
+
+    def clean_cpf(self):
+        cpf = self.cleaned_data.get('cpf')
+        # Remove characters to leave only digits, or format as needed
+        # Here we might just want to ensure it has 11 digits if stripped
+        return cpf
 
 # CustomAuthenticationForm (from previous context)
 class CustomAuthenticationForm(AuthenticationForm):

@@ -1,4 +1,5 @@
 {% load static %}
+{% load auth_extras %}
 <!doctype html>
 <html lang="pt-br" class="h-100">
 <head>
@@ -151,9 +152,11 @@
                     <li class="nav-item">
                         <a class="nav-link" href="{% url 'alunos:lista_alunos' %}">Alunos</a>
                     </li>
+                    {% if not user|has_group:"Auxiliar Administrativo" %}
                     <li class="nav-item">
-                        <a class="nav-link" href="{% url 'cursos:matricula' %}">Matrículas</a>
+                        <a class="nav-link" href="{% url 'cursos:matricula' %}">Matrícula</a>
                     </li>
+                    {% endif %}
 
                     <li class="nav-item">
                         <a class="nav-link" href="{% url 'escolas:lista_escolas' %}">Escolas</a>

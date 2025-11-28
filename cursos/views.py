@@ -41,6 +41,13 @@ class TipoCursoForm(forms.ModelForm):
         elif not user.is_superuser:
             self.fields['escola'].queryset = self.fields['escola'].queryset.none()
 
+class CoordenadorRequiredMixin(UserPassesTestMixin):
+    def test_func(self):
+        user = self.request.user
+        if user.is_superuser:
+            return True
+        return user.groups.filter(name='Coordenador').exists()
+
 class CursoListView(LoginRequiredMixin, ListView):
     model = Curso
     template_name = 'cursos/curso_list.html'
@@ -237,7 +244,7 @@ class UpdateInscricaoStatusView(LoginRequiredMixin, StaffRequiredMixin, SingleOb
             
         return redirect('cursos:detalhe_curso', pk=inscricao.curso.pk)
 
-class MatriculaView(LoginRequiredMixin, ListView):
+class MatriculaView(LoginRequiredMixin, CoordenadorRequiredMixin, ListView):
     model = Aluno
     template_name = 'cursos/matricula_page.html'
     context_object_name = 'alunos_sugeridos'
@@ -284,7 +291,7 @@ class MatriculaView(LoginRequiredMixin, ListView):
             
         return context
 
-class MatricularAlunoDiretoView(LoginRequiredMixin, StaffRequiredMixin, View):
+class MatricularAlunoDiretoView(LoginRequiredMixin, CoordenadorRequiredMixin, View):
     def post(self, request, *args, **kwargs):
         aluno_id = request.POST.get('aluno_id')
         curso_id = request.POST.get('curso_id')
@@ -330,6 +337,26 @@ class MatricularAlunoDiretoView(LoginRequiredMixin, StaffRequiredMixin, View):
         messages.success(request, f'Aluno {aluno.nome_completo} matriculado com sucesso no curso {curso.nome}.')
 
         return redirect(redirect_url)
+
+class CancelarMatriculaDiretoView(LoginRequiredMixin, CoordenadorRequiredMixin, View):
+    def post(self, request, *args, **kwargs):
+        inscricao_id = request.POST.get('inscricao_id')
+        inscricao = get_object_or_404(Inscricao, pk=inscricao_id)
+        curso_id = inscricao.curso.pk
+        
+        # Confirmação adicional de permissão (escola) se necessário, mas CoordenadorRequiredMixin + filtro inicial já ajuda
+        # Vamos garantir que o coordenador é da mesma escola se não for superuser
+        if not request.user.is_superuser:
+            if hasattr(request.user, 'profile') and request.user.profile.escola != inscricao.curso.escola:
+                messages.error(request, "Você não tem permissão para cancelar matrículas desta escola.")
+                return redirect(reverse_lazy('cursos:matricula') + f'?curso_id={curso_id}')
+
+        aluno_nome = inscricao.aluno.nome_completo
+        inscricao.delete()
+        
+        messages.success(request, f"Matrícula de {aluno_nome} cancelada com sucesso.")
+        return redirect(reverse_lazy('cursos:matricula') + f'?curso_id={curso_id}')
+
 class InscricaoDeleteView(LoginRequiredMixin, StaffRequiredMixin, DeleteView):
     model = Inscricao
     template_name = 'cursos/inscricao_confirm_delete.html' # Pode ser um template genérico ou um específico

@@ -132,7 +132,7 @@
 
 <!-- HEADER -->
 <div class="d-flex justify-content-between align-items-center mb-4">
-    <h1 class="page-title mb-0">Matrícula Rápida</h1>
+    <h1 class="page-title mb-0">Matrícula</h1>
 </div>
 
 
@@ -265,8 +265,16 @@
                     <td>{{ inscricao.aluno.telefone_principal }}</td>
                     <td><span class="badge bg-success">{{ inscricao.get_status_display }}</span></td>
                     <td class="text-end">
-                        <a href="{% url 'cursos:detalhe_curso' pk=selected_curso.pk %}"
-                           class="btn btn-info btn-sm btn-app">Detalhes</a>
+                        <div class="d-flex gap-2 justify-content-end">
+                            <a href="{% url 'cursos:detalhe_curso' pk=selected_curso.pk %}"
+                               class="btn btn-info btn-sm btn-app">Detalhes</a>
+                            
+                            <form method="post" action="{% url 'cursos:cancelar_matricula_direto' %}" onsubmit="return confirm('Tem certeza que deseja cancelar a matrícula de {{ inscricao.aluno.nome_completo }}?');">
+                                {% csrf_token %}
+                                <input type="hidden" name="inscricao_id" value="{{ inscricao.pk }}">
+                                <button type="submit" class="btn btn-danger btn-sm btn-app">Cancelar</button>
+                            </form>
+                        </div>
                     </td>
                 </tr>
                 {% empty %}

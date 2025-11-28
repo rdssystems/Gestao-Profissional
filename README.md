@@ -17,6 +17,11 @@ O software oferece um fluxo completo desde o cadastro de alunos, criação de cu
 
 ### 👥 Gestão de Alunos (Candidatos)
 - Cadastro completo de alunos com dados pessoais, socioeconômicos e de contato.
+- **Busca Inteligente**: Localize alunos rapidamente pelo Nome ou CPF na listagem.
+- **Gestão Multi-Escola**:
+  - O sistema permite o cadastro do mesmo aluno em diferentes escolas (unidades).
+  - **Clonagem de Cadastro**: Ao tentar cadastrar um aluno já existente em outra unidade, o sistema alerta e oferece a opção de importar os dados cadastrais, evitando retrabalho e duplicidade de digitação.
+  - **Prevenção de Duplicidade**: Bloqueia o cadastro de um CPF se ele já estiver matriculado na mesma escola.
 - **Cálculo Automático de Score**: O sistema calcula uma pontuação para cada aluno com base em critérios de vulnerabilidade social (Renda, Nº de Moradores, Situação de Trabalho, etc.), facilitando a priorização no preenchimento de vagas.
 - **Importação em Massa**: Upload de alunos via arquivo **CSV** ou planilha **XLSX**, com validação de dados.
 - Histórico de matrículas do aluno.

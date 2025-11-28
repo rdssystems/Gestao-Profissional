@@ -6,44 +6,38 @@ from escolas.models import Escola # Import Escola
 from django.http import JsonResponse
 from django.urls import reverse
 from datetime import timedelta, date, time
-
-# @login_required
-# def dashboard_view(request):
-#     total_cursos = Curso.objects.count()
-#     total_alunos = Aluno.objects.count()
-#     cursos_ativos = Curso.objects.filter(status='Aberta').count()
-#     cursos_concluidos = Curso.objects.filter(status='Concluído').count()
-
-#     context = {
-#         'total_cursos': total_cursos,
-#         'total_alunos': total_alunos,
-#         'cursos_ativos': cursos_ativos,
-#         'cursos_concluidos': cursos_concluidos,
-#     }
-#     return render(request, 'core/dashboard.html', context)
-
+from django.db.models import Prefetch
 
 @login_required
 def calendar_view(request):
-    cursos_queryset = Curso.objects.all()
-    todas_escolas = Escola.objects.all().order_by('nome')
-    todos_nomes_cursos = Curso.objects.values_list('nome', flat=True).distinct().order_by('nome')
-
     # Filtros
-    curso_nome_filter = request.GET.get('curso_nome', '') # Default to empty string
-    escola_nome_filter = request.GET.get('escola_nome', '') # Default to empty string
+    curso_nome_filter = request.GET.get('curso_nome', '')
+    escola_nome_filter = request.GET.get('escola_nome', '')
 
+    # Base query for courses
+    cursos_qs = Curso.objects.all().order_by('data_inicio', 'horario')
+    
     if curso_nome_filter:
-        cursos_queryset = cursos_queryset.filter(nome=curso_nome_filter) # Exact match for selectbox
+        cursos_qs = cursos_qs.filter(nome__icontains=curso_nome_filter)
+
+    # Fetch schools with their related courses
+    schools = Escola.objects.all().order_by('nome').prefetch_related(
+        Prefetch('cursos', queryset=cursos_qs)
+    )
+
     if escola_nome_filter:
-        cursos_queryset = cursos_queryset.filter(escola__nome=escola_nome_filter) # Exact match for selectbox
+        schools = schools.filter(nome=escola_nome_filter)
+
+    # Filter out schools with no courses if desired? 
+    # Or keep them to show empty tables? 
+    # User said "crie uma tabela para cada unidade com seus respectivos cursos".
+    # I'll pass all schools.
 
     context = {
-        'cursos': cursos_queryset.order_by('data_inicio', 'horario'),
-        'todas_escolas': todas_escolas,
-        'todos_nomes_cursos': todos_nomes_cursos,
+        'schools': schools,
         'curso_nome_filter': curso_nome_filter,
         'escola_nome_filter': escola_nome_filter,
+        'todas_escolas': Escola.objects.all().order_by('nome'), # For filter dropdown
     }
     return render(request, 'core/calendar.html', context)
 
@@ -97,6 +91,11 @@ O software oferece um fluxo completo desde o cadastro de alunos, criação de cu
 
 ### <i class="bi bi-people"></i> Gestão de Alunos (Candidatos)
 - Cadastro completo de alunos com dados pessoais, socioeconômicos e de contato.
+- **Busca Inteligente**: Localize alunos rapidamente pelo Nome ou CPF na listagem.
+- **Gestão Multi-Escola**:
+  - O sistema permite o cadastro do mesmo aluno em diferentes escolas (unidades).
+  - **Clonagem de Cadastro**: Ao tentar cadastrar um aluno já existente em outra unidade, o sistema alerta e oferece a opção de importar os dados cadastrais, evitando retrabalho e duplicidade de digitação.
+  - **Prevenção de Duplicidade**: Bloqueia o cadastro de um CPF se ele já estiver matriculado na mesma escola.
 - **Cálculo Automático de Score**: O sistema calcula uma pontuação para cada aluno com base em critérios de vulnerabilidade social (Renda, Nº de Moradores, Situação de Trabalho, etc.), facilitando a priorização no preenchimento de vagas.
 - **Importação em Massa**: Upload de alunos via arquivo **CSV** ou planilha **XLSX**, com validação de dados.
 - Histórico de matrículas do aluno.

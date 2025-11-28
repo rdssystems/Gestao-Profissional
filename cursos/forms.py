@@ -7,7 +7,7 @@ from django.forms import inlineformset_factory # Adicionar import
 class CursoForm(forms.ModelForm):
     class Meta:
         model = Curso
-        fields = ['escola', 'tipo_curso', 'nome', 'carga_horaria', 'data_inicio', 'data_fim', 'turno', 'horario', 'status']
+        fields = ['escola', 'tipo_curso', 'nome', 'carga_horaria', 'data_inicio', 'data_fim', 'turno', 'horario', 'horario_fim', 'dia_inicio_semana', 'dia_fim_semana', 'status']
         widgets = {
             'escola': forms.Select(attrs={'class': 'form-select'}),
             'tipo_curso': forms.Select(attrs={'class': 'form-select'}),
@@ -17,6 +17,9 @@ class CursoForm(forms.ModelForm):
             'data_fim': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'turno': forms.Select(attrs={'class': 'form-select'}),
             'horario': forms.TimeInput(attrs={'class': 'form-control', 'type': 'time'}),
+            'horario_fim': forms.TimeInput(attrs={'class': 'form-control', 'type': 'time'}),
+            'dia_inicio_semana': forms.Select(attrs={'class': 'form-select'}),
+            'dia_fim_semana': forms.Select(attrs={'class': 'form-select'}),
             'status': forms.Select(attrs={'class': 'form-select'}),
         }
 

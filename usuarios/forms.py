@@ -54,6 +54,12 @@ class UserCreationForm(forms.ModelForm):
             # Assign role
             role_name = self.cleaned_data.get('role')
             if role_name:
+                # Remove existing roles managed by this form
+                managed_roles = ['Coordenador', 'Auxiliar Administrativo']
+                groups_to_remove = Group.objects.filter(name__in=managed_roles)
+                user.groups.remove(*groups_to_remove)
+
+                # Add new role
                 group, created = Group.objects.get_or_create(name=role_name)
                 user.groups.add(group)
             

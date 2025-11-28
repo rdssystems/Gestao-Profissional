@@ -25,6 +25,7 @@ urlpatterns = [
     # URL para a nova página de Matrícula
     path('matriculas/', views.MatriculaView.as_view(), name='matricula'),
     path('matricular-direto/', views.MatricularAlunoDiretoView.as_view(), name='matricular_aluno_direto'),
+    path('cancelar-matricula-direto/', views.CancelarMatriculaDiretoView.as_view(), name='cancelar_matricula_direto'),
 
     # URLs para Chamada
     path('chamadas/', views.ChamadaCursoListView.as_view(), name='lista_cursos_chamada'),
