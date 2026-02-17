@@ -43,3 +43,12 @@ Thumbs.db
 # My custom files
 *.csv
 *.xlsx
+venv_new/
+staticfiles/
+backups/
+/app/
+*.bat
+*.pptx
+*.png
+!logopmu.png
+!logologin.png

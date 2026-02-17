@@ -11,6 +11,8 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
 from pathlib import Path
+import os
+
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -23,14 +25,16 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-ij4m531%r&e6)@6+^mulytw1ph2x&(kw4p^91(i$au+&(zy=_%'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.getenv('DEBUG', 'True') == 'True'
 
-ALLOWED_HOSTS = ['172.16.0.1', 'SMDS-LOC-201930','192.168.137.1', '172.16.8.240', '127.0.0.1']
+ALLOWED_HOSTS = ['*']
+
 
 
 # Application definition
 
 INSTALLED_APPS = [
+    'daphne',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -45,8 +49,13 @@ INSTALLED_APPS = [
     'alunos',
     'usuarios',
     'score_config',
+    'declaracao.apps.DeclaracaoConfig',
+    'controle_diario', # Novo app
 
     # Apps de terceiros
+    'dbbackup',
+    'channels',
+    'widget_tweaks',
 ]
 
 MIDDLEWARE = [
@@ -59,7 +68,7 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-ROOT_URLCONF = 'gestao_qualificacao_profissional.urls';
+ROOT_URLCONF = 'gestao_qualificacao_profissional.urls'
 
 TEMPLATES = [
     {
@@ -68,6 +77,7 @@ TEMPLATES = [
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
+                'django.template.context_processors.debug',
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
@@ -77,15 +87,39 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'gestao_qualificacao_profissional.wsgi.application'
+ASGI_APPLICATION = 'gestao_qualificacao_profissional.asgi.application'
+
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [(os.getenv('REDIS_HOST', '127.0.0.1'), 6379)],
+        },
+    },
+}
 
 
+# Configuração de CACHES para usar Redis
+CACHES = {
+    "default": {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": os.getenv('REDIS_CACHE_URL', "redis://127.0.0.1:6379/1"),
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+        }
+    }
+}
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': os.getenv('DB_ENGINE', 'django.db.backends.sqlite3'),
+        'NAME': os.getenv('DB_NAME', BASE_DIR / 'db.sqlite3'),
+        'USER': os.getenv('DB_USER', ''),
+        'PASSWORD': os.getenv('DB_PASSWORD', ''),
+        'HOST': os.getenv('DB_HOST', ''),
+        'PORT': os.getenv('DB_PORT', ''),
     }
 }
 
@@ -112,9 +146,9 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 # https://docs.djangoproject.com/en/5.2/topics/i18n/
 
-LANGUAGE_CODE = 'en-us'
+LANGUAGE_CODE = 'pt-br'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'America/Sao_Paulo'
 
 USE_I18N = True
 
@@ -125,6 +159,10 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
 STATIC_URL = 'static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+STATICFILES_DIRS = [
+    BASE_DIR,
+]
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
@@ -137,5 +175,32 @@ LOGOUT_REDIRECT_URL = '/'
 
 # Email backend for development (shows emails in console)
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+
+# --- CONFIGURAÇÃO DE BACKUP (django-dbbackup) ---
+DBBACKUP_STORAGE = 'django.core.files.storage.FileSystemStorage'
+DBBACKUP_STORAGE_OPTIONS = {'location': BASE_DIR / 'backups'}
+# Número de backups para manter (apaga os mais antigos automaticamente)
+DBBACKUP_CLEANUP_KEEP = 10 
+DBBACKUP_CLEANUP_KEEP_MEDIA = 10
+
+# --- CONFIGURAÇÃO PARA ENVIO DE E-MAIL REAL (PRODUÇÃO) ---
+# Para usar, comente a linha acima (EMAIL_BACKEND = '...console...')
+# e descomente as linhas abaixo, preenchendo com seus dados.
+
+# Exemplo para GMAIL:
+# EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+# EMAIL_HOST = 'smtp.gmail.com'
+# EMAIL_PORT = 587
+# EMAIL_USE_TLS = True
+# EMAIL_HOST_USER = 'seu_email@gmail.com'
+# EMAIL_HOST_PASSWORD = 'sua_senha_de_app_do_google' # Não é a senha normal, é a "Senha de App"
+
+# Exemplo para OUTLOOK / HOTMAIL:
+# EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+# EMAIL_HOST = 'smtp-mail.outlook.com'
+# EMAIL_PORT = 587
+# EMAIL_USE_TLS = True
+# EMAIL_HOST_USER = 'seu_email@outlook.com'
+# EMAIL_HOST_PASSWORD = 'sua_senha'
 
 AUTHENTICATION_FORM = 'usuarios.forms.CustomAuthenticationForm'

@@ -5,29 +5,42 @@
 {% block content %}
 
 <style>
-    /* Título principal */
+    body {
+        background: #eef1f5 !important;
+        font-family: "Inter", sans-serif;
+        color: #424a57;
+        background-image: radial-gradient(rgba(0,0,0,0.02) 1px, transparent 0);
+        background-size: 18px 18px;
+    }
+
     .page-title {
         font-weight: 700;
         color: #1f2937;
+        margin-bottom: .25rem;
     }
 
-    /* Botão adicionar tipo */
-    .new-btn {
+    .page-subtitle {
+        color: #6b7280;
+        font-size: 1rem;
+    }
+
+    .btn {
+        border-radius: .6rem;
+        font-weight: 600;
+        font-size: .85rem;
+        white-space: nowrap;
+    }
+
+    .btn-primary {
         background-color: #4B5DFF;
         border: none;
-        font-weight: 600;
-        border-radius: 0.6rem;
-        color: #fff;
-        padding: 0.55rem 1.4rem;
-        transition: 0.25s ease;
-    }
-    .new-btn:hover {
-        background-color: #6372ff;
-        transform: translateY(-2px);
-        box-shadow: 0 6px 24px rgba(75,93,255,0.25);
     }
 
-    /* Cartão principal */
+    .btn-primary:hover {
+        background-color: #6372ff;
+        box-shadow: 0 6px 18px rgba(75,93,255,.25);
+    }
+
     .list-card {
         position: relative;
         border-radius: 1.2rem;
@@ -39,7 +52,6 @@
         overflow: hidden;
     }
 
-    /* Linha azul premium no topo */
     .list-card::before {
         content: "";
         position: absolute;
@@ -51,99 +63,129 @@
         );
     }
 
-    /* Borda sólida no rodapé */
-    .list-card::after {
-        content: "";
-        position: absolute;
-        bottom: 0; left: 0; right: 0;
-        height: 4px;
-        background: #4B5DFF;
-        border-radius: 0 0 1.2rem 1.2rem;
-        opacity: 0.7;
-    }
-
-    /* Linhas da lista */
     .list-group-item {
         border: none;
         border-bottom: 1px solid rgba(0,0,0,0.06);
         padding: 1rem 1.25rem;
-        font-size: 1rem;
+        font-size: .95rem;
         color: #2c3441;
-        transition: 0.15s ease;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
     }
+
+    .list-group-item:last-child {
+        border-bottom: none;
+    }
+
     .list-group-item:hover {
         background: #f2f4fa;
     }
 
-    /* Botões de ação */
-    .tag-actions .btn {
-        border-radius: 0.6rem;
+    .item-title {
         font-weight: 600;
-        padding: 0.35rem 0.9rem;
+        color: #1f2937;
     }
-    .btn-edit {
-        border: 1px solid #3B4BCC;
-        background: transparent;
-        color: #3B4BCC;
+
+    .item-subtitle {
+        font-size: .8rem;
+        color: #6b7280;
     }
-    .btn-edit:hover {
-        background: #3B4BCC;
+
+    .action-buttons .btn {
+        border-radius: .55rem;
+        padding: .35rem .85rem;
+        font-size: .8rem;
+    }
+
+    .btn-outline-primary {
+        border-color: #4B5DFF;
+        color: #4B5DFF;
+    }
+
+    .btn-outline-primary:hover {
+        background-color: #4B5DFF;
         color: #fff;
     }
-    .btn-delete {
+
+    .btn-danger {
+        background-color: #e43e3e;
         border: none;
-        background: #e43e3e;
-        color: #fff;
     }
-    .btn-delete:hover {
-        background: #c92f2f;
+
+    .btn-danger:hover {
+        background-color: #c92f2f;
         box-shadow: 0 6px 16px rgba(233,23,23,0.25);
     }
 
-    /* Texto vazio */
     .empty-text {
         color: #6d7a92;
-        padding: 1.5rem;
+        padding: 2rem;
         text-align: center;
+        font-size: .95rem;
     }
 </style>
 
+<div class="container-fluid px-4 px-lg-5 mt-4 mb-5">
 
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h1 class="page-title">Tipos de Curso</h1>
-    <a href="{% url 'cursos:criar_tipo_curso' %}" class="btn new-btn">Novo Tipo</a>
-</div>
+    <!-- Cabeçalho -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="page-title">Tipos de Curso</h1>
+            <div class="page-subtitle">Categorias utilizadas para organização dos cursos</div>
+        </div>
 
-<div class="card list-card">
-    <div class="list-group list-group-flush">
-
-        {% for tipo_curso in tipos_curso %}
-            <div class="list-group-item d-flex justify-content-between align-items-center">
-                <span>
-                    {{ tipo_curso.nome }}
-                    {% if user.is_superuser %}
-                        <small class="text-muted"> ({{ tipo_curso.escola.nome }})</small>
-                    {% endif %}
-                </span>
-
-                <div class="tag-actions">
-                    <a href="{% url 'cursos:editar_tipo_curso' pk=tipo_curso.pk %}"
-                       class="btn btn-sm btn-edit me-2">
-                        Editar
-                    </a>
-
-                    <a href="{% url 'cursos:excluir_tipo_curso' pk=tipo_curso.pk %}"
-                       class="btn btn-sm btn-delete">
-                        Excluir
-                    </a>
-                </div>
-            </div>
-
-        {% empty %}
-            <p class="empty-text">Nenhum tipo de curso cadastrado ainda.</p>
-        {% endfor %}
-
+        {% if perms.cursos.add_tipocurso %}
+            <a href="{% url 'cursos:criar_tipo_curso' %}"
+               class="btn btn-primary fw-semibold">
+                Novo Tipo
+            </a>
+        {% endif %}
     </div>
+
+    <!-- Lista -->
+    <div class="card list-card">
+        <div class="list-group list-group-flush">
+
+            {% for tipo_curso in tipos_curso %}
+                <div class="list-group-item">
+                    <div>
+                        <div class="item-title">
+                            {{ tipo_curso.nome }}
+                        </div>
+                        {% if user.is_superuser %}
+                            <div class="item-subtitle">
+                                {{ tipo_curso.escola.nome }}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="action-buttons d-flex gap-2">
+                        {% if perms.cursos.change_tipocurso %}
+                            <a href="{% url 'cursos:editar_tipo_curso' pk=tipo_curso.pk %}"
+                               class="btn btn-outline-primary btn-sm">
+                                Editar
+                            </a>
+                        {% endif %}
+
+                        {% if perms.cursos.delete_tipocurso %}
+                            <a href="{% url 'cursos:excluir_tipo_curso' pk=tipo_curso.pk %}"
+                               class="btn btn-danger btn-sm">
+                                Excluir
+                            </a>
+                        {% endif %}
+                    </div>
+                </div>
+
+            {% empty %}
+                <div class="empty-text">
+                    Nenhum tipo de curso cadastrado ainda.
+                </div>
+            {% endfor %}
+
+        </div>
+    </div>
+
 </div>
 
 {% endblock %}

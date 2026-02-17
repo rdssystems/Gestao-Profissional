@@ -144,12 +144,15 @@
 
     <a href="{% url 'cursos:lista_cursos' %}" class="btn btn-secondary btn-app">Voltar</a>
 
-    {% if user.is_superuser or user.escola_coordenada == curso.escola %}
-
+    {% if perms.cursos.change_curso %}
         <a href="{% url 'cursos:editar_curso' pk=curso.pk %}" class="btn btn-warning btn-app">Editar</a>
+    {% endif %}
 
+    {% if perms.cursos.delete_curso %}
         <a href="{% url 'cursos:excluir_curso' pk=curso.pk %}" class="btn btn-danger btn-app">Excluir</a>
+    {% endif %}
 
+    {% if perms.cursos.change_curso %}
         <div class="btn-group">
             <button type="button" class="btn btn-info btn-app dropdown-toggle" data-bs-toggle="dropdown">
                 Alterar Status
@@ -175,10 +178,10 @@
                 </form></li>
             </ul>
         </div>
+    {% endif %}
 
-        {% if curso.status == 'Aberta' %}
+    {% if curso.status == 'Aberta' and perms.cursos.change_curso %}
         <a href="{% url 'cursos:inscrever_aluno' curso_pk=curso.pk %}" class="btn btn-success btn-app">Inscrever Aluno</a>
-        {% endif %}
     {% endif %}
 
 </div>

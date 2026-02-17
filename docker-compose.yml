@@ -1,0 +1,48 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:alpine
+    container_name: gq-db
+    restart: always
+    environment:
+      - POSTGRES_DB=gestao_db
+      - POSTGRES_USER=gestao_user
+      - POSTGRES_PASSWORD=gestao_pass
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  db-redis:
+    image: redis:alpine
+    container_name: gq-redis
+    restart: always
+
+  web:
+    build: .
+    container_name: gq-app
+    restart: always
+    volumes:
+      - .:/app
+      - static_volume:/app/staticfiles
+      - media_volume:/app/media
+    ports:
+      - "8000:8000"
+    environment:
+      - DEBUG=True
+      - REDIS_URL=redis://db-redis:6379/0
+      - REDIS_HOST=db-redis
+      - REDIS_CACHE_URL=redis://db-redis:6379/1
+      - DB_ENGINE=django.db.backends.postgresql
+      - DB_NAME=gestao_db
+      - DB_USER=gestao_user
+      - DB_PASSWORD=gestao_pass
+      - DB_HOST=db
+      - DB_PORT=5432
+    depends_on:
+      - db
+      - db-redis
+
+volumes:
+  static_volume:
+  media_volume:
+  postgres_data:

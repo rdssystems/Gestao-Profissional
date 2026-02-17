@@ -5,7 +5,7 @@ from datetime import date, time, datetime # Import datetime and time
 from django.views.generic import ListView, DetailView, View
 from django.views.generic.edit import CreateView, UpdateView, DeleteView
 from django.views.generic.detail import SingleObjectMixin
-from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin # Import UserPassesTestMixin
+from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin, PermissionRequiredMixin # Import UserPassesTestMixin
 from django.urls import reverse_lazy
 from django.shortcuts import get_object_or_404, redirect, render # Adicionar render aqui
 from django.contrib import messages
@@ -16,7 +16,7 @@ from django.forms import inlineformset_factory # Adicionar import
 # Importar modelos e formulários
 from .models import Curso, TipoCurso, Inscricao, RegistroAula, Chamada # Adicionar RegistroAula, Chamada
 from .forms import CursoForm, InscricaoForm, RegistroAulaForm, ChamadaFormSet, CursoCSVUploadForm, ChamadaForm # Adicionar RegistroAulaForm, ChamadaFormSet, CursoCSVUploadForm
-from core.mixins import StaffRequiredMixin
+from core.mixins import StaffRequiredMixin, AuditLogMixin
 from alunos.models import Aluno
 from .validators import validar_conflito_matricula 
 
@@ -99,7 +99,8 @@ class CursoDetailView(LoginRequiredMixin, DetailView):
             
         return Curso.objects.none()
 
-class CursoCreateView(LoginRequiredMixin, StaffRequiredMixin, CreateView):
+class CursoCreateView(AuditLogMixin, PermissionRequiredMixin, LoginRequiredMixin, StaffRequiredMixin, CreateView):
+    permission_required = 'cursos.add_curso'
     model = Curso
     form_class = CursoForm
     template_name = 'cursos/curso_form.html'
@@ -115,7 +116,8 @@ class CursoCreateView(LoginRequiredMixin, StaffRequiredMixin, CreateView):
             form.instance.escola = self.request.user.profile.escola
         return super().form_valid(form)
 
-class CursoUpdateView(StaffRequiredMixin, UpdateView):
+class CursoUpdateView(AuditLogMixin, PermissionRequiredMixin, StaffRequiredMixin, UpdateView):
+    permission_required = 'cursos.change_curso'
     model = Curso
     form_class = CursoForm
     template_name = 'cursos/curso_form.html'
@@ -126,10 +128,14 @@ class CursoUpdateView(StaffRequiredMixin, UpdateView):
         kwargs['user'] = self.request.user
         return kwargs
 
-class CursoDeleteView(StaffRequiredMixin, DeleteView):
+class CursoDeleteView(AuditLogMixin, PermissionRequiredMixin, StaffRequiredMixin, DeleteView):
+    permission_required = 'cursos.delete_curso'
     model = Curso
     template_name = 'cursos/curso_confirm_delete.html'
     success_url = reverse_lazy('cursos:lista_cursos')
+
+from django.contrib.contenttypes.models import ContentType # Import ContentType
+from core.models import AuditLog # Import AuditLog
 
 class CursoStatusUpdateView(LoginRequiredMixin, StaffRequiredMixin, View):
     model = Curso
@@ -137,9 +143,24 @@ class CursoStatusUpdateView(LoginRequiredMixin, StaffRequiredMixin, View):
         curso = get_object_or_404(Curso, pk=pk)
         novo_status = request.POST.get('status')
         if novo_status in [choice[0] for choice in Curso.STATUS_CHOICES]:
+            old_status = curso.status
             curso.status = novo_status
             curso.save()
-        return redirect('cursos:detalhe_curso', pk=pk)
+
+            # Create AuditLog manually to trigger WebSocket
+            try:
+                AuditLog.objects.create(
+                    usuario=request.user,
+                    acao='UPDATE',
+                    content_type=ContentType.objects.get_for_model(curso),
+                    object_id=str(curso.pk),
+                    detalhes=f'Status alterado de "{old_status}" para "{novo_status}"',
+                    ip_address=request.META.get('REMOTE_ADDR')
+                )
+            except Exception as e:
+                print(f"Erro ao gerar log de auditoria manual: {e}")
+
+        return redirect('cursos:lista_cursos')
 
 # Views para TipoCurso
 class TipoCursoListView(LoginRequiredMixin, ListView):
@@ -157,7 +178,8 @@ class TipoCursoListView(LoginRequiredMixin, ListView):
         
         return TipoCurso.objects.none()
 
-class TipoCursoCreateView(LoginRequiredMixin, StaffRequiredMixin, CreateView):
+class TipoCursoCreateView(AuditLogMixin, PermissionRequiredMixin, LoginRequiredMixin, StaffRequiredMixin, CreateView):
+    permission_required = 'cursos.add_tipocurso'
     model = TipoCurso
     form_class = TipoCursoForm
     template_name = 'cursos/tipocurso_form.html'
@@ -173,7 +195,8 @@ class TipoCursoCreateView(LoginRequiredMixin, StaffRequiredMixin, CreateView):
             form.instance.escola = self.request.user.profile.escola
         return super().form_valid(form)
 
-class TipoCursoUpdateView(StaffRequiredMixin, UpdateView):
+class TipoCursoUpdateView(AuditLogMixin, PermissionRequiredMixin, StaffRequiredMixin, UpdateView):
+    permission_required = 'cursos.change_tipocurso'
     model = TipoCurso
     form_class = TipoCursoForm
     template_name = 'cursos/tipocurso_form.html'
@@ -184,13 +207,14 @@ class TipoCursoUpdateView(StaffRequiredMixin, UpdateView):
         kwargs['user'] = self.request.user
         return kwargs
 
-class TipoCursoDeleteView(StaffRequiredMixin, DeleteView):
+class TipoCursoDeleteView(AuditLogMixin, PermissionRequiredMixin, StaffRequiredMixin, DeleteView):
+    permission_required = 'cursos.delete_tipocurso'
     model = TipoCurso
     template_name = 'cursos/tipocurso_confirm_delete.html'
     success_url = reverse_lazy('cursos:lista_cursos')
 
 # Views para Inscrição
-class InscricaoCreateView(LoginRequiredMixin, StaffRequiredMixin, CreateView):
+class InscricaoCreateView(AuditLogMixin, LoginRequiredMixin, StaffRequiredMixin, CreateView):
     model = Inscricao
     form_class = InscricaoForm
     template_name = 'cursos/inscricao_form.html'
@@ -238,6 +262,27 @@ class UpdateInscricaoStatusView(LoginRequiredMixin, StaffRequiredMixin, SingleOb
         if novo_status in ['concluido', 'desistente']:
             inscricao.status = novo_status
             inscricao.save()
+
+            # Log manual para WS
+            try:
+                AuditLog.objects.create(
+                    usuario=request.user,
+                    acao='UPDATE',
+                    content_type=ContentType.objects.get_for_model(inscricao),
+                    object_id=str(inscricao.pk),
+                    detalhes=f"Status inscrição alterado para {novo_status}",
+                    ip_address=request.META.get('REMOTE_ADDR')
+                )
+            except Exception as e:
+                print(f"Erro log status inscricao: {e}")
+
+            # Se o aluno concluiu o curso, removemos este tipo de curso dos interesses dele
+            # para que ele não apareça mais nas sugestões para este tipo.
+            if novo_status == 'concluido':
+                tipo_curso = inscricao.curso.tipo_curso
+                if tipo_curso in inscricao.aluno.cursos_interesse.all():
+                    inscricao.aluno.cursos_interesse.remove(tipo_curso)
+
             messages.success(request, f"Status do aluno '{inscricao.aluno.nome_completo}' atualizado para '{inscricao.get_status_display()}'.")
         else:
             messages.error(request, "Status inválido.")
@@ -332,7 +377,20 @@ class MatricularAlunoDiretoView(LoginRequiredMixin, CoordenadorRequiredMixin, Vi
 
         # Cria a inscrição
 
-        Inscricao.objects.create(aluno=aluno, curso=curso)
+        inscricao = Inscricao.objects.create(aluno=aluno, curso=curso)
+        
+        # Log manual
+        try:
+            AuditLog.objects.create(
+                usuario=request.user,
+                acao='CREATE',
+                content_type=ContentType.objects.get_for_model(inscricao),
+                object_id=str(inscricao.pk),
+                detalhes=f"Matrícula direta de {aluno.nome_completo} em {curso.nome}",
+                ip_address=request.META.get('REMOTE_ADDR')
+            )
+        except Exception as e:
+            print(f"Erro log matricula direta: {e}")
 
         messages.success(request, f'Aluno {aluno.nome_completo} matriculado com sucesso no curso {curso.nome}.')
 
@@ -352,12 +410,30 @@ class CancelarMatriculaDiretoView(LoginRequiredMixin, CoordenadorRequiredMixin, 
                 return redirect(reverse_lazy('cursos:matricula') + f'?curso_id={curso_id}')
 
         aluno_nome = inscricao.aluno.nome_completo
+        curso_nome = inscricao.curso.nome
+        inscricao_id = inscricao.pk
+        # Salva o content type antes de deletar
+        inscricao_content_type = ContentType.objects.get_for_model(inscricao)
+        
         inscricao.delete()
+        
+        # Log manual para WS
+        try:
+            AuditLog.objects.create(
+                usuario=request.user,
+                acao='DELETE',
+                content_type=inscricao_content_type,
+                object_id=str(inscricao_id),
+                detalhes=f"Cancelamento direto: {aluno_nome} do curso {curso_nome}",
+                ip_address=request.META.get('REMOTE_ADDR')
+            )
+        except Exception as e:
+            print(f"Erro log cancelamento: {e}")
         
         messages.success(request, f"Matrícula de {aluno_nome} cancelada com sucesso.")
         return redirect(reverse_lazy('cursos:matricula') + f'?curso_id={curso_id}')
 
-class InscricaoDeleteView(LoginRequiredMixin, StaffRequiredMixin, DeleteView):
+class InscricaoDeleteView(AuditLogMixin, LoginRequiredMixin, StaffRequiredMixin, DeleteView):
     model = Inscricao
     template_name = 'cursos/inscricao_confirm_delete.html' # Pode ser um template genérico ou um específico
     context_object_name = 'inscricao'

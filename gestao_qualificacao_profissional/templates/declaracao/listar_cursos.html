@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block title %}Cursos de {{ aluno.nome_completo }} - Declarações{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="mb-0">Cursos de {{ aluno.nome_completo }}</h2>
+            <p class="text-muted">Selecione um curso para gerar a declaração.</p>
+        </div>
+        <a href="{% url 'declaracao:buscar_aluno' %}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-2"></i>Voltar à busca
+        </a>
+    </div>
+
+    {% if inscricoes %}
+        <div class="list-group shadow-sm">
+            {% for item in inscricoes %}
+                <div class="list-group-item list-group-item-action d-flex justify-content-between align-items-center p-3">
+                    <div>
+                        <h5 class="mb-1">{{ item.inscricao.curso.nome }}</h5>
+                        <p class="mb-1 text-muted">
+                            Status: 
+                            <span class="badge 
+                                {% if item.status_display == 'Concluído' %}bg-success
+                                {% elif item.status_display == 'Cursando' %}bg-info
+                                {% elif item.status_display == 'Matriculado' %}bg-primary
+                                {% else %}bg-secondary{% endif %}">
+                                {{ item.status_display }}
+                            </span>
+                        </p>
+                        <small>
+                            Período do curso: {{ item.inscricao.curso.data_inicio|date:"d/m/Y" }} a {{ item.inscricao.curso.data_fim|date:"d/m/Y" }}
+                        </small>
+                    </div>
+                    {% if item.pode_gerar %}
+                        {% if item.status_raw == 'aguardando_regularizacao' %}
+                            <div class="dropdown">
+                                <button class="btn btn-primary dropdown-toggle" type="button" id="dropdownMenuButton-{{ item.inscricao.id }}" data-bs-toggle="dropdown" aria-expanded="false">
+                                    Gerar Declaração <i class="bi bi-file-earmark-text ms-2"></i>
+                                </button>
+                                <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton-{{ item.inscricao.id }}">
+                                    <li><a class="dropdown-item" href="{% url 'declaracao:gerar_declaracao_com_tipo' item.inscricao.id 'matriculado' %}">Matriculado</a></li>
+                                    <li><a class="dropdown-item" href="{% url 'declaracao:gerar_declaracao_com_tipo' item.inscricao.id 'cursando' %}">Cursando</a></li>
+                                </ul>
+                            </div>
+                        {% else %}
+                            <a href="{% url 'declaracao:gerar_declaracao' item.inscricao.id %}" class="btn btn-primary">
+                                Gerar Declaração<i class="bi bi-file-earmark-text ms-2"></i>
+                            </a>
+                        {% endif %}
+                    {% else %}
+                        <button class="btn btn-secondary" disabled>
+                            Indisponível <i class="bi bi-slash-circle ms-2"></i>
+                        </button>
+                    {% endif %}
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="alert alert-info" role="alert">
+            Este aluno não possui nenhuma inscrição em cursos que permita a geração de declaração.
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -136,6 +136,14 @@
                         {% endif %}
                     </div>
 
+                    <div class="mb-4">
+                        {{ form.email.label_tag }}
+                        <div class="custom-input">{{ form.email }}</div>
+                        {% if form.email.errors %}
+                        <div class="invalid-feedback d-block mt-2">{{ form.email.errors.as_text }}</div>
+                        {% endif %}
+                    </div>
+
                     <div class="row">
                         <div class="col-md-6 mb-4">
                             {{ form.first_name.label_tag }}

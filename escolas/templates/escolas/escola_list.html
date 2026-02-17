@@ -4,78 +4,119 @@
 {% block title %}Lista de Escolas{% endblock %}
 
 {% block content %}
-<div class="container-fluid">
-    <div class="row page-titles mx-0">
-        <div class="col-sm-6 p-md-0">
-            <div class="welcome-text">
-                <h4>Lista de Escolas</h4>
-            </div>
+<div class="container-fluid px-4 px-lg-5 mt-4 mb-5">
+
+    <!-- Cabeçalho -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="fw-bold display-6 text-primary mb-1">
+                Escolas
+            </h1>
+            <p class="text-muted fs-5 mb-0">
+                Escolas cadastradas no sistema
+            </p>
         </div>
-        <div class="col-sm-6 justify-content-sm-end mt-2 mt-sm-0 d-flex right-0 p-md-0">
-            <ol class="breadcrumb">
-                <li class="breadcrumb-item"><a href="{% url 'escolas:dashboard' %}">Home</a></li>
-                <li class="breadcrumb-item active"><a href="javascript:void(0);">Escolas</a></li>
-            </ol>
+
+        {% if user.is_superuser %}
+            <a href="{% url 'escolas:criar_escola' %}"
+               class="btn btn-primary btn-lg fw-semibold shadow-sm">
+                <i class="fa fa-plus me-2"></i>
+                Nova Escola
+            </a>
+        {% endif %}
+    </div>
+
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb mb-0">
+            <li class="breadcrumb-item">
+                <a href="{% url 'escolas:dashboard' %}" class="text-decoration-none">
+                    Home
+                </a>
+            </li>
+            <li class="breadcrumb-item active" aria-current="page">
+                Escolas
+            </li>
+        </ol>
+    </nav>
+
+    <!-- Card da Tabela -->
+    <div class="card border-0 shadow-sm rounded-4">
+        <div class="card-header bg-white py-3 border-bottom">
+            <h5 class="mb-0 fw-bold text-primary">
+                Escolas Cadastradas
+            </h5>
+        </div>
+
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr class="text-secondary small text-uppercase">
+                            <th>Nome</th>
+                            <th>Endereço</th>
+                            <th>Email</th>
+                            <th>Telefone</th>
+                            <th>Coordenador</th>
+                            <th class="text-center">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+
+                        {% for escola in escolas %}
+                            <tr>
+                                <td class="fw-semibold">
+                                    {{ escola.nome }}
+                                </td>
+                                <td>{{ escola.endereco }}</td>
+                                <td>{{ escola.email }}</td>
+                                <td>{{ escola.get_telefone_formatado }}</td>
+                                <td>
+                                    {% if escola.coordenador_user %}
+                                        {{ escola.coordenador_user.get_full_name|default:escola.coordenador_user.username }}
+                                    {% else %}
+                                        <span class="text-muted">
+                                            Nenhum Coordenador
+                                        </span>
+                                    {% endif %}
+                                </td>
+
+                                <!-- AÇÕES COM TEXTO -->
+                                <td class="text-center">
+                                    {% if user.is_superuser %}
+                                        <a href="{% url 'escolas:detalhe_escola' pk=escola.pk %}"
+                                           class="btn btn-info btn-sm text-white me-1">
+                                            <i class="fa fa-eye me-1"></i>
+                                            Ver
+                                        </a>
+
+                                        <a href="{% url 'escolas:editar_escola' pk=escola.pk %}"
+                                           class="btn btn-warning btn-sm text-white me-1">
+                                            <i class="fa fa-pencil-alt me-1"></i>
+                                            Editar
+                                        </a>
+
+                                        <a href="{% url 'escolas:excluir_escola' pk=escola.pk %}"
+                                           class="btn btn-danger btn-sm text-white">
+                                            <i class="fa fa-trash me-1"></i>
+                                            Excluir
+                                        </a>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% empty %}
+                            <tr>
+                                <td colspan="6" class="text-center text-muted py-4">
+                                    Nenhuma escola cadastrada.
+                                </td>
+                            </tr>
+                        {% endfor %}
+
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 
-    <div class="row">
-        <div class="col-lg-12">
-            <div class="card">
-                <div class="card-header">
-                    <h4 class="card-title">Escolas Cadastradas</h4>
-                    <a href="{% url 'escolas:criar_escola' %}" class="btn btn-primary btn-sm float-right">
-                        <i class="fa fa-plus"></i> Nova Escola
-                    </a>
-                </div>
-                <div class="card-body">
-                    <div class="table-responsive">
-                        <table class="table table-striped table-bordered">
-                            <thead>
-                                <tr>
-                                    <th>Nome</th>
-                                    <th>Endereço</th>
-                                    <th>Email</th>
-                                    <th>Telefone</th>
-                                    <th>Coordenador</th>
-                                    <th>Ações</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for escola in escolas %}
-                                <tr>
-                                    <td>{{ escola.nome }}</td>
-                                    <td>{{ escola.endereco }}</td>
-                                    <td>{{ escola.email }}</td>
-                                    <td>{{ escola.telefone }}</td>
-                                    {% if escola.coordenador_user %}
-                                            {{ escola.coordenador_user.get_full_name|default:escola.coordenador_user.username }}
-                                        {% else %}
-                                            Nenhum Coordenador
-                                        {% endif %}
-                                    <td>
-                                        <a href="{% url 'escolas:detalhe_escola' pk=escola.pk %}" class="btn btn-info btn-sm">
-                                            <i class="fa fa-eye"></i> Ver
-                                        </a>
-                                        <a href="{% url 'escolas:editar_escola' pk=escola.pk %}" class="btn btn-warning btn-sm">
-                                            <i class="fa fa-pencil-alt"></i> Editar
-                                        </a>
-                                        <a href="{% url 'escolas:excluir_escola' pk=escola.pk %}" class="btn btn-danger btn-sm">
-                                            <i class="fa fa-trash"></i> Excluir
-                                        </a>
-                                    </td>
-                                </tr>
-                                {% empty %}
-                                <tr>
-                                    <td colspan="6" class="text-center">Nenhuma escola cadastrada.</td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
 </div>
 {% endblock %}

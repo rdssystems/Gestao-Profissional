@@ -3,6 +3,9 @@ from django.views.generic import View
 from django.contrib.auth.mixins import UserPassesTestMixin
 from django.contrib import messages
 from django.db import transaction
+from core.models import AuditLog
+from django.contrib.contenttypes.models import ContentType
+import json
 
 from .forms import (
     RendaFamiliarScoreForm,
@@ -49,6 +52,21 @@ class ConfiguracaoScoreView(SuperuserRequiredMixin, View):
                     
                     formsets['Tempo de Moradia'].save()
                     formsets['Tipo de Moradia'].save()
+
+                    # LOG DE AUDITORIA MANUAL
+                    try:
+                        # Usamos RendaFamiliarFaixa como referência de ContentType para "Configuração de Score"
+                        ct = ContentType.objects.get_for_model(RendaFamiliarFaixa)
+                        AuditLog.objects.create(
+                            usuario=request.user,
+                            acao='UPDATE',
+                            content_type=ct,
+                            object_id='GLOBAL_CONFIG',
+                            detalhes=json.dumps({'info': 'Alteração nas regras de pontuação (Score)'}),
+                            ip_address=request.META.get('REMOTE_ADDR')
+                        )
+                    except Exception as e:
+                        print(f"Erro ao salvar log: {e}")
 
                 messages.success(request, "Configurações de score salvas com sucesso!")
                 return redirect('score_config:configurar')

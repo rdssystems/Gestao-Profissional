@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% block title %}Gerar Declaração - {{ inscricao.aluno.nome_completo }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card shadow-sm border-0" style="border-radius: 1rem;">
+        <div class="card-body p-4 p-lg-5">
+            <h2 class="card-title text-center mb-2">Pré-visualização da Declaração</h2>
+            <p class="text-center text-muted mb-4">
+                Confira o texto, desenhe sua assinatura no campo abaixo e clique em salvar.
+            </p>
+
+            <!-- Pré-visualização do Texto -->
+            <div class="border p-4 mb-4" style="background-color: #f8f9fa; border-radius: 0.5rem;">
+                <h5 class="text-center fw-bold">DECLARAÇÃO</h5>
+                <p style="text-indent: 3em; line-height: 1.8; text-align: justify;">
+                    {{ texto }}
+                </p>
+                <p class="text-end mt-5">
+                    Uberlândia, {{ current_datetime|date:"d \d\e F \d\e Y" }}.
+                </p>
+            </div>
+
+            <!-- Formulário com Canvas para Assinatura -->
+            <form id="form-declaracao" method="post" action="{% url 'declaracao:salvar_declaracao' inscricao.id %}">
+                {% csrf_token %}
+                <input type="hidden" name="assinatura" id="assinatura-input">
+
+                <div class="mb-4 text-center">
+                    <label for="signature-pad" class="form-label fw-bold">Assinatura Digital do Emissor</label>
+                    <div class="d-flex justify-content-center">
+                        <canvas id="signature-pad" class="border" style="cursor: crosshair; background-color: white; border-radius: 0.5rem;"></canvas>
+                    </div>
+                    <button type="button" id="clear-signature" class="btn btn-sm btn-outline-danger mt-2">Limpar Assinatura</button>
+                    <div class="mt-3">
+                        <p class="mb-0">____________________________________</p>
+                        <p class="fw-bold">{{ request.user.get_full_name }}</p>
+                    </div>
+                </div>
+
+                <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                    <a href="{% url 'declaracao:listar_cursos_aluno' inscricao.aluno.id %}" class="btn btn-secondary me-md-2">Cancelar</a>
+                    <button type="submit" id="save-signature" class="btn btn-primary">
+                        <i class="bi bi-check-circle me-2"></i>Salvar e Gerar PDF
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/signature_pad@4.0.0/dist/signature_pad.umd.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const canvas = document.getElementById('signature-pad');
+    const signaturePad = new SignaturePad(canvas, {
+        backgroundColor: 'rgb(255, 255, 255)'
+    });
+
+    // Ajusta o tamanho do canvas para corresponder ao seu tamanho de exibição
+    function resizeCanvas() {
+        const ratio =  Math.max(window.devicePixelRatio || 1, 1);
+        canvas.width = canvas.offsetWidth * ratio;
+        canvas.height = canvas.offsetHeight * ratio;
+        canvas.getContext("2d").scale(ratio, ratio);
+        signaturePad.clear(); // Limpa a assinatura ao redimensionar
+    }
+
+    window.addEventListener("resize", resizeCanvas);
+    resizeCanvas();
+
+
+    document.getElementById('clear-signature').addEventListener('click', function () {
+        signaturePad.clear();
+    });
+
+    document.getElementById('form-declaracao').addEventListener('submit', function (event) {
+        if (signaturePad.isEmpty()) {
+            alert("Por favor, forneça sua assinatura.");
+            event.preventDefault(); // Impede o envio do formulário
+        } else {
+            const signatureData = signaturePad.toDataURL('image/png');
+            document.getElementById('assinatura-input').value = signatureData;
+        }
+    });
+});
+</script>
+{% endblock %}

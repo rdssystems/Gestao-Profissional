@@ -16,7 +16,7 @@ from django.http import HttpResponse
 
 from .models import Aluno
 from .forms import AlunoForm, AuxiliarAlunoForm, AlunoCSVUploadForm, VerificarCPFForm
-from core.mixins import StaffRequiredMixin
+from core.mixins import StaffRequiredMixin, AuditLogMixin
 from escolas.models import Escola
 from cursos.models import TipoCurso # Para cursos de interesse, se for o caso
 
@@ -93,7 +93,7 @@ class AlunoVerificarCPFView(StaffRequiredMixin, View):
             
         return render(request, self.template_name, {'form': form})
 
-class AlunoClonarView(StaffRequiredMixin, View):
+class AlunoClonarView(AuditLogMixin, StaffRequiredMixin, View):
     def post(self, request, pk):
         # Get original student
         aluno_original = get_object_or_404(Aluno, pk=pk)
@@ -157,6 +157,9 @@ class AlunoClonarView(StaffRequiredMixin, View):
         
         try:
             novo_aluno.save()
+            # Log manual da clonagem para acionar WebSocket
+            self.save_log(novo_aluno, 'CREATE', {'origem_clonagem': str(aluno_original.pk), 'acao': 'clonagem'})
+            
             messages.success(request, f"Aluno {novo_aluno.nome_completo} importado com sucesso! Verifique os dados e matricule nos cursos.")
             return redirect('alunos:editar_aluno', pk=novo_aluno.pk)
         except Exception as e:
@@ -212,7 +215,7 @@ class AlunoDetailView(StaffRequiredMixin, DetailView):
     template_name = 'alunos/aluno_detail.html'
     context_object_name = 'aluno'
 
-class AlunoCreateView(StaffRequiredMixin, CreateView):
+class AlunoCreateView(AuditLogMixin, StaffRequiredMixin, CreateView):
     model = Aluno
     form_class = AlunoForm
     template_name = 'alunos/aluno_form.html'
@@ -257,7 +260,7 @@ class AlunoCadastroSucessoView(StaffRequiredMixin, DetailView):
         
         return context
 
-class AlunoUpdateView(StaffRequiredMixin, UpdateView):
+class AlunoUpdateView(AuditLogMixin, StaffRequiredMixin, UpdateView):
     model = Aluno
     template_name = 'alunos/aluno_form.html'
     success_url = reverse_lazy('alunos:lista_alunos')
@@ -275,7 +278,7 @@ class AlunoUpdateView(StaffRequiredMixin, UpdateView):
         kwargs['user'] = self.request.user
         return kwargs
 
-class AlunoDeleteView(StaffRequiredMixin, DeleteView):
+class AlunoDeleteView(AuditLogMixin, StaffRequiredMixin, DeleteView):
 
     model = Aluno
 
@@ -317,6 +320,8 @@ class AlunoHistoricoView(StaffRequiredMixin, DetailView):
 
         return context
 
+
+from core.models import AuditLog # Import AuditLog
 
 class AlunoCSVUploadView(LoginRequiredMixin, SuperuserRequiredMixin, View): # Apenas superusuário pode fazer upload
     template_name = 'alunos/upload_alunos_csv.html'
@@ -494,6 +499,17 @@ class AlunoCSVUploadView(LoginRequiredMixin, SuperuserRequiredMixin, View): # Ap
             else:
                 messages.success(request, f"Upload de CSV concluído com sucesso: {created_count} alunos criados, {updated_count} alunos atualizados.")
             
+            # Log da ação em massa para WebSocket
+            try:
+                AuditLog.objects.create(
+                    usuario=request.user,
+                    acao='CREATE',
+                    detalhes=f"Upload CSV Alunos: {created_count} criados, {updated_count} atualizados.",
+                    ip_address=request.META.get('REMOTE_ADDR')
+                )
+            except Exception as e:
+                print(f"Erro log CSV Aluno: {e}")
+
             return redirect(reverse_lazy('alunos:lista_alunos'))
         else:
             # Se o formulário não for válido (ex: nenhum arquivo enviado), renderiza com erros

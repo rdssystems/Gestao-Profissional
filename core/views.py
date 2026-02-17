@@ -1,12 +1,17 @@
-from django.shortcuts import render
-from django.contrib.auth.decorators import login_required
-from cursos.models import Curso, TipoCurso
+from django.shortcuts import render, redirect
+from django.contrib.auth.decorators import login_required, user_passes_test
+from cursos.models import Curso, TipoCurso, Inscricao
 from alunos.models import Aluno
 from escolas.models import Escola # Import Escola
 from django.http import JsonResponse
 from django.urls import reverse
 from datetime import timedelta, date, time
-from django.db.models import Prefetch
+from django.db.models import Prefetch, Exists, OuterRef # Import Exists and OuterRef
+from django.views.generic import ListView
+from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
+from core.models import AuditLog
+from django.contrib.auth.models import User
+from django.contrib import messages # Adicionado o import para messages
 
 @login_required
 def calendar_view(request):
@@ -15,7 +20,7 @@ def calendar_view(request):
     escola_nome_filter = request.GET.get('escola_nome', '')
 
     # Base query for courses
-    cursos_qs = Curso.objects.all().order_by('data_inicio', 'horario')
+    cursos_qs = Curso.objects.all().exclude(status='Arquivado').order_by('data_inicio', 'horario')
     
     if curso_nome_filter:
         cursos_qs = cursos_qs.filter(nome__icontains=curso_nome_filter)
@@ -179,3 +184,69 @@ O sistema possui hierarquia de acesso para garantir segurança e organização:
         'sobre_content': sobre_content
     }
     return render(request, 'core/about.html', context)
+
+@login_required
+@user_passes_test(lambda u: u.is_superuser or (hasattr(u, 'profile') and u.profile.escola))
+def limpar_agenda_cursos_view(request):
+    if request.method == 'POST':
+        if not request.user.is_superuser and hasattr(request.user, 'profile') and request.user.profile.escola:
+            escola_do_usuario = request.user.profile.escola
+            cursos_para_excluir = Curso.objects.filter(
+                escola=escola_do_usuario,
+                status='Aberta'
+            ).annotate(
+                has_inscricoes=Exists(
+                    Inscricao.objects.filter(curso=OuterRef('pk'))
+                )
+            ).filter(has_inscricoes=False)
+            
+            count = cursos_para_excluir.update(status='Arquivado')
+            messages.success(request, f"{count} cursos 'Aberta' sem inscrições foram ARQUIVADOS da agenda da escola {escola_do_usuario.nome}.")
+        elif request.user.is_superuser:
+            cursos_para_excluir = Curso.objects.filter(
+                status='Aberta'
+            ).annotate(
+                has_inscricoes=Exists(
+                    Inscricao.objects.filter(curso=OuterRef('pk'))
+                )
+            ).filter(has_inscricoes=False)
+            
+            count = cursos_para_excluir.update(status='Arquivado')
+            messages.success(request, f"{count} cursos 'Aberta' sem inscrições foram ARQUIVADOS de todas as agendas.")
+        else:
+            messages.error(request, "Permissão negada para esta ação.")
+    else:
+        messages.error(request, "Método não permitido para esta ação.")
+
+    return redirect('core:agenda') # Redireciona de volta para a agenda
+
+class AuditLogListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
+    model = AuditLog
+    template_name = 'core/audit_log_list.html'
+    context_object_name = 'logs'
+    paginate_by = 25
+
+    def test_func(self):
+        return self.request.user.is_superuser
+
+    def get_queryset(self):
+        qs = AuditLog.objects.select_related('usuario', 'content_type').all()
+        
+        # Filtros
+        usuario_id = self.request.GET.get('usuario')
+        data_inicio = self.request.GET.get('data_inicio')
+        data_fim = self.request.GET.get('data_fim')
+
+        if usuario_id:
+            qs = qs.filter(usuario_id=usuario_id)
+        if data_inicio:
+            qs = qs.filter(data_hora__date__gte=data_inicio)
+        if data_fim:
+            qs = qs.filter(data_hora__date__lte=data_fim)
+            
+        return qs
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['usuarios'] = User.objects.filter(audit_logs__isnull=False).distinct()
+        return context

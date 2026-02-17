@@ -12,6 +12,8 @@ urlpatterns = [
     path('alunos/', include('alunos.urls', namespace='alunos')),
     path('usuarios/', include('usuarios.urls', namespace='usuarios')),
     path('score/', include('score_config.urls', namespace='score_config')),
+    path('declaracoes/', include('declaracao.urls', namespace='declaracao')),
+    path('controle-diario/', include('controle_diario.urls', namespace='controle_diario')), # Nova inclusão
 
     # Re-incluindo core.urls para que o namespace 'core' e a URL 'core:agenda' sejam registrados
     path('agenda/', include('core.urls', namespace='core')), # ADICIONADO AQUI

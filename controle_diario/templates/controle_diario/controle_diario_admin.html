@@ -1,0 +1,156 @@
+{% extends "base.html" %}
+
+{% block title %}Controle Diário - Visão Administrativa{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 px-lg-5 mt-4 mb-5">
+
+    <!-- Cabeçalho -->
+    <div class="mb-4">
+        <h1 class="fw-bold display-6 text-primary mb-1">
+            Controle Diário
+        </h1>
+        <p class="text-muted fs-5 mb-0">
+            Visão Administrativa
+        </p>
+    </div>
+
+    <!-- Filtros -->
+    <div class="card border-0 shadow-sm rounded-4 mb-4">
+        <div class="card-body p-4">
+            <form method="GET" class="row g-4 align-items-end">
+
+                <div class="col-12 col-md-4">
+                    <label class="form-label fw-semibold text-secondary">
+                        Filtrar por Data
+                    </label>
+                    <input type="date"
+                           name="data"
+                           class="form-control form-control-lg"
+                           value="{{ data_selecionada|date:'Y-m-d' }}">
+                </div>
+
+                <div class="col-12 col-md-4">
+                    <label class="form-label fw-semibold text-secondary">
+                        Filtrar por Escola
+                    </label>
+                    <select name="escola" class="form-select form-select-lg">
+                        <option value="">Todas as Escolas</option>
+                        {% for escola in todas_escolas %}
+                            <option value="{{ escola.id }}"
+                                {% if escola.id|stringformat:"s" == escola_id_selecionada %}selected{% endif %}>
+                                {{ escola.nome }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-6 col-md-2">
+                    <button type="submit"
+                            class="btn btn-primary btn-lg w-100 fw-semibold">
+                        Consultar
+                    </button>
+                </div>
+
+                <div class="col-6 col-md-2">
+                    <a href="{% url 'controle_diario:admin_view' %}"
+                       class="btn btn-outline-secondary btn-lg w-100 fw-semibold">
+                        Limpar
+                    </a>
+                </div>
+
+            </form>
+        </div>
+    </div>
+
+    <!-- Totais do Dia -->
+    <div class="card border-0 shadow-sm rounded-4 mb-4">
+        <div class="card-header bg-primary bg-gradient text-white py-3 rounded-top-4">
+            <h5 class="mb-0 fw-bold">
+                Totais do Dia {{ data_selecionada|date:"d/m/Y" }}
+                {% if escola_id_selecionada %}
+                    <span class="fw-normal">(Escola Filtrada)</span>
+                {% endif %}
+            </h5>
+        </div>
+
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table align-middle mb-0">
+                    <thead class="table-light">
+                        <tr class="text-secondary small text-uppercase">
+                            <th>Atendimento</th>
+                            <th>Inscrições</th>
+                            <th>Presentes</th>
+                            <th>Ligações Recebidas</th>
+                            <th>Ligações Realizadas</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr class="fw-semibold">
+                            <td>{{ totais.total_atendimento|default:0 }}</td>
+                            <td>{{ totais.total_inscricoes|default:0 }}</td>
+                            <td>{{ totais.total_pessoas_presentes|default:0 }}</td>
+                            <td>{{ totais.total_ligacoes_recebidas|default:0 }}</td>
+                            <td>{{ totais.total_ligacoes_realizadas|default:0 }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Registros Detalhados -->
+    <div class="card border-0 shadow-sm rounded-4 mb-5">
+        <div class="card-header bg-white py-3 border-bottom">
+            <h5 class="mb-0 fw-bold text-primary">
+                Registros Detalhados
+            </h5>
+        </div>
+
+        <div class="card-body p-0">
+            {% if controles_diarios %}
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr class="text-secondary small text-uppercase">
+                                <th>Escola</th>
+                                <th>Data</th>
+                                <th>Atendimento</th>
+                                <th>Inscrições</th>
+                                <th>Presentes</th>
+                                <th>Lig. Recebidas</th>
+                                <th>Lig. Realizadas</th>
+                                <th>Lançado por</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for controle in controles_diarios %}
+                                <tr>
+                                    <td class="fw-semibold">
+                                        {{ controle.escola.nome }}
+                                    </td>
+                                    <td>{{ controle.data|date:"d/m/Y" }}</td>
+                                    <td>{{ controle.atendimento }}</td>
+                                    <td>{{ controle.inscricoes }}</td>
+                                    <td>{{ controle.pessoas_presentes }}</td>
+                                    <td>{{ controle.ligacoes_recebidas }}</td>
+                                    <td>{{ controle.ligacoes_realizadas }}</td>
+                                    <td>
+                                        {{ controle.usuario.username|default:"N/A" }}
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="alert alert-info m-4">
+                    Nenhum registro encontrado para a data e filtros selecionados.
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+</div>
+{% endblock %}

@@ -8,6 +8,7 @@ from django.shortcuts import redirect
 from django.contrib import messages
 
 from .forms import UserCreationForm
+from core.mixins import AuditLogMixin  # Importando o Mixin de Auditoria
 
 class UserListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
     model = User
@@ -20,7 +21,7 @@ class UserListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
         return User.objects.all().select_related('profile__escola').prefetch_related('groups')
 
 
-class UserCreateView(LoginRequiredMixin, PermissionRequiredMixin, SuccessMessageMixin, CreateView):
+class UserCreateView(AuditLogMixin, LoginRequiredMixin, PermissionRequiredMixin, SuccessMessageMixin, CreateView):
     form_class = UserCreationForm
     template_name = 'usuarios/user_form.html'
     success_url = reverse_lazy('usuarios:lista_usuarios')
@@ -32,7 +33,7 @@ class UserCreateView(LoginRequiredMixin, PermissionRequiredMixin, SuccessMessage
         context['title'] = 'Criar Novo Usuário'
         return context
 
-class UserUpdateView(LoginRequiredMixin, PermissionRequiredMixin, SuccessMessageMixin, UpdateView):
+class UserUpdateView(AuditLogMixin, LoginRequiredMixin, PermissionRequiredMixin, SuccessMessageMixin, UpdateView):
     model = User
     form_class = UserCreationForm # Reusing UserCreationForm for editing
     template_name = 'usuarios/user_form.html' # Reusing the same form template
@@ -46,7 +47,7 @@ class UserUpdateView(LoginRequiredMixin, PermissionRequiredMixin, SuccessMessage
         context['title'] = f'Editar Usuário: {self.object.username}'
         return context
 
-class UserDeleteView(LoginRequiredMixin, PermissionRequiredMixin, DeleteView):
+class UserDeleteView(AuditLogMixin, LoginRequiredMixin, PermissionRequiredMixin, DeleteView):
     model = User
     template_name = 'usuarios/user_confirm_delete.html' # Template for confirmation
     context_object_name = 'user'
@@ -55,8 +56,17 @@ class UserDeleteView(LoginRequiredMixin, PermissionRequiredMixin, DeleteView):
 
     def delete(self, request, *args, **kwargs):
         obj = self.get_object()
+        
+        # Adicionar Log Manualmente aqui (já que estamos sobrescrevendo o delete)
+        # Ou apenas deixar o AuditLogMixin agir se removermos este override, mas queremos a mensagem.
+        # Vamos chamar o save_log do mixin explicitamente.
+        self.save_log(obj, 'DELETE', {'removido': str(obj)})
+
         messages.success(request, f"Usuário '{obj.username}' excluído com sucesso.")
-        return super(UserDeleteView, self).delete(request, *args, **kwargs)
+        return super().delete(request, *args, **kwargs) 
+        # Nota: super().delete() aqui vai chamar DeleteView.delete, que faz a deleção real.
+        # O delete do AuditLogMixin seria ignorado a menos que chamássemos super(UserDeleteView, self) de forma diferente.
+        # Mas como chamamos save_log manualmente acima, está resolvido.
 
     def dispatch(self, request, *args, **kwargs):
         # Get the object first to check if it's the current superuser
@@ -70,10 +80,6 @@ class UserDeleteView(LoginRequiredMixin, PermissionRequiredMixin, DeleteView):
         
         # If not the superuser deleting themselves, proceed with the default dispatch
         return super().dispatch(request, *args, **kwargs)
-
-    # Removed the custom delete method override, relying on SuccessMessageMixin
-    # def delete(self, request, *args, **kwargs):
-    #     ...
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)

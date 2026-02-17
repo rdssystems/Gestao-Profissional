@@ -168,10 +168,11 @@
 
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h1 class="mb-0 page-title">Alunos</h1>
-    <div class="d-flex align-items-center gap-2">
-        <form method="get" class="d-flex gap-2 align-items-center">
+    
+    <div class="d-flex flex-wrap align-items-center gap-2">
+        <form method="get" class="d-flex flex-wrap align-items-center gap-2"> {# Formulário para filtros #}
             {% if user.is_superuser %}
-            <select name="escola" class="form-select" style="max-width: 250px;" onchange="this.form.submit()">
+            <select name="escola" class="form-select form-select-sm" style="max-width: 180px;" onchange="this.form.submit()">
                 <option value="">Todas as Escolas</option>
                 {% for escola in todas_escolas %}
                 <option value="{{ escola.id }}" {% if escola_selecionada|stringformat:"s" == escola.id|stringformat:"s" %}selected{% endif %}>
@@ -181,7 +182,7 @@
             </select>
             {% endif %}
 
-            <div class="input-group">
+            <div class="input-group input-group-sm" style="max-width: 250px;">
                 <input type="text" name="search" class="form-control" placeholder="Nome ou CPF..." value="{{ request.GET.search|default:'' }}">
                 <button class="btn btn-outline-primary" type="submit">
                     <i class="bi bi-search"></i>
@@ -194,12 +195,13 @@
             </div>
         </form>
 
+        {# Botões de Ação #}
         {% if user.is_superuser %}
-        <a href="{% url 'alunos:upload_alunos_csv' %}" class="btn btn-outline-primary new-btn">
+        <a href="{% url 'alunos:upload_alunos_csv' %}" class="btn btn-outline-primary new-btn btn-sm">
             <i class="bi bi-upload me-1"></i> Importar
         </a>
         {% endif %}
-        <a href="{% url 'alunos:verificar_cpf' %}" class="btn new-btn">
+        <a href="{% url 'alunos:verificar_cpf' %}" class="btn new-btn btn-sm">
             <i class="bi bi-plus-lg me-1"></i> Novo Aluno
         </a>
     </div>
@@ -238,7 +240,7 @@
                         </td>
                         <td>
                             {% for curso in aluno.cursos_interesse.all %}
-                            <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-10">{{ curso.nome }}</span>{% if not forloop.last %} {% endif %}
+                            <span class="badge bg-{{ curso.cor }} text-white">{{ curso.nome }}</span>{% if not forloop.last %} {% endif %}
                             {% empty %}
                             <span class="text-muted small">-</span>
                             {% endfor %}

@@ -428,7 +428,7 @@
             <li class="mb-1">Declaro estar ciente de que não é permitido comparecer acompanhado(a) às aulas, exceto quando previamente autorizado pela coordenação da unidade.</li>
             <li class="mb-1">Declaro que ( ) autorizo / ( ) não autorizo o uso da minha imagem, voz e nome em materiais institucionais, educacionais ou de divulgação da Prefeitura Municipal de Uberlândia e da Diretoria de Qualificação Profissional, sem fins comerciais.</li>
             <li class="mb-1">Comprometo-me a respeitar as normas da unidade de ensino, prezar pela boa convivência e zelar pelos equipamentos e materiais disponibilizados.</li>
-            <li class="mb-0">Estou ciente de que o descumprimento das regras acima poderá resultar no cancelamento da minha participação no curso.</li>
+            <li class="mb-1">Estou ciente de que o descumprimento das regras acima poderá resultar no cancelamento da minha participação no curso.</li>
         </ul>
 
         <div class="row mt-4 align-items-end">
@@ -451,4 +451,15 @@
     </div>
 </div>
 
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('print') === 'true') {
+            window.print();
+        }
+    });
+</script>
 {% endblock %}

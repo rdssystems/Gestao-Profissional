@@ -145,6 +145,7 @@
                 <thead>
                     <tr>
                         <th scope="col">Username</th>
+                        <th scope="col">Email</th>
                         <th scope="col">Nome Completo</th>
                         <th scope="col">Escola</th>
                         <th scope="col">Papel</th>
@@ -155,6 +156,7 @@
                     {% for u in usuarios %}
                     <tr>
                         <td class="fw-medium text-dark">{{ u.username }}</td>
+                        <td>{{ u.email }}</td>
                         <td>{{ u.get_full_name }}</td>
                         <td>{{ u.profile.escola.nome|default:"-" }}</td>
                         <td>
@@ -177,7 +179,7 @@
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="5" class="text-center py-5">
+                        <td colspan="6" class="text-center py-5">
                             <div class="text-muted">
                                 <i class="bi bi-people display-4 d-block mb-3 opacity-25"></i>
                                 Nenhum usuário cadastrado ainda.

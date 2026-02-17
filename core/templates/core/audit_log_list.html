@@ -1,0 +1,214 @@
+{% extends "base.html" %}
+
+{% block title %}Logs de Auditoria{% endblock %}
+
+{% block content %}
+
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
+
+    body {
+        background-color: #f8fafc;
+        font-family: 'Plus Jakarta Sans', sans-serif;
+        color: #1e293b;
+    }
+
+    .page-title {
+        font-weight: 700;
+        color: #0f172a;
+        font-size: 1.75rem;
+        letter-spacing: -0.025em;
+    }
+
+    .table-card {
+        border-radius: 16px;
+        background: white;
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.025);
+        border: 1px solid #e2e8f0;
+        overflow: hidden;
+    }
+
+    .table thead {
+        background: #f1f5f9;
+        border-bottom: 1px solid #e2e8f0;
+    }
+
+    .table thead th {
+        color: #64748b;
+        font-weight: 600;
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        padding: 1rem 1.5rem;
+        border: none;
+    }
+
+    .table tbody tr {
+        border-bottom: 1px solid #f1f5f9;
+        transition: background-color 0.2s ease;
+    }
+
+    .table tbody tr:hover {
+        background-color: #f8fafc !important;
+    }
+
+    .table tbody td {
+        padding: 1rem 1.5rem;
+        color: #334155;
+        font-size: 0.9rem;
+        vertical-align: middle;
+        border: none;
+    }
+
+    .badge {
+        font-weight: 600;
+        padding: 0.35em 0.65em;
+        border-radius: 6px;
+    }
+
+    .badge-create { background-color: #dcfce7; color: #166534; }
+    .badge-update { background-color: #dbeafe; color: #1e40af; }
+    .badge-delete { background-color: #fee2e2; color: #991b1b; }
+    .badge-login { background-color: #f3e8ff; color: #6b21a8; }
+    .badge-logout { background-color: #f1f5f9; color: #475569; }
+
+    .filter-card {
+        background: white;
+        border-radius: 12px;
+        border: 1px solid #e2e8f0;
+        padding: 1rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    pre {
+        background: #f8fafc;
+        padding: 0.5rem;
+        border-radius: 6px;
+        font-size: 0.75rem;
+        border: 1px solid #e2e8f0;
+        margin: 0;
+        max-width: 300px;
+        white-space: pre-wrap;
+    }
+</style>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="mb-0 page-title">Logs de Auditoria</h1>
+</div>
+
+<div class="filter-card">
+    <form method="get" class="row g-3 align-items-end">
+        <div class="col-md-3">
+            <label class="form-label text-muted small fw-bold">Usuário</label>
+            <select name="usuario" class="form-select form-select-sm">
+                <option value="">Todos</option>
+                {% for u in usuarios %}
+                <option value="{{ u.id }}" {% if request.GET.usuario|add:"0" == u.id %}selected{% endif %}>
+                    {{ u.username }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-3">
+            <label class="form-label text-muted small fw-bold">Data Início</label>
+            <input type="date" name="data_inicio" class="form-control form-control-sm" value="{{ request.GET.data_inicio }}">
+        </div>
+        <div class="col-md-3">
+            <label class="form-label text-muted small fw-bold">Data Fim</label>
+            <input type="date" name="data_fim" class="form-control form-control-sm" value="{{ request.GET.data_fim }}">
+        </div>
+        <div class="col-md-3 d-flex gap-2">
+            <button type="submit" class="btn btn-primary btn-sm w-100">Filtrar</button>
+            <a href="{% url 'core:lista_auditoria' %}" class="btn btn-outline-secondary btn-sm w-100">Limpar</a>
+        </div>
+    </form>
+</div>
+
+<div class="card table-card">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table align-middle">
+                <thead>
+                    <tr>
+                        <th>Data/Hora</th>
+                        <th>Usuário</th>
+                        <th>Ação</th>
+                        <th>Objeto</th>
+                        <th>Detalhes</th>
+                        <th>IP</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for log in logs %}
+                    <tr>
+                        <td>{{ log.data_hora|date:"d/m/Y H:i:s" }}</td>
+                        <td>
+                            {% if log.usuario %}
+                                <span class="fw-medium">{{ log.usuario.username }}</span>
+                            {% else %}
+                                <span class="text-muted">Sistema/Anônimo</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if log.acao == 'CREATE' %}
+                                <span class="badge badge-create">CRIAÇÃO</span>
+                            {% elif log.acao == 'UPDATE' %}
+                                <span class="badge badge-update">EDIÇÃO</span>
+                            {% elif log.acao == 'DELETE' %}
+                                <span class="badge badge-delete">EXCLUSÃO</span>
+                            {% else %}
+                                <span class="badge bg-light text-dark">{{ log.acao }}</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <small class="text-muted d-block">{{ log.content_type.model|upper }}</small>
+                            <span class="fw-medium">{{ log.object_id }}</span>
+                        </td>
+                        <td>
+                            {% if log.detalhes %}
+                                <pre>{{ log.detalhes }}</pre>
+                            {% else %}
+                                <span class="text-muted small">-</span>
+                            {% endif %}
+                        </td>
+                        <td><span class="text-muted small">{{ log.ip_address|default:"-" }}</span></td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="text-center py-5">
+                            <div class="text-muted">
+                                <i class="bi bi-journal-x display-4 d-block mb-3 opacity-25"></i>
+                                Nenhum registro encontrado.
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+{% if is_paginated %}
+<div class="d-flex justify-content-center mt-4">
+    <nav>
+        <ul class="pagination">
+            {% if page_obj.has_previous %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.usuario %}&usuario={{ request.GET.usuario }}{% endif %}{% if request.GET.data_inicio %}&data_inicio={{ request.GET.data_inicio }}{% endif %}">Anterior</a>
+            </li>
+            {% endif %}
+            
+            <li class="page-item disabled"><span class="page-link">Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span></li>
+            
+            {% if page_obj.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.usuario %}&usuario={{ request.GET.usuario }}{% endif %}{% if request.GET.data_inicio %}&data_inicio={{ request.GET.data_inicio }}{% endif %}">Próxima</a>
+            </li>
+            {% endif %}
+        </ul>
+    </nav>
+</div>
+{% endif %}
+
+{% endblock %}

@@ -7,3 +7,4 @@ class CoreConfig(AppConfig):
 
     def ready(self):
         import core.signals
+        import core.audit_signals # Importar os novos sinais de auditoria

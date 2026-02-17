@@ -33,6 +33,7 @@ class Curso(models.Model):
         ('Aberta', 'Aberta'),
         ('Em Andamento', 'Em Andamento'),
         ('Concluído', 'Concluído'),
+        ('Arquivado', 'Arquivado'), # Novo status
     )
     nome = models.CharField(max_length=200)
     carga_horaria = models.IntegerField()

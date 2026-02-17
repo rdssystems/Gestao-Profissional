@@ -1,6 +1,13 @@
 from django.contrib.auth.mixins import UserPassesTestMixin
-from django.views.generic.edit import CreateView
+from django.views.generic.edit import CreateView, UpdateView, DeleteView
 from django.views.generic.list import ListView
+from django.contrib.contenttypes.models import ContentType
+import json
+from django.core.serializers.json import DjangoJSONEncoder
+from django.forms.models import model_to_dict
+
+# Import local para evitar erro de importação circular se colocar no topo
+# (mas idealmente models devem ser importados no topo se não houver ciclo)
 
 class StaffRequiredMixin(UserPassesTestMixin):
     """
@@ -40,3 +47,77 @@ class StaffRequiredMixin(UserPassesTestMixin):
 
 
         return False
+
+class AuditLogMixin:
+    """
+    Mixin para registrar logs de auditoria automaticamente em CreateView, UpdateView e DeleteView.
+    """
+
+    def get_client_ip(self):
+        x_forwarded_for = self.request.META.get('HTTP_X_FORWARDED_FOR')
+        if x_forwarded_for:
+            ip = x_forwarded_for.split(',')[0]
+        else:
+            ip = self.request.META.get('REMOTE_ADDR')
+        return ip
+
+    def save_log(self, obj, action, details=None):
+        from core.models import AuditLog  # Importação tardia para evitar ciclo
+
+        user = self.request.user if self.request.user.is_authenticated else None
+        
+        try:
+            AuditLog.objects.create(
+                usuario=user,
+                acao=action,
+                content_type=ContentType.objects.get_for_model(obj),
+                object_id=str(obj.pk),
+                detalhes=json.dumps(details, cls=DjangoJSONEncoder, ensure_ascii=False) if details else None,
+                ip_address=self.get_client_ip()
+            )
+        except Exception as e:
+            print(f"Erro ao salvar log de auditoria: {e}")
+
+    def form_valid(self, form):
+        # Capturar ação baseada na View
+        response = super().form_valid(form)
+        
+        # O objeto já foi salvo pelo super().form_valid()
+        obj = self.object
+        
+        action = 'UPDATE'
+        details = {}
+
+        # Se for CreateView, o objeto acabou de ser criado
+        if isinstance(self, CreateView):
+            action = 'CREATE'
+            # Para create, salvamos uma representação simples
+            details = {'novo': str(obj)}
+        elif isinstance(self, UpdateView):
+            action = 'UPDATE'
+            if form.changed_data:
+                changes = {}
+                for field in form.changed_data:
+                    # Tenta pegar o valor limpo
+                    value = form.cleaned_data.get(field)
+                    # Se for um objeto (ForeignKey), converte pra string
+                    changes[field] = str(value)
+                details = {'alteracoes': changes}
+            else:
+                details = {'info': 'Nenhum campo alterado.'}
+
+        self.save_log(obj, action, details)
+        return response
+
+    def delete(self, request, *args, **kwargs):
+        # Para DeleteView, precisamos pegar o objeto ANTES de deletar
+        obj = self.get_object()
+        details = {'removido': str(obj)}
+        
+        # Chama o delete original (que deleta o objeto)
+        response = super().delete(request, *args, **kwargs)
+        
+        # Salva o log
+        self.save_log(obj, 'DELETE', details)
+        
+        return response

@@ -5,12 +5,14 @@ from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.urls import reverse_lazy
 from datetime import date, timedelta # Importar date e timedelta
 from django.db import models # Importar models para Q object
+from core.mixins import AuditLogMixin
 
-from .models import Escola
+from escolas.models import Escola
 from cursos.models import Curso, Inscricao
 from alunos.models import Aluno
 from cursos.views import CursoListView as CursosViewBase
 from alunos.views import AlunoListView as AlunosViewBase
+from .forms import EscolaForm # Adicionar este import
 
 class SuperuserRequiredMixin(UserPassesTestMixin):
     def test_func(self):
@@ -88,6 +90,9 @@ class DashboardView(LoginRequiredMixin, ListView):
         context['alunos_desistentes'] = inscricao_scope.filter(status='desistente').count()
         context['cursos_ativos'] = curso_scope.filter(status__in=['Aberta', 'Em Andamento']).count()
         context['cursos_concluidos'] = curso_scope.filter(status='Concluído').count()
+        
+        # Nova métrica: Alunos Cursando
+        context['alunos_cursando'] = inscricao_scope.filter(status='cursando').count()
 
         # Histórico recente
         context['historico_recente'] = inscricao_scope.order_by('-data_inscricao')[:15]
@@ -126,19 +131,19 @@ class EscolaDetailView(LoginRequiredMixin, DetailView):
             
         return Escola.objects.none()
 
-class EscolaCreateView(SuperuserRequiredMixin, CreateView):
+class EscolaCreateView(AuditLogMixin, SuperuserRequiredMixin, CreateView):
     model = Escola
-    fields = ['nome', 'endereco', 'email', 'telefone', 'coordenador_user']
+    form_class = EscolaForm # Usar o formulário customizado
     template_name = 'escolas/escola_form.html'
     success_url = reverse_lazy('escolas:dashboard')
 
-class EscolaUpdateView(SuperuserRequiredMixin, UpdateView):
+class EscolaUpdateView(AuditLogMixin, SuperuserRequiredMixin, UpdateView):
     model = Escola
-    fields = ['nome', 'endereco', 'email', 'telefone', 'coordenador_user']
+    form_class = EscolaForm # Usar o formulário customizado
     template_name = 'escolas/escola_form.html'
     success_url = reverse_lazy('escolas:dashboard')
 
-class EscolaDeleteView(SuperuserRequiredMixin, DeleteView):
+class EscolaDeleteView(AuditLogMixin, SuperuserRequiredMixin, DeleteView):
     model = Escola
     template_name = 'escolas/escola_confirm_delete.html'
     success_url = reverse_lazy('escolas:dashboard')
@@ -176,8 +181,9 @@ class EscolaListView(LoginRequiredMixin, ListView):
         user = self.request.user
         if user.is_superuser:
             return Escola.objects.all().order_by('nome')
-        elif hasattr(user, 'profile') and user.profile.escola:
-            return Escola.objects.filter(pk=user.profile.escola.pk)
-        return Escola.objects.none()
+        else:
+            # Para todos os usuários autenticados que não são superusuários,
+            # mostrar todas as escolas globalmente para visualização.
+            return Escola.objects.all().order_by('nome')
 
         return context

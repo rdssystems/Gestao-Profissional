@@ -55,7 +55,7 @@
     <div class="card-body">
         <p class="info-line"><strong>Endereço:</strong> {{ escola.endereco }}</p>
         <p class="info-line"><strong>Email:</strong> {{ escola.email }}</p>
-        <p class="info-line"><strong>Telefone:</strong> {{ escola.telefone }}</p>
+        <p class="info-line"><strong>Telefone:</strong> {{ escola.get_telefone_formatado }}</p> {# Modificado aqui #}
 
         <p class="info-line">
             <strong>Coordenador:</strong>
