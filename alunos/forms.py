@@ -32,40 +32,40 @@ class AlunoForm(forms.ModelForm):
             'renda_moradores', 'como_soube'
         ]
         widgets = {
-            'escola': forms.Select(attrs={'class': 'form-select'}),
+            'escola': forms.Select(attrs={'class': 'form-select form-select-premium'}),
             'cursos_interesse': forms.CheckboxSelectMultiple,
-            'nome_completo': forms.TextInput(attrs={'class': 'form-control'}),
-            'cpf': forms.TextInput(attrs={'class': 'form-control', 'inputmode': 'numeric', 'pattern': '[0-9]*'}),
-            'rg': forms.TextInput(attrs={'class': 'form-control'}),
-            'orgao_exp': forms.TextInput(attrs={'class': 'form-control'}),
-            'data_emissao': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}, format='%Y-%m-%d'),
-            'data_nascimento': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}, format='%Y-%m-%d'),
-            'sexo': forms.Select(attrs={'class': 'form-select'}),
-            'estado_civil': forms.Select(attrs={'class': 'form-select'}),
-            'cor_raca': forms.Select(attrs={'class': 'form-select'}),
-            'nome_mae': forms.TextInput(attrs={'class': 'form-control'}),
-            'naturalidade': forms.TextInput(attrs={'class': 'form-control'}),
-            'uf_naturalidade': forms.TextInput(attrs={'class': 'form-control'}),
+            'nome_completo': forms.TextInput(attrs={'class': 'form-control form-control-premium'}),
+            'cpf': forms.TextInput(attrs={'class': 'form-control form-control-premium', 'inputmode': 'numeric', 'pattern': '[0-9]*'}),
+            'rg': forms.TextInput(attrs={'class': 'form-control form-control-premium'}),
+            'orgao_exp': forms.TextInput(attrs={'class': 'form-control form-control-premium'}),
+            'data_emissao': forms.DateInput(attrs={'class': 'form-control form-control-premium', 'type': 'date'}, format='%Y-%m-%d'),
+            'data_nascimento': forms.DateInput(attrs={'class': 'form-control form-control-premium', 'type': 'date'}, format='%Y-%m-%d'),
+            'sexo': forms.Select(attrs={'class': 'form-select form-select-premium'}),
+            'estado_civil': forms.Select(attrs={'class': 'form-select form-select-premium'}),
+            'cor_raca': forms.Select(attrs={'class': 'form-select form-select-premium'}),
+            'nome_mae': forms.TextInput(attrs={'class': 'form-control form-control-premium'}),
+            'naturalidade': forms.TextInput(attrs={'class': 'form-control form-control-premium'}),
+            'uf_naturalidade': forms.TextInput(attrs={'class': 'form-control form-control-premium'}),
             'deficiencia': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
-            'escolaridade': forms.Select(attrs={'class': 'form-select'}),
-            'email_principal': forms.EmailInput(attrs={'class': 'form-control'}),
-            'whatsapp': forms.TextInput(attrs={'class': 'form-control'}),
-            'telefone_principal': forms.TextInput(attrs={'class': 'form-control'}),
-            'endereco_cep': forms.TextInput(attrs={'class': 'form-control'}),
-            'endereco_rua': forms.TextInput(attrs={'class': 'form-control'}),
-            'endereco_numero': forms.TextInput(attrs={'class': 'form-control'}),
-            'endereco_bairro': forms.TextInput(attrs={'class': 'form-control'}),
-            'endereco_cidade': forms.TextInput(attrs={'class': 'form-control'}),
-            'endereco_estado': forms.TextInput(attrs={'class': 'form-control'}),
-            'tempo_moradia': forms.Select(attrs={'class': 'form-select'}),
-            'tipo_moradia': forms.Select(attrs={'class': 'form-select'}),
-            'valor_moradia': forms.NumberInput(attrs={'class': 'form-control'}),
-            'situacao_profissional': forms.Select(attrs={'class': 'form-select'}),
-            'renda_individual': forms.NumberInput(attrs={'class': 'form-control'}),
-            'num_moradores': forms.NumberInput(attrs={'class': 'form-control'}),
-            'quantos_trabalham': forms.NumberInput(attrs={'class': 'form-control'}),
-            'renda_moradores': forms.NumberInput(attrs={'class': 'form-control'}),
-            'como_soube': forms.Select(attrs={'class': 'form-select'}),
+            'escolaridade': forms.Select(attrs={'class': 'form-select form-select-premium'}),
+            'email_principal': forms.EmailInput(attrs={'class': 'form-control form-control-premium'}),
+            'whatsapp': forms.TextInput(attrs={'class': 'form-control form-control-premium'}),
+            'telefone_principal': forms.TextInput(attrs={'class': 'form-control form-control-premium'}),
+            'endereco_cep': forms.TextInput(attrs={'class': 'form-control form-control-premium'}),
+            'endereco_rua': forms.TextInput(attrs={'class': 'form-control form-control-premium'}),
+            'endereco_numero': forms.TextInput(attrs={'class': 'form-control form-control-premium'}),
+            'endereco_bairro': forms.TextInput(attrs={'class': 'form-control form-control-premium'}),
+            'endereco_cidade': forms.TextInput(attrs={'class': 'form-control form-control-premium'}),
+            'endereco_estado': forms.TextInput(attrs={'class': 'form-control form-control-premium'}),
+            'tempo_moradia': forms.Select(attrs={'class': 'form-select form-select-premium'}),
+            'tipo_moradia': forms.Select(attrs={'class': 'form-select form-select-premium'}),
+            'valor_moradia': forms.NumberInput(attrs={'class': 'form-control form-control-premium'}),
+            'situacao_profissional': forms.Select(attrs={'class': 'form-select form-select-premium'}),
+            'renda_individual': forms.NumberInput(attrs={'class': 'form-control form-control-premium'}),
+            'num_moradores': forms.NumberInput(attrs={'class': 'form-control form-control-premium'}),
+            'quantos_trabalham': forms.NumberInput(attrs={'class': 'form-control form-control-premium'}),
+            'renda_moradores': forms.NumberInput(attrs={'class': 'form-control form-control-premium'}),
+            'como_soube': forms.Select(attrs={'class': 'form-select form-select-premium'}),
         }
         labels = {
             'escola': _("Escola"),
@@ -233,17 +233,17 @@ class VerificarCPFForm(forms.Form):
 class CustomAuthenticationForm(AuthenticationForm):
     username = forms.CharField(
         label="Usuário",
-        widget=forms.TextInput(attrs={'autofocus': True, 'class': 'form-control'})
+        widget=forms.TextInput(attrs={'autofocus': True, 'class': 'form-control form-control-premium'})
     )
     password = forms.CharField(
         label="Senha",
         strip=False,
-        widget=forms.PasswordInput(attrs={'class': 'form-control'})
+        widget=forms.PasswordInput(attrs={'class': 'form-control form-control-premium'})
     )
 
 # AlunoCSVUploadForm (from previous context)
 class AlunoCSVUploadForm(forms.Form):
-    csv_file = forms.FileField(label="Selecionar arquivo CSV", help_text="Faça o upload de um arquivo CSV com os dados dos alunos.", widget=forms.FileInput(attrs={'class': 'form-control'}))
+    csv_file = forms.FileField(label="Selecionar arquivo CSV", help_text="Faça o upload de um arquivo CSV com os dados dos alunos.", widget=forms.FileInput(attrs={'class': 'form-control form-control-premium'}))
 
 # UserCreationForm (from previous context)
 class UserCreationForm(forms.ModelForm):
@@ -252,18 +252,18 @@ class UserCreationForm(forms.ModelForm):
         ('Auxiliar Administrativo', 'Auxiliar Administrativo'),
     )
     
-    password = forms.CharField(widget=forms.PasswordInput(attrs={'class': 'form-control'}), label="Senha")
-    password_confirm = forms.CharField(widget=forms.PasswordInput(attrs={'class': 'form-control'}), label="Confirmar Senha")
-    escola = forms.ModelChoiceField(queryset=Escola.objects.all(), widget=forms.Select(attrs={'class': 'form-select'}), label="Escola")
-    role = forms.ChoiceField(choices=ROLE_CHOICES, widget=forms.Select(attrs={'class': 'form-select'}), label="Papel")
+    password = forms.CharField(widget=forms.PasswordInput(attrs={'class': 'form-control form-control-premium'}), label="Senha")
+    password_confirm = forms.CharField(widget=forms.PasswordInput(attrs={'class': 'form-control form-control-premium'}), label="Confirmar Senha")
+    escola = forms.ModelChoiceField(queryset=Escola.objects.all(), widget=forms.Select(attrs={'class': 'form-select form-select-premium'}), label="Escola")
+    role = forms.ChoiceField(choices=ROLE_CHOICES, widget=forms.Select(attrs={'class': 'form-select form-select-premium'}), label="Papel")
 
     class Meta:
         model = User
         fields = ('username', 'first_name', 'last_name')
         widgets = {
-            'username': forms.TextInput(attrs={'class': 'form-control'}),
-            'first_name': forms.TextInput(attrs={'class': 'form-control'}),
-            'last_name': forms.TextInput(attrs={'class': 'form-control'}),
+            'username': forms.TextInput(attrs={'class': 'form-control form-control-premium'}),
+            'first_name': forms.TextInput(attrs={'class': 'form-control form-control-premium'}),
+            'last_name': forms.TextInput(attrs={'class': 'form-control form-control-premium'}),
         }
         labels = {
             'username': 'Nome de Usuário',

@@ -1,125 +1,28 @@
 {% extends "base.html" %}
 
-{% block title %}Detalhes do Aluno: {{ aluno.nome_completo }}{% endblock %}
+{% block title %}Detalhes do Aluno: {{ aluno.nome_completo }}<!-- djlint:on -->
+<!-- prettier-ignore-end -->
+{% endblock %}
 
 {% block content %}
+<!-- prettier-ignore-start -->
+<!-- djlint:off -->
 
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
-
-    body {
-        background-color: #f8fafc;
-        font-family: 'Plus Jakarta Sans', sans-serif;
-        color: #1e293b;
-    }
-
-    .page-title {
-        font-weight: 700;
-        color: #0f172a;
-        font-size: 1.75rem;
-        letter-spacing: -0.025em;
-    }
-
-    .action-btns .btn {
-        border-radius: 12px;
-        padding: 0.6rem 1.2rem;
-        font-weight: 600;
-        font-size: 0.9rem;
-        margin-left: 8px;
-        transition: all 0.2s ease;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-    }
-
-    .action-btns .btn:hover {
-        transform: translateY(-1px);
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    }
-
-    .card-section {
-        border-radius: 16px;
-        background: white;
-        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.025);
-        border: 1px solid #e2e8f0;
-        overflow: hidden;
-    }
-
-    .card-section .card-header {
-        background: #f1f5f9;
-        border-bottom: 1px solid #e2e8f0;
-        padding: 1rem 1.5rem;
-        font-weight: 700;
-        color: #0f172a;
-        font-size: 1.05rem;
-    }
-
-    .card-section .card-body {
-        padding: 1.5rem;
-    }
-
     .info-line {
         margin-bottom: 0.75rem;
-        color: #334155;
+        color: var(--text-main);
         font-size: 0.95rem;
     }
 
     .info-line strong {
-        color: #475569;
+        color: var(--text-muted);
         font-weight: 600;
         margin-right: 0.25rem;
     }
 
-    .btn-secondary {
-        background-color: white;
-        color: #64748b;
-        border: 1px solid #e2e8f0;
-    }
-
-    .btn-secondary:hover {
-        background-color: #f8fafc;
-        color: #475569;
-        border-color: #cbd5e1;
-    }
-
-    .btn-info {
-        background: linear-gradient(135deg, #0ea5e9, #38bdf8);
-        border: none;
-        color: white !important;
-    }
-
-    .btn-info:hover {
-        box-shadow: 0 4px 6px -1px rgba(14, 165, 233, 0.3);
-    }
-
-    .btn-warning {
-        background: linear-gradient(135deg, #f59e0b, #fbbf24);
-        border: none;
-        color: white !important;
-    }
-
-    .btn-warning:hover {
-        box-shadow: 0 4px 6px -1px rgba(245, 158, 11, 0.3);
-    }
-
-    .btn-danger {
-        background: linear-gradient(135deg, #ef4444, #f87171);
-        border: none;
-        color: white;
-    }
-
-    .btn-danger:hover {
-        box-shadow: 0 4px 6px -1px rgba(239, 68, 68, 0.3);
-    }
-
-    .display-4 {
-        font-weight: 800;
-        color: #2563eb;
-        letter-spacing: -0.05em;
-    }
-
-    .badge {
-        font-weight: 500;
-        padding: 0.35em 0.65em;
-        border-radius: 6px;
+    .text-justify {
+        text-align: justify;
     }
 
     @media print {
@@ -136,10 +39,9 @@
         }
 
         body {
-            background-color: white;
-            padding-top: 0;
+            background-color: white !important;
+            padding-top: 0 !important;
             font-size: 9pt;
-            /* Smaller font to fit everything */
             -webkit-print-color-adjust: exact;
             print-color-adjust: exact;
         }
@@ -250,47 +152,47 @@
         }
 
         /* Hide URL print headers/footers usually added by browser (cannot fully control, but margins help) */
-        @page { 
-            margin: 0.5cm; 
+        @page {
+            margin: 0.5cm;
             size: A4;
         }
 
         .mb-4 {
             margin-bottom: 0.5rem !important;
         }
-        
-        html, body {
+
+        html,
+        body {
             height: auto !important;
             min-height: 0 !important;
             overflow: visible !important;
             font-size: 8.5pt !important;
         }
     }
-
-    .text-justify {
-        text-align: justify;
-    }
 </style>
 
 
 <div class="d-flex justify-content-between align-items-center mb-4">
-    <h1 class="page-title mb-0">Detalhes do Aluno</h1>
+    <h1 class="page-header-premium mb-0">Detalhes do Aluno</h1>
 
-    <div class="action-btns d-flex">
-        <button onclick="window.print()" class="btn btn-secondary">
+    <div class="action-btns d-flex gap-2">
+        <button onclick="window.print()" class="btn btn-premium-outline">
             <i class="bi bi-printer me-1"></i> Imprimir
         </button>
-        <a href="{% url 'alunos:lista_alunos' %}" class="btn btn-secondary">
+        <a href="{% url 'alunos:lista_alunos' %}" class="btn btn-premium-outline">
             <i class="bi bi-arrow-left me-1"></i> Voltar
         </a>
-        <a href="{% url 'alunos:historico_aluno' pk=aluno.pk %}" class="btn btn-info">
+        <a href="{% url 'alunos:historico_aluno' pk=aluno.pk %}" class="btn btn-action-premium text-white"
+            style="background-color: var(--brand-primary);">
             <i class="bi bi-clock-history me-1"></i> Histórico
         </a>
-        <a href="{% url 'alunos:editar_aluno' pk=aluno.pk %}" class="btn btn-warning">
+        <a href="{% url 'alunos:editar_aluno' pk=aluno.pk %}" class="btn btn-action-premium text-white"
+            style="background-color: #f59e0b;">
             <i class="bi bi-pencil me-1"></i> Editar
         </a>
         {% if perms.alunos.delete_aluno %}
-        <a href="{% url 'alunos:excluir_aluno' pk=aluno.pk %}" class="btn btn-danger">
+        <a href="{% url 'alunos:excluir_aluno' pk=aluno.pk %}" class="btn btn-action-premium text-white"
+            style="background-color: #dc2626;">
             <i class="bi bi-trash me-1"></i> Excluir
         </a>
         {% endif %}
@@ -300,25 +202,26 @@
 <div class="row">
     <div class="col-lg-8">
 
-        <div class="card card-section mb-4">
-            <div class="card-header">Identificação</div>
+        <div class="premium-card mb-4">
+            <h5 class="text-muted fw-bold mb-3">Identificação</h5>
             <div class="card-body">
                 <div class="row">
                     <div class="col-md-6">
                         <p class="info-line"><strong>Nome:</strong> {{ aluno.nome_completo }}</p>
                         <p class="info-line"><strong>CPF:</strong> {{ aluno.cpf }}</p>
-                        <p class="info-line"><strong>RG:</strong> {{ aluno.rg|default:"Não informado" }}</p>
+                        <p class="info-line"><strong>RG:</strong> {% if aluno.rg %}{{ aluno.rg }}{% else %}Não
+                            informado{% endif %}</p>
                     </div>
                     <div class="col-md-6">
-                        <p class="info-line"><strong>Órgão Expedidor:</strong> {{ aluno.orgao_exp|default:"Não informado" }}</p>
-                        <p class="info-line"><strong>Data de Emissão:</strong> {{ aluno.data_emissao|date:"d/m/Y"|default:"Não informado" }}</p>
+                        <p class="info-line"><strong>Órgão Expedidor:</strong> {% if aluno.orgao_exp %}{{ aluno.orgao_exp }}{% else %}Não informado{% endif %}</p>
+                        <p class="info-line"><strong>Data de Emissão:</strong> {% if aluno.data_emissao %}{{ aluno.data_emissao|date:"d/m/Y" }}{% else %}Não informado{% endif %}</p>
                     </div>
                 </div>
             </div>
         </div>
 
-        <div class="card card-section mb-4">
-            <div class="card-header">Informações Pessoais</div>
+        <div class="premium-card mb-4">
+            <h5 class="text-muted fw-bold mb-3">Informações Pessoais</h5>
             <div class="card-body">
                 <div class="row">
                     <div class="col-md-6">
@@ -331,15 +234,22 @@
                         <p class="info-line"><strong>Nome da Mãe:</strong> {{ aluno.nome_mae|default:"Não informado" }}
                         </p>
                         <p class="info-line"><strong>Naturalidade:</strong> {{ aluno.naturalidade|default:"Não informado" }} - {{ aluno.uf_naturalidade|default:"N/A" }}</p>
-                        <p class="info-line"><strong>Deficiência:</strong> {% if aluno.deficiencia %}Sim{% else %}Não{% endif %}</p>
+                        <p class="info-line">
+                            <strong>Deficiência:</strong>
+                            {% if aluno.deficiencia %}
+                            Sim
+                            {% else %}
+                            Não
+                            {% endif %}
+                        </p>
                         <p class="info-line"><strong>Escolaridade:</strong> {{ aluno.get_escolaridade_display|default:"Não informado" }}</p>
                     </div>
                 </div>
             </div>
         </div>
 
-        <div class="card card-section mb-4">
-            <div class="card-header">Endereço</div>
+        <div class="premium-card mb-4">
+            <h5 class="text-muted fw-bold mb-3">Endereço</h5>
             <div class="card-body">
                 <div class="row">
                     <div class="col-md-6">
@@ -361,8 +271,8 @@
 
     <div class="col-lg-4">
 
-        <div class="card card-section mb-4">
-            <div class="card-header">Contato</div>
+        <div class="premium-card mb-4">
+            <h5 class="text-muted fw-bold mb-3">Contato</h5>
             <div class="card-body">
                 <p class="info-line"><strong>Email:</strong> {{ aluno.email_principal }}</p>
                 <p class="info-line"><strong>WhatsApp:</strong> {{ aluno.whatsapp|default:"Não informado" }}</p>
@@ -370,8 +280,8 @@
             </div>
         </div>
 
-        <div class="card card-section mb-4">
-            <div class="card-header">Dados Socioeconômicos</div>
+        <div class="premium-card mb-4">
+            <h5 class="text-muted fw-bold mb-3">Dados Socioeconômicos</h5>
             <div class="card-body">
                 <div class="text-center mb-4 p-3 bg-light rounded-3 border border-light">
                     <h6 class="mb-1 text-uppercase text-muted fw-bold" style="font-size: 0.75rem;">Score Total</h6>
@@ -393,8 +303,8 @@
             </div>
         </div>
 
-        <div class="card card-section mb-4">
-            <div class="card-header">Inscrição e Interesses</div>
+        <div class="premium-card mb-4">
+            <h5 class="text-muted fw-bold mb-3">Inscrição e Interesses</h5>
             <div class="card-body">
                 <p class="info-line"><strong>Escola de Origem:</strong> {{ aluno.escola.nome }}</p>
                 <p class="info-line"><strong>Como Soube:</strong> {{ aluno.get_como_soube_display|default:"Não informado" }}</p>
@@ -404,7 +314,7 @@
                 <p class="info-line mb-2"><strong>Cursos de Interesse:</strong></p>
                 <div class="d-flex flex-wrap gap-2">
                     {% for tipo in aluno.cursos_interesse.all %}
-                    <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-10">{{ tipo.nome }}</span>
+                    <span class="badge-premium bg-{{ tipo.cor }} text-white">{{ tipo.nome }}</span>
                     {% empty %}
                     <span class="text-muted small">Nenhum interesse cadastrado.</span>
                     {% endfor %}
@@ -416,19 +326,28 @@
 </div>
 
 <!-- Termo de Compromisso -->
-<div class="card card-section mt-4 termo-compromisso">
-    <div class="card-header text-center">📄 Comprovante de Inscrição e Termo de Compromisso</div>
+<div class="premium-card mt-4 termo-compromisso">
+    <h5 class="text-muted fw-bold mb-3 text-center">📄 Comprovante de Inscrição e Termo de Compromisso</h5>
     <div class="card-body">
         <p class="mb-2 text-justify">
-            Eu, <strong>{{ aluno.nome_completo }}</strong>, portador(a) do CPF <strong>{{ aluno.cpf }}</strong>, declaro que as informações por mim fornecidas neste ato são verdadeiras e que estou ciente e de acordo com as condições a seguir:
+            Eu, <strong>{{ aluno.nome_completo }}</strong>, portador(a) do CPF <strong>{{ aluno.cpf }}</strong>, declaro
+            que as informações por mim fornecidas neste ato são verdadeiras e que estou ciente e de acordo com as
+            condições a seguir:
         </p>
-        
+
         <ul class="ps-3 mb-3 text-justify" style="list-style-type: disc;">
-            <li class="mb-1">Confirmo minha inscrição no(s) curso(s) oferecido(s) pela Diretoria de Qualificação Profissional, entendendo que este documento tem validade para todos os cursos em que eu venha a participar futuramente, mediante minha solicitação e aprovação de vaga.</li>
-            <li class="mb-1">Declaro estar ciente de que não é permitido comparecer acompanhado(a) às aulas, exceto quando previamente autorizado pela coordenação da unidade.</li>
-            <li class="mb-1">Declaro que ( ) autorizo / ( ) não autorizo o uso da minha imagem, voz e nome em materiais institucionais, educacionais ou de divulgação da Prefeitura Municipal de Uberlândia e da Diretoria de Qualificação Profissional, sem fins comerciais.</li>
-            <li class="mb-1">Comprometo-me a respeitar as normas da unidade de ensino, prezar pela boa convivência e zelar pelos equipamentos e materiais disponibilizados.</li>
-            <li class="mb-1">Estou ciente de que o descumprimento das regras acima poderá resultar no cancelamento da minha participação no curso.</li>
+            <li class="mb-1">Confirmo minha inscrição no(s) curso(s) oferecido(s) pela Diretoria de Qualificação
+                Profissional, entendendo que este documento tem validade para todos os cursos em que eu venha a
+                participar futuramente, mediante minha solicitação e aprovação de vaga.</li>
+            <li class="mb-1">Declaro estar ciente de que não é permitido comparecer acompanhado(a) às aulas, exceto
+                quando previamente autorizado pela coordenação da unidade.</li>
+            <li class="mb-1">Declaro que ( ) autorizo / ( ) não autorizo o uso da minha imagem, voz e nome em materiais
+                institucionais, educacionais ou de divulgação da Prefeitura Municipal de Uberlândia e da Diretoria de
+                Qualificação Profissional, sem fins comerciais.</li>
+            <li class="mb-1">Comprometo-me a respeitar as normas da unidade de ensino, prezar pela boa convivência e
+                zelar pelos equipamentos e materiais disponibilizados.</li>
+            <li class="mb-1">Estou ciente de que o descumprimento das regras acima poderá resultar no cancelamento da
+                minha participação no curso.</li>
         </ul>
 
         <div class="row mt-4 align-items-end">
@@ -451,15 +370,19 @@
     </div>
 </div>
 
+<!-- djlint:on -->
+<!-- prettier-ignore-end -->
 {% endblock %}
 
 {% block extra_js %}
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
+    document.addEventListener('DOMContentLoaded', function () {
         const urlParams = new URLSearchParams(window.location.search);
         if (urlParams.get('print') === 'true') {
             window.print();
         }
     });
 </script>
+<!-- djlint:on -->
+<!-- prettier-ignore-end -->
 {% endblock %}

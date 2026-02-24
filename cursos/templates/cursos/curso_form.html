@@ -5,114 +5,6 @@
 
 {% block content %}
 
-<style>
-    body {
-        background: #eef1f5 !important;
-        font-family: "Inter", sans-serif;
-        color: #424a57;
-        background-image: radial-gradient(rgba(0,0,0,0.02) 1px, transparent 0);
-        background-size: 18px 18px;
-    }
-
-    .page-title {
-        font-weight: 700;
-        color: #1f2937;
-        margin-bottom: 1.2rem;
-    }
-
-    .page-subtitle {
-        color: #6b7280;
-        margin-bottom: 2rem;
-    }
-
-    /* Card */
-    .app-card {
-        position: relative;
-        border-radius: 1.2rem;
-        background: #ffffff;
-        border: 1px solid rgba(0,0,0,0.05);
-        box-shadow:
-            0 3px 8px rgba(0,0,0,0.04),
-            0 14px 40px rgba(0,0,0,0.08);
-        overflow: hidden;
-    }
-
-    .app-card::before {
-        content: "";
-        position: absolute;
-        top: 0; left: 0; right: 0;
-        height: 3px;
-        background: linear-gradient(90deg,
-            rgba(75,93,255,0.28),
-            rgba(99,114,255,0.12)
-        );
-    }
-
-    .app-card::after {
-        content: "";
-        position: absolute;
-        bottom: 0; left: 0; right: 0;
-        height: 4px;
-        background: #4B5DFF;
-        opacity: .75;
-        border-radius: 0 0 1.2rem 1.2rem;
-    }
-
-    /* Labels e Inputs */
-    .form-label {
-        font-weight: 600;
-        color: #1f2937;
-        font-size: .95rem;
-    }
-
-    .custom-input input,
-    .custom-input select {
-        width: 100%;
-        border-radius: .7rem;
-        padding: .65rem 1rem;
-        border: 1px solid #d2d8e3;
-        background: #fbfcff;
-        font-size: .9rem;
-        transition: .25s ease;
-    }
-
-    .custom-input input:focus,
-    .custom-input select:focus {
-        border-color: #4B5DFF;
-        background: #ffffff;
-        box-shadow: 0 0 0 3px rgba(75,93,255,0.18);
-    }
-
-    /* Botões */
-    .btn-app {
-        border-radius: .7rem;
-        padding: .6rem 1.6rem;
-        font-weight: 600;
-        transition: .22s ease;
-    }
-
-    .btn-primary.btn-app {
-        background: #4B5DFF;
-        border: none;
-    }
-
-    .btn-primary.btn-app:hover {
-        background: #6372ff;
-        transform: translateY(-2px);
-        box-shadow: 0 6px 22px rgba(75,93,255,0.25);
-    }
-
-    .btn-secondary.btn-app {
-        background: #adb5bd;
-        border: none;
-    }
-
-    .btn-secondary.btn-app:hover {
-        background: #9aa2b0;
-        transform: translateY(-2px);
-    }
-</style>
-
 <div class="container-fluid px-4 px-lg-5 mt-4 mb-5">
 
     <div class="row justify-content-center">
@@ -120,35 +12,35 @@
 
             <!-- Cabeçalho -->
             <div class="mb-4">
-                <h1 class="page-title">
+                <h1 class="page-header-premium mb-2">
                     {% if object %}Editar Curso{% else %}Novo Curso{% endif %}
                 </h1>
-                <div class="page-subtitle">
+                <p class="text-muted">
                     Preencha as informações do curso
-                </div>
+                </p>
             </div>
 
             <!-- Card -->
-            <div class="app-card p-4 p-lg-5">
+            <div class="premium-card mb-4">
 
                 <form method="post">
                     {% csrf_token %}
 
                     {% if form.non_field_errors %}
-                        <div class="alert alert-danger mb-4">
-                            {% for error in form.non_field_errors %}
-                                {{ error }}
-                            {% endfor %}
-                        </div>
+                    <div class="alert alert-danger mb-4">
+                        {% for error in form.non_field_errors %}
+                        {{ error }}
+                        {% endfor %}
+                    </div>
                     {% endif %}
 
                     <div class="mb-3">
                         <label class="form-label">{{ form.tipo_curso.label }}</label>
                         <div class="custom-input">{{ form.tipo_curso }}</div>
                         {% if form.tipo_curso.errors %}
-                            <div class="invalid-feedback d-block">
-                                {{ form.tipo_curso.errors }}
-                            </div>
+                        <div class="invalid-feedback d-block">
+                            {{ form.tipo_curso.errors }}
+                        </div>
                         {% endif %}
                     </div>
 
@@ -198,16 +90,14 @@
                         <div class="custom-input">{{ form.status }}</div>
                     </div>
 
-                    <hr class="my-4">
+                    <hr class="my-4 text-muted opacity-25">
 
                     <div class="d-flex justify-content-end gap-2">
-                        <a href="{% url 'cursos:lista_cursos' %}"
-                           class="btn btn-secondary btn-app">
+                        <a href="{% url 'cursos:lista_cursos' %}" class="btn btn-premium-outline">
                             Cancelar
                         </a>
 
-                        <button type="submit"
-                                class="btn btn-primary btn-app">
+                        <button type="submit" class="btn btn-premium">
                             Salvar
                         </button>
                     </div>
@@ -222,12 +112,12 @@
 </div>
 
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
+    document.addEventListener('DOMContentLoaded', function () {
         const tipoCursoSelect = document.getElementById('id_tipo_curso');
         const nomeInput = document.getElementById('id_nome');
 
         if (tipoCursoSelect && nomeInput) {
-            tipoCursoSelect.addEventListener('change', function() {
+            tipoCursoSelect.addEventListener('change', function () {
                 const selectedOption = tipoCursoSelect.options[tipoCursoSelect.selectedIndex];
                 if (selectedOption && selectedOption.text && selectedOption.value) {
                     let nomeCurso = selectedOption.text;

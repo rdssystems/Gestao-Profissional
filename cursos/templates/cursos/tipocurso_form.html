@@ -1,126 +1,69 @@
 {% extends "base.html" %}
 
 {% block title %}
-    {% if form.instance.pk %}Editar Tipo de Curso{% else %}Novo Tipo de Curso{% endif %}
+{% if form.instance.pk %}Editar Tipo de Curso{% else %}Novo Tipo de Curso{% endif %}
 {% endblock %}
 
 {% block content %}
 
-<style>
-    .form-wrapper {
-        max-width: 600px;
-        margin: 4rem auto;
-        padding: 2.2rem;
-        border-radius: 1.3rem;
-        background: #ffffff;
-        border: 1px solid rgba(0,0,0,0.05);
-        box-shadow:
-            0 4px 12px rgba(0,0,0,0.05),
-            0 16px 40px rgba(0,0,0,0.09);
-        animation: fadeIn 0.4s ease-out;
-    }
+<div class="container-fluid px-4 px-lg-5 mt-4 mb-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-6">
 
-    @keyframes fadeIn {
-        from { opacity: 0; transform: translateY(18px); }
-        to   { opacity: 1; transform: translateY(0); }
-    }
+            <div class="mb-4">
+                <h1 class="page-header-premium mb-2">
+                    {% if form.instance.pk %}Editar Tipo de Curso{% else %}Novo Tipo de Curso{% endif %}
+                </h1>
+                <p class="text-muted">Configure as categorias principais dos cursos da unidade</p>
+            </div>
 
-    .form-title {
-        font-weight: 700;
-        font-size: 1.35rem;
-        color: #1f2937;
-        text-align: center;
-        margin-bottom: 1.7rem;
-    }
+            <div class="premium-card p-4">
+                <form method="post">
+                    {% csrf_token %}
 
-    .form-label {
-        font-weight: 600;
-        color: #2d3d55;
-    }
+                    <div class="mb-4">
+                        <label class="form-label-premium">Nome da Categoria</label>
+                        <div class="custom-input">{{ form.nome }}</div>
+                        {% if form.nome.errors %}
+                        <div class="invalid-feedback d-block">{{ form.nome.errors.0 }}</div>
+                        {% endif %}
+                    </div>
 
-    .custom-input input,
-    .custom-input select {
-        width: 100%;
-        border-radius: 0.8rem !important;
-        padding: 0.75rem 1rem;
-        border: 1px solid #d5dff0;
-        background: #f9fbff;
-        transition: all 0.25s ease;
-    }
+                    <div class="mb-4">
+                        <label class="form-label-premium">Cor de Identificação</label>
+                        <div class="custom-input">{{ form.cor }}</div>
+                        {% if form.cor.errors %}
+                        <div class="invalid-feedback d-block">{{ form.cor.errors.0 }}</div>
+                        {% endif %}
+                        <div class="form-text small text-muted mt-2">
+                            <i class="bi bi-info-circle me-1"></i> Esta cor será usada em badges e listas por todo o
+                            sistema.
+                        </div>
+                    </div>
 
-    .custom-input input:focus,
-    .custom-input select:focus {
-        border-color: #4B5DFF !important;
-        box-shadow: 0 0 0 3px rgba(75,93,255,0.18);
-        background: #ffffff;
-    }
+                    {% if user.is_superuser %}
+                    <div class="mb-4">
+                        <label class="form-label-premium">Unidade Vinculada</label>
+                        <div class="custom-input">{{ form.escola }}</div>
+                        {% if form.escola.errors %}
+                        <div class="invalid-feedback d-block">{{ form.escola.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                    {% endif %}
 
-    .btn-save {
-        border-radius: 50px;
-        padding: 0.65rem 2.1rem;
-        background: #4B5DFF;
-        font-weight: 700;
-        border: none;
-        color: white;
-        transition: 0.25s ease;
-    }
+                    <div class="d-flex justify-content-end mt-5 gap-3 pt-3 border-top">
+                        <a href="{% url 'cursos:lista_tipos_curso' %}" class="btn btn-premium-outline">
+                            <i class="bi bi-x-lg me-1"></i> Cancelar
+                        </a>
+                        <button type="submit" class="btn btn-premium">
+                            <i class="bi bi-check-lg me-1"></i> Salvar Categoria
+                        </button>
+                    </div>
 
-    .btn-save:hover {
-        background-color: #6372ff;
-        transform: translateY(-2px);
-        box-shadow: 0 8px 18px rgba(75,93,255,0.35);
-    }
-
-    .btn-cancel {
-        border-radius: 50px;
-        padding: 0.65rem 2rem;
-        font-weight: 600;
-    }
-</style>
-
-
-<div class="form-wrapper">
-
-    <h2 class="form-title">
-        {% if form.instance.pk %}Editar Tipo de Curso{% else %}Novo Tipo de Curso{% endif %}
-    </h2>
-
-    <form method="post">
-        {% csrf_token %}
-
-        <div class="mb-3">
-            <label class="form-label">{{ form.nome.label }}</label>
-            <div class="custom-input">{{ form.nome }}</div>
-            {% if form.nome.errors %}
-                <div class="invalid-feedback d-block">{{ form.nome.errors }}</div>
-            {% endif %}
+                </form>
+            </div>
         </div>
-
-        <div class="mb-3">
-            <label class="form-label">{{ form.cor.label }}</label>
-            <div class="custom-input">{{ form.cor }}</div>
-            {% if form.cor.errors %}
-                <div class="invalid-feedback d-block">{{ form.cor.errors }}</div>
-            {% endif %}
-        </div>
-
-        {% if user.is_superuser %}
-        <div class="mb-3">
-            <label class="form-label">{{ form.escola.label }}</label>
-            <div class="custom-input">{{ form.escola }}</div>
-            {% if form.escola.errors %}
-                <div class="invalid-feedback d-block">{{ form.escola.errors }}</div>
-            {% endif %}
-        </div>
-        {% endif %}
-
-        <div class="d-flex justify-content-end mt-4">
-            <a href="{% url 'cursos:lista_tipos_curso' %}" class="btn btn-secondary btn-cancel me-2">Cancelar</a>
-            <button type="submit" class="btn btn-save">Salvar</button>
-        </div>
-
-    </form>
-
+    </div>
 </div>
 
 {% endblock %}

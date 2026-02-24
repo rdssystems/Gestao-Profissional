@@ -6,55 +6,28 @@
 
 {% block content %}
 
-<style>
-    body {
-        background: #eef1f5 !important;
-        font-family: "Inter", sans-serif;
-        color: #424a57;
-    }
-
-    .page-title {
-        font-weight: 700;
-        color: #1f2937;
-    }
-
-    .table-card {
-        border-radius: 1.2rem;
-        background: #ffffff;
-        border: 1px solid rgba(0, 0, 0, 0.05);
-        box-shadow: 0 3px 8px rgba(0, 0, 0, 0.04), 0 14px 40px rgba(0, 0, 0, 0.08);
-        overflow: hidden;
-    }
-
-    .btn-app {
-        border-radius: .6rem;
-        font-weight: 600;
-        font-size: .85rem;
-    }
-</style>
-
 <div class="container-fluid px-4 mt-4">
     <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
-        <h2 class="page-title">Gestão de Cursos</h2>
+        <h1 class="page-header-premium mb-0">Gestão de Cursos</h1>
         <div class="d-flex gap-2">
             {% if user.is_superuser or user|has_group:"Coordenador" %}
-            <a href="{% url 'cursos:criar_curso' %}" class="btn btn-primary btn-app">Novo Curso</a>
-            <a href="{% url 'cursos:lista_tipos_curso' %}" class="btn btn-outline-secondary btn-app">Tipos de Curso</a>
+            <a href="{% url 'cursos:criar_curso' %}" class="btn btn-premium">Novo Curso</a>
+            <a href="{% url 'cursos:lista_tipos_curso' %}" class="btn btn-premium-outline">Tipos de Curso</a>
             {% endif %}
 
             {% if user.is_superuser %}
-            <a href="{% url 'cursos:upload_cursos_csv' %}" class="btn btn-outline-info btn-app">Upload CSV</a>
+            <a href="{% url 'cursos:upload_cursos_csv' %}" class="btn btn-premium-outline">Upload CSV</a>
             {% endif %}
         </div>
     </div>
 
     <!-- Cursos Ativos -->
-    <div class="card table-card mb-4">
-        <div class="p-3 bg-light border-bottom">
-            <h5 class="mb-0">Cursos Ativos</h5>
+    <div class="premium-card mb-4">
+        <div class="d-flex align-items-center justify-content-between mb-3">
+            <h5 class="text-muted fw-bold mb-0">Cursos Ativos</h5>
         </div>
-        <div class="table-responsive">
-            <table class="table align-middle">
+        <div class="table-responsive-premium">
+            <table class="table-premium">
                 <thead>
                     <tr>
                         <th>Curso</th>
@@ -76,7 +49,7 @@
                             {% if perms.cursos.change_curso or user|has_group:"Coordenador" %}
                             <form method="post" action="{% url 'cursos:alterar_status_curso' pk=curso.pk %}">
                                 {% csrf_token %}
-                                <select name="status" class="form-select form-select-sm status-select"
+                                <select name="status" class="form-select form-select-sm-premium status-select"
                                     onchange="this.form.submit()" data-current="{{ curso.status }}">
                                     <option value="Aberta">Aberta</option>
                                     <option value="Em Andamento">Em Andamento</option>
@@ -89,9 +62,11 @@
                         </td>
                         <td>
                             <a href="{% url 'cursos:detalhe_curso' pk=curso.pk %}"
-                                class="btn btn-sm btn-outline-primary">Ver</a>
+                                class="btn btn-action-premium text-white"
+                                style="background-color: var(--brand-primary);"><i class="bi bi-eye"></i></a>
                             <a href="{% url 'cursos:fazer_chamada' curso_pk=curso.pk %}"
-                                class="btn btn-sm btn-success">Chamada</a>
+                                class="btn btn-action-premium text-white" style="background-color: #10b981;"><i
+                                    class="bi bi-person-check"></i> Chamada</a>
                         </td>
                     </tr>
                     {% empty %}

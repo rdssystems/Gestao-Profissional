@@ -1,0 +1,458 @@
+:root {
+    /* Cores da Marca Baseadas no Dashboard Modernizado */
+    --brand-primary: #2563eb;
+    --brand-secondary: #64748b;
+    --bg-main: #f8fafc;
+    --card-bg: #ffffff;
+    --text-main: #1e293b;
+    --text-muted: #64748b;
+
+    /* Variações Suaves para Badges e Ícones */
+    --bg-blue-soft: #eff6ff;
+    --text-blue-soft: #1d4ed8;
+
+    --bg-green-soft: #f0fdf4;
+    --text-green-soft: #15803d;
+
+    --bg-red-soft: #fef2f2;
+    --text-red-soft: #b91c1c;
+
+    --bg-amber-soft: #fffbeb;
+    --text-amber-soft: #b45309;
+
+    --bg-indigo-soft: #eef2ff;
+    --text-indigo-soft: #4338ca;
+
+    --bg-slate-soft: #f8fafc;
+    --text-slate-soft: #334155;
+
+    /* Específicos da Navbar */
+    --nav-bg: #ffffff;
+    --nav-border: #e2e8f0;
+}
+
+body {
+    background-color: var(--bg-main) !important;
+    font-family: 'Inter', sans-serif;
+    color: var(--text-main);
+}
+
+main {
+    padding-top: 90px;
+}
+
+/* --------------------------------------------------------------------------
+   ANIMAÇÕES GLOBAIS
+   -------------------------------------------------------------------------- */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.animate-up {
+    animation: fadeInUp 0.5s ease-out forwards;
+}
+
+/* --------------------------------------------------------------------------
+   NAVBAR PREMIUM
+   -------------------------------------------------------------------------- */
+.navbar-custom {
+    background: var(--nav-bg);
+    border-bottom: 1px solid var(--nav-border);
+    padding: 0.8rem 0;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    z-index: 1030;
+}
+
+.navbar-custom .nav-link {
+    color: var(--text-muted) !important;
+    font-weight: 500;
+    transition: 0.2s;
+    border-radius: 0.5rem;
+    padding: 0.5rem 0.8rem !important;
+    margin: 0 0.2rem;
+}
+
+.navbar-custom .nav-link:hover {
+    color: var(--brand-primary) !important;
+    background-color: var(--bg-main);
+}
+
+.navbar-custom .nav-link.active-nav-link {
+    color: var(--brand-primary) !important;
+    font-weight: 600;
+    background-color: var(--bg-blue-soft);
+}
+
+.navbar-brand-custom img {
+    height: 48px;
+    margin-right: 12px;
+    transition: transform 0.2s;
+}
+
+.navbar-brand-custom:hover img {
+    transform: scale(1.05);
+}
+
+.navbar-brand-text {
+    font-weight: 700;
+    color: var(--text-main);
+}
+
+.navbar-custom .dropdown-menu {
+    border-radius: 1rem;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    padding: 0.5rem;
+}
+
+.navbar-custom .dropdown-item {
+    border-radius: 0.5rem;
+    padding: 0.5rem 1rem;
+    font-weight: 500;
+    color: var(--text-main);
+    transition: all 0.2s;
+}
+
+.navbar-custom .dropdown-item:hover {
+    background-color: var(--bg-main);
+    color: var(--brand-primary);
+}
+
+/* --------------------------------------------------------------------------
+   COMPONENTES PREMIUM (Cards)
+   -------------------------------------------------------------------------- */
+.premium-card {
+    background: var(--card-bg);
+    border: 1px solid rgba(226, 232, 240, 0.8);
+    border-radius: 1.25rem;
+    padding: 1.5rem;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+}
+
+.premium-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+    border-color: var(--brand-primary);
+}
+
+/* --------------------------------------------------------------------------
+   BOTÕES GLOBAIS
+   -------------------------------------------------------------------------- */
+.btn-premium {
+    background: var(--brand-primary);
+    color: white;
+    padding: 0.6rem 1.2rem;
+    border-radius: 0.75rem;
+    font-weight: 600;
+    border: none;
+    box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.2);
+    transition: all 0.2s;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.btn-premium:hover {
+    background: #1d4ed8;
+    transform: scale(1.02);
+    color: white;
+}
+
+.btn-premium-outline {
+    background: transparent;
+    color: var(--brand-primary);
+    padding: 0.6rem 1.2rem;
+    border-radius: 0.75rem;
+    font-weight: 600;
+    border: 1px solid var(--brand-primary);
+    transition: all 0.2s;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.btn-premium-outline:hover {
+    background: var(--bg-blue-soft);
+    color: var(--brand-primary);
+}
+
+/* --------------------------------------------------------------------------
+   CORES AUXILIARES (Backgrounds de Ícones e Badges)
+   -------------------------------------------------------------------------- */
+.bg-blue-soft {
+    background: var(--bg-blue-soft);
+    color: var(--text-blue-soft);
+}
+
+.bg-green-soft {
+    background: var(--bg-green-soft);
+    color: var(--text-green-soft);
+}
+
+.bg-red-soft {
+    background: var(--bg-red-soft);
+    color: var(--text-red-soft);
+}
+
+.bg-amber-soft {
+    background: var(--bg-amber-soft);
+    color: var(--text-amber-soft);
+}
+
+.bg-indigo-soft {
+    background: var(--bg-indigo-soft);
+    color: var(--text-indigo-soft);
+}
+
+.bg-slate-soft {
+    background: var(--bg-slate-soft);
+    color: var(--text-slate-soft);
+}
+
+/* --------------------------------------------------------------------------
+   FORMULÁRIOS
+   -------------------------------------------------------------------------- */
+.form-control-premium,
+.form-select-premium {
+    border: 1px solid #e2e8f0;
+    border-radius: 0.75rem;
+    padding: 0.6rem 1rem;
+    background-color: var(--bg-main);
+    transition: all 0.2s;
+    color: var(--text-main);
+}
+
+.form-control-premium:focus,
+.form-select-premium:focus {
+    border-color: var(--brand-primary);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    outline: none;
+}
+
+label.form-label-premium {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.4rem;
+    display: block;
+}
+
+/* Wrapper global para inputs do Django sem classes */
+.custom-input input,
+.custom-input select,
+.custom-input textarea {
+    display: block;
+    width: 100%;
+    padding: 0.75rem 1.1rem;
+    font-family: inherit;
+    font-size: 0.95rem;
+    font-weight: 400;
+    line-height: 1.5;
+    color: var(--text-main);
+    background-color: var(--bg-main);
+    background-clip: padding-box;
+    border: 1.5px solid #e2e8f0;
+    appearance: none;
+    border-radius: 0.85rem;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.custom-input input:focus,
+.custom-input select:focus,
+.custom-input textarea:focus {
+    border-color: var(--brand-primary);
+    outline: 0;
+    box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.15);
+    background-color: #ffffff;
+    transform: translateY(-1px);
+}
+
+.custom-input select {
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23343a40' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 1rem center;
+    background-size: 16px 12px;
+    padding-right: 2.5rem;
+}
+
+.invalid-feedback {
+    font-size: 0.8rem;
+    margin-top: 0.25rem;
+    color: #ef4444;
+}
+
+/* --------------------------------------------------------------------------
+   TABELAS PREMIUM
+   -------------------------------------------------------------------------- */
+.table-premium {
+    width: 100%;
+    margin-bottom: 1rem;
+    color: var(--text-main);
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+.table-premium th {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid #f1f5f9;
+    background: #f8fafc;
+}
+
+.table-premium th:first-child {
+    border-top-left-radius: 1rem;
+}
+
+.table-premium th:last-child {
+    border-top-right-radius: 1rem;
+}
+
+.table-premium td {
+    padding: 1rem 1.5rem;
+    vertical-align: middle;
+    border-bottom: 1px solid #f1f5f9;
+    background: white;
+    transition: background-color 0.2s;
+}
+
+.table-premium tbody tr:hover td {
+    background-color: #f8fafc;
+}
+
+.table-premium tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.table-premium tbody tr:last-child td:first-child {
+    border-bottom-left-radius: 1rem;
+}
+
+.table-premium tbody tr:last-child td:last-child {
+    border-bottom-right-radius: 1rem;
+}
+
+/* Envolver a tabela nisto para dar o formato de card */
+.table-responsive-premium {
+    background: white;
+    border-radius: 1.25rem;
+    border: 1px solid #e2e8f0;
+    overflow: hidden;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+}
+
+/* --------------------------------------------------------------------------
+   PAGE HEADERS (Títulos de Página)
+   -------------------------------------------------------------------------- */
+.page-header-premium {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+}
+
+.page-title {
+    font-size: 1.875rem;
+    font-weight: 800;
+    letter-spacing: -0.025em;
+    color: var(--text-main);
+    margin-bottom: 0.25rem;
+}
+
+.page-subtitle {
+    color: var(--text-muted);
+    font-size: 0.95rem;
+}
+
+/* --------------------------------------------------------------------------
+   BOTÕES DE AÇÃO PEQUENOS E BADGES
+   -------------------------------------------------------------------------- */
+.btn-action-premium {
+    border-radius: 0.5rem;
+    padding: 0.4rem 0.8rem;
+    font-weight: 500;
+    font-size: 0.85rem;
+    transition: all 0.2s;
+    color: var(--brand-primary);
+    border: 1px solid var(--nav-border);
+    background: white;
+}
+
+.btn-action-premium:hover {
+    background: var(--bg-blue-soft);
+    border-color: #bfdbfe;
+    color: #1d4ed8;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.badge-premium {
+    font-weight: 500;
+    padding: 0.35em 0.65em;
+    border-radius: 6px;
+}
+
+/* --------------------------------------------------------------------------
+   FORMULÁRIOS PEQUENOS (Filtros)
+   -------------------------------------------------------------------------- */
+.form-select-sm-premium,
+.form-control-sm-premium {
+    border-radius: 0.5rem;
+    border-color: var(--nav-border);
+    color: var(--text-main);
+    font-size: 0.875rem;
+    transition: all 0.2s;
+}
+
+.form-select-sm-premium:focus,
+.form-control-sm-premium:focus {
+    border-color: var(--brand-primary);
+    box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1);
+}
+
+/* --------------------------------------------------------------------------
+   PAGINAÇÃO PREMIUM
+   -------------------------------------------------------------------------- */
+.pagination-premium .page-link {
+    border: none;
+    color: var(--text-muted);
+    border-radius: 0.5rem;
+    margin: 0 2px;
+    font-weight: 500;
+    padding: 0.5rem 0.75rem;
+    transition: all 0.2s;
+    background-color: transparent;
+}
+
+.pagination-premium .page-item.active .page-link {
+    background: var(--brand-primary);
+    color: white;
+    box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.2);
+}
+
+.pagination-premium .page-link:hover:not(.active) {
+    background-color: var(--bg-main);
+    color: var(--text-main);
+}

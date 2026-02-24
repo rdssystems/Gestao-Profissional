@@ -9,18 +9,18 @@ class CursoForm(forms.ModelForm):
         model = Curso
         fields = ['escola', 'tipo_curso', 'nome', 'carga_horaria', 'data_inicio', 'data_fim', 'turno', 'horario', 'horario_fim', 'dia_inicio_semana', 'dia_fim_semana', 'status']
         widgets = {
-            'escola': forms.Select(attrs={'class': 'form-select'}),
-            'tipo_curso': forms.Select(attrs={'class': 'form-select'}),
-            'nome': forms.TextInput(attrs={'class': 'form-control'}),
-            'carga_horaria': forms.NumberInput(attrs={'class': 'form-control'}),
-            'data_inicio': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
-            'data_fim': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
-            'turno': forms.Select(attrs={'class': 'form-select'}),
-            'horario': forms.TimeInput(attrs={'class': 'form-control', 'type': 'time'}),
-            'horario_fim': forms.TimeInput(attrs={'class': 'form-control', 'type': 'time'}),
-            'dia_inicio_semana': forms.Select(attrs={'class': 'form-select'}),
-            'dia_fim_semana': forms.Select(attrs={'class': 'form-select'}),
-            'status': forms.Select(attrs={'class': 'form-select'}),
+            'escola': forms.Select(attrs={'class': 'form-select form-select-premium'}),
+            'tipo_curso': forms.Select(attrs={'class': 'form-select form-select-premium'}),
+            'nome': forms.TextInput(attrs={'class': 'form-control form-control-premium'}),
+            'carga_horaria': forms.NumberInput(attrs={'class': 'form-control form-control-premium'}),
+            'data_inicio': forms.DateInput(attrs={'class': 'form-control form-control-premium', 'type': 'date'}),
+            'data_fim': forms.DateInput(attrs={'class': 'form-control form-control-premium', 'type': 'date'}),
+            'turno': forms.Select(attrs={'class': 'form-select form-select-premium'}),
+            'horario': forms.TimeInput(attrs={'class': 'form-control form-control-premium', 'type': 'time'}),
+            'horario_fim': forms.TimeInput(attrs={'class': 'form-control form-control-premium', 'type': 'time'}),
+            'dia_inicio_semana': forms.Select(attrs={'class': 'form-select form-select-premium'}),
+            'dia_fim_semana': forms.Select(attrs={'class': 'form-select form-select-premium'}),
+            'status': forms.Select(attrs={'class': 'form-select form-select-premium'}),
         }
 
     def __init__(self, *args, **kwargs):
@@ -46,8 +46,8 @@ class InscricaoForm(forms.ModelForm):
         model = Inscricao
         fields = ['aluno', 'curso']
         widgets = {
-            'aluno': forms.Select(attrs={'class': 'form-select'}),
-            'curso': forms.Select(attrs={'class': 'form-select'}),
+            'aluno': forms.Select(attrs={'class': 'form-select form-select-premium'}),
+            'curso': forms.Select(attrs={'class': 'form-select form-select-premium'}),
         }
 
     def __init__(self, *args, **kwargs):
@@ -77,8 +77,8 @@ class RegistroAulaForm(forms.ModelForm):
         model = RegistroAula
         fields = ['data_aula', 'observacoes'] # Curso será definido na view
         widgets = {
-            'data_aula': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
-            'observacoes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'data_aula': forms.DateInput(attrs={'class': 'form-control form-control-premium', 'type': 'date'}),
+            'observacoes': forms.Textarea(attrs={'class': 'form-control form-control-premium', 'rows': 3}),
         }
 
 class ChamadaForm(forms.ModelForm):
@@ -87,11 +87,11 @@ class ChamadaForm(forms.ModelForm):
         fields = ['inscricao', 'status_presenca']
         widgets = {
             'inscricao': forms.HiddenInput(), # Ocultar o select, pois já exibimos o nome
-            'status_presenca': forms.Select(attrs={'class': 'form-select'}),
+            'status_presenca': forms.Select(attrs={'class': 'form-select form-select-premium'}),
         }
     
     # Adiciona um campo apenas para exibir o nome do aluno no template
-    aluno_nome = forms.CharField(label="Aluno", required=False, widget=forms.TextInput(attrs={'class': 'form-control', 'readonly': 'readonly'}))
+    aluno_nome = forms.CharField(label="Aluno", required=False, widget=forms.TextInput(attrs={'class': 'form-control form-control-premium', 'readonly': 'readonly'}))
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -119,4 +119,4 @@ ChamadaFormSet = inlineformset_factory(
 )
 
 class CursoCSVUploadForm(forms.Form):
-    csv_file = forms.FileField(label="Selecionar arquivo CSV", help_text="Faça o upload de um arquivo CSV com os dados dos cursos.", widget=forms.FileInput(attrs={'class': 'form-control'}))
+    csv_file = forms.FileField(label="Selecionar arquivo CSV", help_text="Faça o upload de um arquivo CSV com os dados dos cursos.", widget=forms.FileInput(attrs={'class': 'form-control form-control-premium'}))

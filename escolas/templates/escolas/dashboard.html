@@ -4,239 +4,7 @@
 {% block title %}Dashboard - Sistema de Gestão{% endblock %}
 
 {% block content %}
-<style>
-    :root {
-        --brand-primary: #2563eb;
-        --brand-secondary: #64748b;
-        --bg-main: #f8fafc;
-        --card-bg: #ffffff;
-        --text-main: #1e293b;
-        --text-muted: #64748b;
-    }
 
-    body {
-        background-color: var(--bg-main) !important;
-        font-family: 'Inter', sans-serif;
-        color: var(--text-main);
-    }
-
-    /* Animação de entrada */
-    @keyframes fadeInUp {
-        from {
-            opacity: 0;
-            transform: translateY(20px);
-        }
-
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
-    }
-
-    .animate-up {
-        animation: fadeInUp 0.5s ease-out forwards;
-    }
-
-    /* Saudação e Header */
-    .welcome-section {
-        margin-bottom: 2.5rem;
-    }
-
-    .dashboard-title {
-        font-size: 1.875rem;
-        font-weight: 800;
-        letter-spacing: -0.025em;
-        color: var(--text-main);
-        margin-bottom: 0.25rem;
-    }
-
-    .dashboard-subtitle {
-        color: var(--text-muted);
-        font-size: 0.95rem;
-    }
-
-    /* Cards de Métricas Estilo Premium */
-    .metric-card {
-        background: var(--card-bg);
-        border: 1px solid rgba(226, 232, 240, 0.8);
-        border-radius: 1.25rem;
-        padding: 1.5rem;
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        position: relative;
-        overflow: hidden;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
-    }
-
-    .metric-card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
-        border-color: var(--brand-primary);
-    }
-
-    .icon-wrapper {
-        width: 3.5rem;
-        height: 3.5rem;
-        border-radius: 1rem;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        margin-bottom: 1.25rem;
-        font-size: 1.5rem;
-        background: var(--bg-main);
-        color: var(--brand-primary);
-        transition: all 0.3s ease;
-    }
-
-    .metric-card:hover .icon-wrapper {
-        background: var(--brand-primary);
-        color: white;
-        transform: rotate(-5deg);
-    }
-
-    .metric-label {
-        font-size: 0.875rem;
-        font-weight: 600;
-        color: var(--text-muted);
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-        margin-bottom: 0.5rem;
-    }
-
-    .metric-value {
-        font-size: 2rem;
-        font-weight: 800;
-        color: var(--text-main);
-        line-height: 1;
-    }
-
-    /* Cores das métricas */
-    .bg-blue-soft {
-        background: #eff6ff;
-        color: #1d4ed8;
-    }
-
-    .bg-green-soft {
-        background: #f0fdf4;
-        color: #15803d;
-    }
-
-    .bg-red-soft {
-        background: #fef2f2;
-        color: #b91c1c;
-    }
-
-    .bg-amber-soft {
-        background: #fffbeb;
-        color: #b45309;
-    }
-
-    .bg-indigo-soft {
-        background: #eef2ff;
-        color: #4338ca;
-    }
-
-    .bg-slate-soft {
-        background: #f8fafc;
-        color: #334155;
-    }
-
-    /* Estilo do Filtro */
-    .filter-section {
-        background: white;
-        border-radius: 1rem;
-        border: 1px solid #e2e8f0;
-        padding: 1.5rem;
-        margin-bottom: 2rem;
-    }
-
-    .filter-btn-toggle {
-        background: none;
-        border: none;
-        color: var(--brand-primary);
-        font-weight: 600;
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        padding: 0;
-    }
-
-    /* Atividades Recentes (Estilo Feed) */
-    .feed-card {
-        background: white;
-        border-radius: 1.25rem;
-        border: 1px solid #e2e8f0;
-        overflow: hidden;
-    }
-
-    .feed-header {
-        padding: 1.25rem 1.5rem;
-        border-bottom: 1px solid #f1f5f9;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-    }
-
-    .feed-header h5 {
-        font-weight: 700;
-        margin: 0;
-    }
-
-    .feed-item {
-        padding: 1.25rem 1.5rem;
-        border-bottom: 1px solid #f8fafc;
-        display: flex;
-        align-items: center;
-        gap: 1rem;
-        transition: background 0.2s ease;
-    }
-
-    .feed-item:hover {
-        background: #f8fafc;
-    }
-
-    .feed-icon {
-        width: 2.5rem;
-        height: 2.5rem;
-        border-radius: 50%;
-        background: #f1f5f9;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        flex-shrink: 0;
-        color: var(--brand-secondary);
-    }
-
-    .feed-content {
-        flex: 1;
-    }
-
-    .feed-time {
-        font-size: 0.75rem;
-        color: var(--text-muted);
-    }
-
-    /* Botão Nova Escola */
-    .btn-create {
-        background: var(--brand-primary);
-        color: white;
-        padding: 0.75rem 1.5rem;
-        border-radius: 0.75rem;
-        font-weight: 600;
-        border: none;
-        box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.2);
-        transition: all 0.2s;
-        text-decoration: none;
-        display: inline-flex;
-        align-items: center;
-        gap: 0.5rem;
-    }
-
-    .btn-create:hover {
-        background: #1d4ed8;
-        transform: scale(1.02);
-        color: white;
-    }
-</style>
 
 <div class="container-fluid py-4 px-lg-4">
 
@@ -250,7 +18,7 @@
         </div>
         {% if user.is_superuser %}
         <div class="mt-3 mt-md-0">
-            <a href="{% url 'escolas:criar_escola' %}" class="btn-create">
+            <a href="{% url 'escolas:criar_escola' %}" class="btn-premium">
                 <i class="bi bi-plus-lg"></i> Nova Escola
             </a>
         </div>
@@ -259,33 +27,48 @@
 
     {% if user.is_superuser %}
     <!-- Seção de Filtros -->
-    <div class="filter-section animate-up" style="animation-delay: 0.1s;">
-        <button class="filter-btn-toggle mb-3" type="button" data-bs-toggle="collapse" data-bs-target="#filterCollapse">
-            <i class="bi bi-sliders"></i> Opções de Filtro
+    <div class="premium-card mb-4 animate-up" style="animation-delay: 0.1s;">
+        <button class="btn btn-premium-outline mb-1 d-inline-flex align-items-center" type="button"
+            data-bs-toggle="collapse" data-bs-target="#filterCollapse"
+            aria-expanded="{% if filter_collapse_class %}true{% else %}false{% endif %}">
+            <i class="bi bi-sliders me-2"></i> Opções de Filtro
         </button>
 
-        <div class="collapse {{ filter_collapse_class }}" id="filterCollapse">
-            <form method="GET" action="{% url 'escolas:dashboard' %}" class="row g-3">
-                <div class="col-md-5">
-                    <label class="form-label small fw-bold text-muted">UNIDADE</label>
-                    <select class="form-select border-0 bg-light" name="escola_id">
-                        <option value="all" {% if selected_escola_id == 'all' %}selected{% endif %}>Todas as Unidades
-                        </option>
+        <div class="collapse {{ filter_collapse_class }} mt-3" id="filterCollapse">
+            <form method="GET" action="{% url 'escolas:dashboard' %}" class="row align-items-end g-3">
+                <div class="col-md-5 col-lg-4">
+                    <label class="form-label small fw-bold text-muted mb-1">UNIDADE</label>
+                    <select class="form-select form-select-premium shadow-sm" name="escola_id">
+                        {% if selected_escola_id == 'all' %}
+                        <option value="all" selected>Todas as Unidades</option>
+                        {% else %}
+                        <option value="all">Todas as Unidades</option>
+                        {% endif %}
+
                         {% for escola in todas_escolas %}
-                        <option value="{{ escola.pk }}" {% if selected_escola_id == escola.pk|stringformat:"s"               %}selected{% endif %}>{{ escola.nome }}</option>
+                        {% if selected_escola_id == escola.pk|stringformat:"s" %}
+                        <option value="{{ escola.pk }}" selected>{{ escola.nome }}</option>
+                        {% else %}
+                        <option value="{{ escola.pk }}">{{ escola.nome }}</option>
+                        {% endif %}
                         {% endfor %}
                     </select>
                 </div>
-                <div class="col-md-5">
-                    <label class="form-label small fw-bold text-muted">PERÍODO</label>
-                    <select class="form-select border-0 bg-light" name="period">
+                <div class="col-md-4 col-lg-3">
+                    <label class="form-label small fw-bold text-muted mb-1">PERÍODO</label>
+                    <select class="form-select form-select-premium shadow-sm" name="period">
                         {% for key, value in period_options.items %}
-                        <option value="{{ key }}" {% if selected_period == key %}selected{% endif %}>{{ value }}</option>
+                        {% if selected_period == key %}
+                        <option value="{{ key }}" selected>{{ value }}</option>
+                        {% else %}
+                        <option value="{{ key }}">{{ value }}</option>
+                        {% endif %}
                         {% endfor %}
                     </select>
                 </div>
-                <div class="col-md-2 d-grid align-items-end">
-                    <button type="submit" class="btn btn-primary fw-bold" style="padding: 0.6rem;">Aplicar</button>
+                <div class="col-md-3 col-lg-auto mb-1">
+                    <button type="submit" class="btn btn-premium shadow-sm"><i class="bi bi-funnel-fill me-1"></i>
+                        Filtrar</button>
                 </div>
             </form>
         </div>
@@ -296,7 +79,7 @@
     <div class="row g-4 mb-5 animate-up" style="animation-delay: 0.2s;">
         <!-- Alunos Cadastrados -->
         <div class="col-6 col-md-4 col-xl-2">
-            <div class="metric-card">
+            <div class="premium-card">
                 <div class="icon-wrapper bg-blue-soft">
                     <i class="bi bi-people-fill"></i>
                 </div>
@@ -307,7 +90,7 @@
 
         <!-- Alunos Cursando -->
         <div class="col-6 col-md-4 col-xl-2">
-            <div class="metric-card">
+            <div class="premium-card">
                 <div class="icon-wrapper bg-indigo-soft">
                     <i class="bi bi-person-workspace"></i>
                 </div>
@@ -318,7 +101,7 @@
 
         <!-- Alunos Concluintes -->
         <div class="col-6 col-md-4 col-xl-2">
-            <div class="metric-card">
+            <div class="premium-card">
                 <div class="icon-wrapper bg-green-soft">
                     <i class="bi bi-mortarboard-fill"></i>
                 </div>
@@ -329,7 +112,7 @@
 
         <!-- Alunos Desistentes -->
         <div class="col-6 col-md-4 col-xl-2">
-            <div class="metric-card">
+            <div class="premium-card">
                 <div class="icon-wrapper bg-red-soft">
                     <i class="bi bi-person-dash-fill"></i>
                 </div>
@@ -340,7 +123,7 @@
 
         <!-- Cursos Ativos -->
         <div class="col-6 col-md-4 col-xl-2">
-            <div class="metric-card">
+            <div class="premium-card">
                 <div class="icon-wrapper bg-amber-soft">
                     <i class="bi bi-book-half"></i>
                 </div>
@@ -351,7 +134,7 @@
 
         <!-- Cursos Concluídos -->
         <div class="col-6 col-md-4 col-xl-2">
-            <div class="metric-card">
+            <div class="premium-card">
                 <div class="icon-wrapper bg-slate-soft">
                     <i class="bi bi-archive-fill"></i>
                 </div>
@@ -382,8 +165,7 @@
                                 <span class="text-muted">foi matriculado no curso</span>
                                 <span class="badge bg-blue-soft text-primary">{{ inscricao.curso.nome }}</span>
                             </p>
-                            <span class="feed-time"><i class="bi bi-clock me-1"></i>{{
-                                inscricao.data_inscricao|timesince }} atrás</span>
+                            <span class="feed-time"><i class="bi bi-clock me-1"></i>{{ inscricao.data_inscricao|timesince }} atrás</span>
                         </div>
                         <div class="d-none d-md-block">
                             <a href="{% url 'alunos:detalhe_aluno' pk=inscricao.aluno.pk %}"

@@ -28,17 +28,21 @@
                         <select name="curso_id" class="form-select form-select-lg">
                             <option value="">— Escolha um curso —</option>
                             {% for curso in cursos_abertos %}
-                                <option value="{{ curso.pk }}"
-                                    {% if curso.pk == selected_curso.pk %}selected{% endif %}>
-                                    {{ curso.nome }} • {{ curso.get_turno_display }} • {{ curso.horario|date:"H:i" }}
-                                </option>
+                            {% if curso.pk == selected_curso.pk %}
+                            <option value="{{ curso.pk }}" selected>
+                                {{ curso.nome }} • {{ curso.get_turno_display }} • {{ curso.horario|date:"H:i" }}
+                            </option>
+                            {% else %}
+                            <option value="{{ curso.pk }}">
+                                {{ curso.nome }} • {{ curso.get_turno_display }} • {{ curso.horario|date:"H:i" }}
+                            </option>
+                            {% endif %}
                             {% endfor %}
                         </select>
                     </div>
 
                     <div class="col-12 col-md-4">
-                        <button type="submit"
-                                class="btn btn-primary btn-lg w-100 fw-semibold shadow-sm">
+                        <button type="submit" class="btn btn-primary btn-lg w-100 fw-semibold shadow-sm">
                             Carregar Curso
                         </button>
                     </div>
@@ -62,22 +66,17 @@
             </div>
 
             <div class="d-flex gap-2 flex-wrap">
-                <button type="button"
-                        class="btn btn-outline-primary btn-sm fw-semibold"
-                        onclick="selectTop(20)">
+                <button type="button" class="btn btn-outline-primary btn-sm fw-semibold" onclick="selectTop(20)">
                     Selecionar Top 20
                 </button>
 
-                <button type="button"
-                        class="btn btn-success btn-sm fw-semibold"
-                        onclick="openWhatsappModal()">
+                <button type="button" class="btn btn-success btn-sm fw-semibold" onclick="openWhatsappModal()">
                     <i class="bi bi-whatsapp me-1"></i>
                     Contatar Selecionados
                 </button>
 
-                <button type="button"
-                        class="btn btn-info btn-sm fw-semibold text-white"
-                        onclick="printSelectedStudents()">
+                <button type="button" class="btn btn-info btn-sm fw-semibold text-white"
+                    onclick="printSelectedStudents()">
                     <i class="bi bi-printer me-1"></i>
                     Imprimir Lista
                 </button>
@@ -89,9 +88,7 @@
                 <thead class="table-light">
                     <tr class="text-secondary small text-uppercase">
                         <th class="text-center" style="width: 50px;">
-                            <input type="checkbox"
-                                   class="form-check-input"
-                                   onclick="toggleAll(this)">
+                            <input type="checkbox" class="form-check-input" onclick="toggleAll(this)">
                         </th>
                         <th>Nome</th>
                         <th>CPF</th>
@@ -102,25 +99,19 @@
                 </thead>
                 <tbody>
                     {% for aluno in alunos_sugeridos %}
-                    <tr class="aluno-row"
-                        data-id="{{ aluno.pk }}"
-                        data-nome="{{ aluno.nome_completo }}"
+                    <tr class="aluno-row" data-id="{{ aluno.pk }}" data-nome="{{ aluno.nome_completo }}"
                         data-whatsapp="{{ aluno.whatsapp_link|default:'' }}">
 
                         <td class="text-center">
-                            <input type="checkbox"
-                                   class="form-check-input aluno-select"
-                                   value="{{ aluno.pk }}">
+                            <input type="checkbox" class="form-check-input aluno-select" value="{{ aluno.pk }}">
                         </td>
 
                         <td class="fw-semibold">
                             {{ aluno.nome_completo }}
                             {% if aluno.whatsapp_link %}
-                                <a href="https://wa.me/{{ aluno.whatsapp_link }}"
-                                   target="_blank"
-                                   class="text-success ms-1">
-                                    <i class="bi bi-whatsapp"></i>
-                                </a>
+                            <a href="https://wa.me/{{ aluno.whatsapp_link }}" target="_blank" class="text-success ms-1">
+                                <i class="bi bi-whatsapp"></i>
+                            </a>
                             {% endif %}
                         </td>
 
@@ -129,13 +120,11 @@
                         <td>{{ aluno.score_total }}</td>
 
                         <td class="text-end">
-                            <form method="post"
-                                  action="{% url 'cursos:matricular_aluno_direto' %}">
+                            <form method="post" action="{% url 'cursos:matricular_aluno_direto' %}">
                                 {% csrf_token %}
                                 <input type="hidden" name="aluno_id" value="{{ aluno.pk }}">
                                 <input type="hidden" name="curso_id" value="{{ selected_curso.pk }}">
-                                <button type="submit"
-                                        class="btn btn-success btn-sm fw-semibold">
+                                <button type="submit" class="btn btn-success btn-sm fw-semibold">
                                     Matricular
                                 </button>
                             </form>
@@ -193,17 +182,15 @@
                         <td class="text-end">
                             <div class="d-flex gap-2 justify-content-end">
                                 <a href="{% url 'cursos:detalhe_curso' pk=selected_curso.pk %}"
-                                   class="btn btn-info btn-sm text-white">
+                                    class="btn btn-info btn-sm text-white">
                                     Detalhes
                                 </a>
 
-                                <form method="post"
-                                      action="{% url 'cursos:cancelar_matricula_direto' %}"
-                                      onsubmit="return confirm('Tem certeza que deseja cancelar a matrícula de {{ inscricao.aluno.nome_completo }}?');">
+                                <form method="post" action="{% url 'cursos:cancelar_matricula_direto' %}"
+                                    onsubmit="return confirm('Tem certeza que deseja cancelar a matrícula de {{ inscricao.aluno.nome_completo }}?');">
                                     {% csrf_token %}
                                     <input type="hidden" name="inscricao_id" value="{{ inscricao.pk }}">
-                                    <button type="submit"
-                                            class="btn btn-danger btn-sm">
+                                    <button type="submit" class="btn btn-danger btn-sm">
                                         Cancelar
                                     </button>
                                 </form>
@@ -237,7 +224,8 @@
                 <form id="whatsapp-form">
                     <div class="mb-3">
                         <label for="whatsapp-message" class="form-label">Mensagem</label>
-                        <textarea class="form-control" id="whatsapp-message" rows="5" placeholder="Digite sua mensagem aqui..."></textarea>
+                        <textarea class="form-control" id="whatsapp-message" rows="5"
+                            placeholder="Digite sua mensagem aqui..."></textarea>
                     </div>
                     <p class="text-muted small">
                         A mensagem será enviada para os <strong id="selected-count">0</strong> alunos selecionados.
@@ -342,7 +330,7 @@
         });
 
         printWindow.document.write('</tbody></table>');
-        printWindow.document.write('<script>setTimeout(() => { window.print(); window.close(); }, 500);</script>');
+        printWindow.document.write('<script>setTimeout(() => { window.print(); window.close(); }, 500);</' + 'script>');
         printWindow.document.write('</body></html>');
         printWindow.document.close();
     }

@@ -5,157 +5,34 @@
 
 {% block content %}
 
-<style>
-    body {
-        background: #eef1f5 !important;
-        font-family: "Inter", sans-serif;
-        color: #424a57;
-        background-image: radial-gradient(rgba(0, 0, 0, 0.02) 1px, transparent 0);
-        background-size: 18px 18px;
-    }
-
-    .page-title {
-        font-weight: 700;
-        color: #1f2937;
-        margin-bottom: .25rem;
-    }
-
-    .page-subtitle {
-        color: #6b7280;
-        font-size: 1rem;
-    }
-
-    .btn {
-        border-radius: .6rem;
-        font-weight: 600;
-        font-size: .85rem;
-        white-space: nowrap;
-    }
-
-    .btn-primary {
-        background-color: #4B5DFF;
-        border: none;
-    }
-
-    .btn-primary:hover {
-        background-color: #6372ff;
-        box-shadow: 0 6px 18px rgba(75, 93, 255, .25);
-    }
-
-    .list-card {
-        position: relative;
-        border-radius: 1.2rem;
-        background: #ffffff;
-        border: 1px solid rgba(0, 0, 0, 0.05);
-        box-shadow:
-            0 3px 8px rgba(0, 0, 0, 0.04),
-            0 14px 40px rgba(0, 0, 0, 0.08);
-        overflow: hidden;
-    }
-
-    .list-card::before {
-        content: "";
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        height: 3px;
-        background: linear-gradient(90deg,
-                rgba(75, 93, 255, 0.35),
-                rgba(99, 114, 255, 0.12));
-    }
-
-    .list-group-item {
-        border: none;
-        border-bottom: 1px solid rgba(0, 0, 0, 0.06);
-        padding: 1rem 1.25rem;
-        font-size: .95rem;
-        color: #2c3441;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-    }
-
-    .list-group-item:last-child {
-        border-bottom: none;
-    }
-
-    .list-group-item:hover {
-        background: #f2f4fa;
-    }
-
-    .item-title {
-        font-weight: 600;
-        color: #1f2937;
-    }
-
-    .item-subtitle {
-        font-size: .8rem;
-        color: #6b7280;
-    }
-
-    .action-buttons .btn {
-        border-radius: .55rem;
-        padding: .35rem .85rem;
-        font-size: .8rem;
-    }
-
-    .btn-outline-primary {
-        border-color: #4B5DFF;
-        color: #4B5DFF;
-    }
-
-    .btn-outline-primary:hover {
-        background-color: #4B5DFF;
-        color: #fff;
-    }
-
-    .btn-danger {
-        background-color: #e43e3e;
-        border: none;
-    }
-
-    .btn-danger:hover {
-        background-color: #c92f2f;
-        box-shadow: 0 6px 16px rgba(233, 23, 23, 0.25);
-    }
-
-    .empty-text {
-        color: #6d7a92;
-        padding: 2rem;
-        text-align: center;
-        font-size: .95rem;
-    }
-</style>
-
 <div class="container-fluid px-4 px-lg-5 mt-4 mb-5">
 
     <!-- Cabeçalho -->
-    <div class="d-flex justify-content-between align-items-center mb-4">
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
         <div>
-            <h1 class="page-title">Tipos de Curso</h1>
-            <div class="page-subtitle">Categorias utilizadas para organização dos cursos</div>
+            <h1 class="page-header-premium mb-0">Tipos de Curso</h1>
+            <p class="text-muted mb-0">Categorias utilizadas para organização dos cursos</p>
         </div>
 
         {% if perms.cursos.add_tipocurso or user|has_group:"Coordenador" %}
-        <a href="{% url 'cursos:criar_tipo_curso' %}" class="btn btn-primary fw-semibold">
+        <a href="{% url 'cursos:criar_tipo_curso' %}" class="btn btn-premium fw-semibold">
             Novo Tipo
         </a>
         {% endif %}
     </div>
 
     <!-- Lista -->
-    <div class="card list-card">
+    <div class="premium-card">
         <div class="list-group list-group-flush">
 
             {% for tipo_curso in tipos_curso %}
-            <div class="list-group-item">
+            <div class="list-group-item d-flex justify-content-between align-items-center border-bottom py-3">
                 <div>
-                    <div class="item-title">
+                    <div class="fw-bold text-dark">
                         {{ tipo_curso.nome }}
                     </div>
                     {% if user.is_superuser %}
-                    <div class="item-subtitle">
+                    <div class="text-muted small">
                         {{ tipo_curso.escola.nome }}
                     </div>
                     {% endif %}
@@ -164,21 +41,22 @@
                 <div class="action-buttons d-flex gap-2">
                     {% if perms.cursos.change_tipocurso or user|has_group:"Coordenador" %}
                     <a href="{% url 'cursos:editar_tipo_curso' pk=tipo_curso.pk %}"
-                        class="btn btn-outline-primary btn-sm">
-                        Editar
+                        class="btn btn-action-premium text-white" style="background-color: #f59e0b;">
+                        <i class="bi bi-pencil"></i> Editar
                     </a>
                     {% endif %}
 
                     {% if perms.cursos.delete_tipocurso or user|has_group:"Coordenador" %}
-                    <a href="{% url 'cursos:excluir_tipo_curso' pk=tipo_curso.pk %}" class="btn btn-danger btn-sm">
-                        Excluir
+                    <a href="{% url 'cursos:excluir_tipo_curso' pk=tipo_curso.pk %}"
+                        class="btn btn-action-premium text-white" style="background-color: #dc2626;">
+                        <i class="bi bi-trash"></i> Excluir
                     </a>
                     {% endif %}
                 </div>
             </div>
 
             {% empty %}
-            <div class="empty-text">
+            <div class="p-4 text-center text-muted">
                 Nenhum tipo de curso cadastrado ainda.
             </div>
             {% endfor %}

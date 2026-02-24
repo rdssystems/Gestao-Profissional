@@ -139,10 +139,8 @@
                         <p class="info-line"><strong>RG:</strong> {{ aluno.rg|default:"Não informado" }}</p>
                     </div>
                     <div class="col-md-6">
-                        <p class="info-line"><strong>Órgão Expedidor:</strong> {{ aluno.orgao_exp|default:"Não
-                            informado" }}</p>
-                        <p class="info-line"><strong>Data de Emissão:</strong> {{
-                            aluno.data_emissao|date:"d/m/Y"|default:"Não informado" }}</p>
+                        <p class="info-line"><strong>Órgão Expedidor:</strong> {{ aluno.orgao_exp|default:"Não informado" }}</p>
+                        <p class="info-line"><strong>Data de Emissão:</strong> {{ aluno.data_emissao|date:"d/m/Y"|default:"Não informado" }}</p>
                     </div>
                 </div>
             </div>
@@ -153,22 +151,18 @@
             <div class="card-body">
                 <div class="row">
                     <div class="col-md-6">
-                        <p class="info-line"><strong>Data de Nascimento:</strong> {{ aluno.data_nascimento|date:"d/m/Y"
-                            }} ({{ aluno.idade }} anos)</p>
+                        <p class="info-line"><strong>Data de Nascimento:</strong> {{ aluno.data_nascimento|date:"d/m/Y" }} ({{ aluno.idade }} anos)</p>
                         <p class="info-line"><strong>Sexo:</strong> {{ aluno.get_sexo_display }}</p>
                         <p class="info-line"><strong>Estado Civil:</strong> {{ aluno.get_estado_civil_display }}</p>
-                        <p class="info-line"><strong>Cor/Raça:</strong> {{ aluno.get_cor_raca_display|default:"Não
-                            informado" }}</p>
+                        <p class="info-line"><strong>Cor/Raça:</strong> {{ aluno.get_cor_raca_display|default:"Não informado" }}</p>
                     </div>
                     <div class="col-md-6">
                         <p class="info-line"><strong>Nome da Mãe:</strong> {{ aluno.nome_mae|default:"Não informado" }}
                         </p>
-                        <p class="info-line"><strong>Naturalidade:</strong> {{ aluno.naturalidade|default:"Não
-                            informado" }} - {{ aluno.uf_naturalidade|default:"N/A" }}</p>
+                        <p class="info-line"><strong>Naturalidade:</strong> {{ aluno.naturalidade|default:"Não informado" }} - {{ aluno.uf_naturalidade|default:"N/A" }}</p>
                         <p class="info-line"><strong>Deficiência:</strong> {% if aluno.deficiencia %}Sim{% else %}Não{%
-                            endif %}</p>
-                        <p class="info-line"><strong>Escolaridade:</strong> {{
-                            aluno.get_escolaridade_display|default:"Não informado" }}</p>
+ endif %}</p>
+                        <p class="info-line"><strong>Escolaridade:</strong> {{ aluno.get_escolaridade_display|default:"Não informado" }}</p>
                     </div>
                 </div>
             </div>
@@ -180,19 +174,14 @@
                 <div class="row">
                     <div class="col-md-6">
                         <p class="info-line"><strong>CEP:</strong> {{ aluno.endereco_cep }}</p>
-                        <p class="info-line"><strong>Endereço:</strong> {{ aluno.endereco_rua }}, {{
-                            aluno.endereco_numero }}</p>
+                        <p class="info-line"><strong>Endereço:</strong> {{ aluno.endereco_rua }}, {{ aluno.endereco_numero }}</p>
                         <p class="info-line"><strong>Bairro:</strong> {{ aluno.endereco_bairro }}</p>
                     </div>
                     <div class="col-md-6">
-                        <p class="info-line"><strong>Cidade/Estado:</strong> {{ aluno.endereco_cidade }} / {{
-                            aluno.endereco_estado }}</p>
-                        <p class="info-line"><strong>Tempo de Moradia:</strong> {{
-                            aluno.get_tempo_moradia_display|default:"Não informado" }}</p>
-                        <p class="info-line"><strong>Tipo de Moradia:</strong> {{
-                            aluno.get_tipo_moradia_display|default:"Não informado" }}</p>
-                        <p class="info-line"><strong>Valor da Moradia:</strong> R$ {{ aluno.valor_moradia|default:"0,00"
-                            }}</p>
+                        <p class="info-line"><strong>Cidade/Estado:</strong> {{ aluno.endereco_cidade }} / {{ aluno.endereco_estado }}</p>
+                        <p class="info-line"><strong>Tempo de Moradia:</strong> {{ aluno.get_tempo_moradia_display|default:"Não informado" }}</p>
+                        <p class="info-line"><strong>Tipo de Moradia:</strong> {{ aluno.get_tipo_moradia_display|default:"Não informado" }}</p>
+                        <p class="info-line"><strong>Valor da Moradia:</strong> R$ {{ aluno.valor_moradia|default:"0,00" }}</p>
                     </div>
                 </div>
             </div>
@@ -219,8 +208,7 @@
                     <p class="display-4 fw-bold mb-0">{{ aluno.score_total }}</p>
                 </div>
 
-                <p class="info-line"><strong>Situação Profissional:</strong> {{
-                    aluno.get_situacao_profissional_display|default:"Não informado" }}</p>
+                <p class="info-line"><strong>Situação Profissional:</strong> {{ aluno.get_situacao_profissional_display|default:"Não informado" }}</p>
                 <p class="info-line"><strong>Renda Individual:</strong> R$ {{ aluno.renda_individual|default:"0,00" }}
                 </p>
 
@@ -239,8 +227,7 @@
             <div class="card-header">Inscrição e Interesses</div>
             <div class="card-body">
                 <p class="info-line"><strong>Escola de Origem:</strong> {{ aluno.escola.nome }}</p>
-                <p class="info-line"><strong>Como Soube:</strong> {{ aluno.get_como_soube_display|default:"Não
-                    informado" }}</p>
+                <p class="info-line"><strong>Como Soube:</strong> {{ aluno.get_como_soube_display|default:"Não informado" }}</p>
 
                 <hr class="my-3 opacity-25">
 
@@ -248,8 +235,7 @@
                 <div class="d-flex flex-wrap gap-2">
                     {% for tipo in aluno.cursos_interesse.all %}
                     <span
-                        class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-10">{{
-                        tipo.nome }}</span>
+                        class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-10">{{ tipo.nome }}</span>
                     {% empty %}
                     <span class="text-muted small">Nenhum interesse cadastrado.</span>
                     {% endfor %}
