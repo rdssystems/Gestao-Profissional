@@ -1,6 +1,8 @@
 from django.contrib import admin
 from django.urls import path, include
 from django.contrib.auth import views as auth_views
+from django.conf import settings
+from django.conf.urls.static import static
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -13,9 +15,12 @@ urlpatterns = [
     path('usuarios/', include('usuarios.urls', namespace='usuarios')),
     path('score/', include('score_config.urls', namespace='score_config')),
     path('declaracoes/', include('declaracao.urls', namespace='declaracao')),
-    path('controle-diario/', include('controle_diario.urls', namespace='controle_diario')), # Nova inclusão
+    path('controle-diario/', include('controle_diario.urls', namespace='controle_diario')),
 
-    # Re-incluindo core.urls para que o namespace 'core' e a URL 'core:agenda' sejam registrados
-    path('agenda/', include('core.urls', namespace='core')), # ADICIONADO AQUI
-    path('', include('escolas.urls')), # Novo root para o dashboard da escola
+    path('agenda/', include('core.urls', namespace='core')),
+    path('', include('escolas.urls')),
 ]
+
+if settings.DEBUG:
+    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

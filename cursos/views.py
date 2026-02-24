@@ -16,7 +16,7 @@ from django.forms import inlineformset_factory # Adicionar import
 # Importar modelos e formulários
 from .models import Curso, TipoCurso, Inscricao, RegistroAula, Chamada # Adicionar RegistroAula, Chamada
 from .forms import CursoForm, InscricaoForm, RegistroAulaForm, ChamadaFormSet, CursoCSVUploadForm, ChamadaForm # Adicionar RegistroAulaForm, ChamadaFormSet, CursoCSVUploadForm
-from core.mixins import StaffRequiredMixin, AuditLogMixin
+from core.mixins import StaffRequiredMixin, AuditLogMixin, CoordenadorRequiredMixin
 from alunos.models import Aluno
 from .validators import validar_conflito_matricula 
 
@@ -41,12 +41,6 @@ class TipoCursoForm(forms.ModelForm):
         elif not user.is_superuser:
             self.fields['escola'].queryset = self.fields['escola'].queryset.none()
 
-class CoordenadorRequiredMixin(UserPassesTestMixin):
-    def test_func(self):
-        user = self.request.user
-        if user.is_superuser:
-            return True
-        return user.groups.filter(name='Coordenador').exists()
 
 class CursoListView(LoginRequiredMixin, ListView):
     model = Curso
@@ -99,8 +93,7 @@ class CursoDetailView(LoginRequiredMixin, DetailView):
             
         return Curso.objects.none()
 
-class CursoCreateView(AuditLogMixin, PermissionRequiredMixin, LoginRequiredMixin, StaffRequiredMixin, CreateView):
-    permission_required = 'cursos.add_curso'
+class CursoCreateView(LoginRequiredMixin, CoordenadorRequiredMixin, AuditLogMixin, CreateView):
     model = Curso
     form_class = CursoForm
     template_name = 'cursos/curso_form.html'
@@ -116,8 +109,7 @@ class CursoCreateView(AuditLogMixin, PermissionRequiredMixin, LoginRequiredMixin
             form.instance.escola = self.request.user.profile.escola
         return super().form_valid(form)
 
-class CursoUpdateView(AuditLogMixin, PermissionRequiredMixin, StaffRequiredMixin, UpdateView):
-    permission_required = 'cursos.change_curso'
+class CursoUpdateView(LoginRequiredMixin, CoordenadorRequiredMixin, StaffRequiredMixin, AuditLogMixin, UpdateView):
     model = Curso
     form_class = CursoForm
     template_name = 'cursos/curso_form.html'
@@ -128,8 +120,7 @@ class CursoUpdateView(AuditLogMixin, PermissionRequiredMixin, StaffRequiredMixin
         kwargs['user'] = self.request.user
         return kwargs
 
-class CursoDeleteView(AuditLogMixin, PermissionRequiredMixin, StaffRequiredMixin, DeleteView):
-    permission_required = 'cursos.delete_curso'
+class CursoDeleteView(LoginRequiredMixin, CoordenadorRequiredMixin, StaffRequiredMixin, AuditLogMixin, DeleteView):
     model = Curso
     template_name = 'cursos/curso_confirm_delete.html'
     success_url = reverse_lazy('cursos:lista_cursos')
@@ -163,7 +154,7 @@ class CursoStatusUpdateView(LoginRequiredMixin, StaffRequiredMixin, View):
         return redirect('cursos:lista_cursos')
 
 # Views para TipoCurso
-class TipoCursoListView(LoginRequiredMixin, ListView):
+class TipoCursoListView(LoginRequiredMixin, CoordenadorRequiredMixin, ListView):
     model = TipoCurso
     template_name = 'cursos/tipocurso_list.html'
     context_object_name = 'tipos_curso'
@@ -178,8 +169,7 @@ class TipoCursoListView(LoginRequiredMixin, ListView):
         
         return TipoCurso.objects.none()
 
-class TipoCursoCreateView(AuditLogMixin, PermissionRequiredMixin, LoginRequiredMixin, StaffRequiredMixin, CreateView):
-    permission_required = 'cursos.add_tipocurso'
+class TipoCursoCreateView(LoginRequiredMixin, CoordenadorRequiredMixin, AuditLogMixin, CreateView):
     model = TipoCurso
     form_class = TipoCursoForm
     template_name = 'cursos/tipocurso_form.html'
@@ -195,8 +185,7 @@ class TipoCursoCreateView(AuditLogMixin, PermissionRequiredMixin, LoginRequiredM
             form.instance.escola = self.request.user.profile.escola
         return super().form_valid(form)
 
-class TipoCursoUpdateView(AuditLogMixin, PermissionRequiredMixin, StaffRequiredMixin, UpdateView):
-    permission_required = 'cursos.change_tipocurso'
+class TipoCursoUpdateView(LoginRequiredMixin, CoordenadorRequiredMixin, StaffRequiredMixin, AuditLogMixin, UpdateView):
     model = TipoCurso
     form_class = TipoCursoForm
     template_name = 'cursos/tipocurso_form.html'
@@ -207,8 +196,7 @@ class TipoCursoUpdateView(AuditLogMixin, PermissionRequiredMixin, StaffRequiredM
         kwargs['user'] = self.request.user
         return kwargs
 
-class TipoCursoDeleteView(AuditLogMixin, PermissionRequiredMixin, StaffRequiredMixin, DeleteView):
-    permission_required = 'cursos.delete_tipocurso'
+class TipoCursoDeleteView(LoginRequiredMixin, CoordenadorRequiredMixin, StaffRequiredMixin, AuditLogMixin, DeleteView):
     model = TipoCurso
     template_name = 'cursos/tipocurso_confirm_delete.html'
     success_url = reverse_lazy('cursos:lista_cursos')

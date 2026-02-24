@@ -47,6 +47,31 @@ class StaffRequiredMixin(UserPassesTestMixin):
 
 
         return False
+class CoordenadorRequiredMixin(UserPassesTestMixin):
+    """
+    Mixin que verifica se o usuário é:
+    1. Superuser.
+    2. Pertence ao grupo 'Coordenador' E está associado a uma escola.
+    """
+    def test_func(self):
+        user = self.request.user
+        import sys
+        
+        if user.is_superuser:
+            # sys.stderr.write(f"DEBUG: Superuser {user.username} access granted.\n")
+            return True
+        
+        has_profile = hasattr(user, 'profile')
+        has_escola = bool(user.profile.escola) if has_profile else False
+        is_coordenador = user.groups.filter(name='Coordenador').exists()
+        
+        res = has_profile and has_escola and is_coordenador
+        
+        if not res:
+            sys.stderr.write(f"DEBUG 403: User={user.username}, Profile={has_profile}, Escola={has_escola}, Coord={is_coordenador}\n")
+            
+        return res
+
 
 class AuditLogMixin:
     """
