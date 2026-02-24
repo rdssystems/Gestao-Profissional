@@ -269,11 +269,10 @@
                 <div class="col-md-5">
                     <label class="form-label small fw-bold text-muted">UNIDADE</label>
                     <select class="form-select border-0 bg-light" name="escola_id">
-                        <option value="all" {% if selected_escola_id=='all' %}selected{% endif %}>Todas as Unidades
+                        <option value="all" {% if selected_escola_id == 'all' %}selected{% endif %}>Todas as Unidades
                         </option>
                         {% for escola in todas_escolas %}
-                        <option value="{{ escola.pk }}" {% if selected_escola_id==escola.pk|stringformat:"s"
-                            %}selected{% endif %}>{{ escola.nome }}</option>
+                        <option value="{{ escola.pk }}" {% if selected_escola_id == escola.pk|stringformat:"s"               %}selected{% endif %}>{{ escola.nome }}</option>
                         {% endfor %}
                     </select>
                 </div>
@@ -281,7 +280,7 @@
                     <label class="form-label small fw-bold text-muted">PERÍODO</label>
                     <select class="form-select border-0 bg-light" name="period">
                         {% for key, value in period_options.items %}
-                        <option value="{{ key }}" {% if selected_period==key %}selected{% endif %}>{{ value }}</option>
+                        <option value="{{ key }}" {% if selected_period == key %}selected{% endif %}>{{ value }}</option>
                         {% endfor %}
                     </select>
                 </div>
