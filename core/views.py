@@ -160,14 +160,18 @@ O sistema possui hierarquia de acesso para garantir segurança e organização:
 
 ---
 
-## <i class="bi bi-tools"></i> Tecnologias Utilizadas
+## <i class="bi bi-tools"></i> Tecnologias utilizadas
 
 - **Backend**: Python 3.12+, Django 5.2.8
-- **Banco de Dados**: SQLite (padrão), compatível com PostgreSQL/MySQL.
+- **Banco de Dados**: PostgreSQL (Principal em produção/Docker), com suporte a SQLite para testes.
+- **Cache & Real-time**: Redis e Django Channels (para notificações e atualizações dinâmicas).
+- **Infraestrutura**: Docker e Docker Compose (Containerização completa).
 - **Frontend**: HTML5, CSS3, Bootstrap 5 (Design responsivo e moderno), JavaScript.
 - **Bibliotecas Principais**:
   - `openpyxl`: Geração e leitura de planilhas Excel.
   - `django-widget-tweaks`: Manipulação de formulários.
+  - `django-dbbackup`: Sistema automatizado de backups do banco e mídia.
+  - `daphne`: Servidor ASGI para suporte a WebSockets.
 
 ---
 
