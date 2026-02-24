@@ -80,8 +80,8 @@ class DashboardView(LoginRequiredMixin, ListView):
             inscricao_scope = inscricao_scope.filter(data_inscricao__date__range=[start_date, end_date])
             # Para cursos, podemos filtrar por data de início ou data de fim que estejam no período
             curso_scope = curso_scope.filter(
-                models.Q(data_inicio__date__range=[start_date, end_date]) | 
-                models.Q(data_fim__date__range=[start_date, end_date])
+                models.Q(data_inicio__range=[start_date, end_date]) | 
+                models.Q(data_fim__range=[start_date, end_date])
             ).distinct() # Usar distinct para evitar duplicatas se um curso se encaixar em ambos os filtros Q
 
         # Calcula as métricas
