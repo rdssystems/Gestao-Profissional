@@ -7,6 +7,7 @@ class Escola(models.Model):
     email = models.EmailField(unique=True)
     telefone = models.CharField(max_length=20)
     coordenador_user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='escola_coordenada')
+    data_atualizacao = models.DateTimeField(auto_now=True, null=True, blank=True)
 
     def __str__(self):
         return self.nome
