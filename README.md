@@ -44,6 +44,17 @@ O software oferece um fluxo completo desde o cadastro de alunos, criação de cu
 - Lista de chamada digital para marcar presença, falta ou ausência justificada.
 - Histórico de chamadas por curso.
 
+### 📜 Declarações e Certificados
+- Geração automática de declarações de status (**Matriculado**, **Cursando**, **Concluído**).
+- **Assinatura Digital**: Captura de assinatura via tela sensível ao toque ou mouse.
+- **Validação de Autenticidade**: Cada declaração possui um hash de validação único para conferência de veracidade.
+- Impressão otimizada em papel timbrado da escola.
+
+### 🛡️ Auditoria de Sistema (Logs)
+- Monitoramento completo de ações críticas (**CREATE**, **UPDATE**, **DELETE**).
+- Registro detalhado de quem alterou o quê e em qual horário.
+- Abrange Alunos, Cursos, Matrículas, Escolas e Declarações.
+
 ### ⚙️ Configuração de Score (Ranking)
 - Interface administrativa para definir pesos e pontuações dos critérios socioeconômicos.
 - Critérios configuráveis:
@@ -84,8 +95,13 @@ O sistema possui hierarquia de acesso para garantir segurança e organização:
 ## 🛠️ Tecnologias Utilizadas
 
 - **Backend**: Python 3.12+, Django 5.2.8
-- **Banco de Dados**: SQLite (padrão), compatível com PostgreSQL/MySQL.
-- **Frontend**: HTML5, CSS3, Bootstrap 5 (Design responsivo e moderno), JavaScript.
+- **Tempo Real**: Django Channels & WebSockets (Comunicação bidirecional)
+- **Cache & Filas**: Redis
+- **Bancos de Dados**:
+  - **Desenvolvimento**: SQLite (padrão)
+  - **Produção**: PostgreSQL 16+ (via Docker)
+- **Frontend**: HTML5, CSS3, Bootstrap 5 (Premium Design), JavaScript Vanilla.
+- **Infraestrutura**: Docker & Docker Compose.
 - **Bibliotecas Principais**:
   - `openpyxl`: Geração e leitura de planilhas Excel.
   - `django-widget-tweaks`: Manipulação de formulários.
@@ -138,8 +154,33 @@ O sistema possui hierarquia de acesso para garantir segurança e organização:
    python manage.py runserver
    ```
 
+### 🐳 Execução via Docker (Recomendado para Produção)
+
+O projeto está totalmente containerizado para facilitar o deploy e garantir consistência de ambiente:
+
+1. **Suba os containers (App, Postgres, Redis):**
+   ```bash
+   docker-compose up --build -d
+   ```
+2. **Execute as migrações no container:**
+   ```bash
+   docker-compose exec web python manage.py migrate
+   ```
+3. **Crie o superusuário:**
+   ```bash
+   docker-compose exec web python manage.py createsuperuser
+   ```
+
+O sistema estará disponível em `http://localhost:8000`.
+
 7. **Acesse o sistema:**
    Abra o navegador em `http://127.0.0.1:8000/`.
+
+---
+
+## 💾 Backup e Segurança
+- Integração com `django-dbbackup` para dumps periódicos do banco de dados e arquivos de mídia.
+- Scripts de automação incluídos (`deploy_servidor.sh`).
 
 ---
 
@@ -153,8 +194,9 @@ O sistema possui hierarquia de acesso para garantir segurança e organização:
    - Selecione o curso. O sistema sugerirá alunos com interesse naquele tipo de curso, ordenados pelo Score (maior vulnerabilidade primeiro).
    - Confirme a matrícula (o sistema validará conflitos de horário).
 5. **Chamada**: No curso, clique em "Chamada" para registrar a presença do dia.
+6. **Declarações**: Na ficha do aluno ou curso, selecione a opção para gerar a declaração com a assinatura digital.
 
 ---
 
 **Desenvolvido por:** Klisman rDs
-**Ano:** 2025
+**Ano:** 2026
