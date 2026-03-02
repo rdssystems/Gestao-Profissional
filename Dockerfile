@@ -8,7 +8,9 @@ ENV PYTHONUNBUFFERED 1
 WORKDIR /app
 
 # Instala dependências do sistema
-RUN apt-get update && apt-get install -y \
+RUN apt-get clean && \
+    apt-get update --fix-missing -o Acquire::Retries=3 -y || true && \
+    apt-get install -y --no-install-recommends \
     build-essential \
     libpq-dev \
     netcat-openbsd \
