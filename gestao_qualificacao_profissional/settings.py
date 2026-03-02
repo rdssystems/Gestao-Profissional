@@ -93,26 +93,39 @@ TEMPLATES = [
 WSGI_APPLICATION = 'gestao_qualificacao_profissional.wsgi.application'
 ASGI_APPLICATION = 'gestao_qualificacao_profissional.asgi.application'
 
-CHANNEL_LAYERS = {
-    "default": {
-        "BACKEND": "channels_redis.core.RedisChannelLayer",
-        "CONFIG": {
-            "hosts": [(os.getenv('REDIS_HOST', '127.0.0.1'), 6379)],
+REDIS_HOST = os.getenv('REDIS_HOST')
+
+if REDIS_HOST:
+    CHANNEL_LAYERS = {
+        "default": {
+            "BACKEND": "channels_redis.core.RedisChannelLayer",
+            "CONFIG": {
+                "hosts": [(REDIS_HOST, 6379)],
+            },
         },
-    },
-}
-
-
-# Configuração de CACHES para usar Redis
-CACHES = {
-    "default": {
-        "BACKEND": "django_redis.cache.RedisCache",
-        "LOCATION": os.getenv('REDIS_CACHE_URL', "redis://127.0.0.1:6379/1"),
-        "OPTIONS": {
-            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+    }
+    CACHES = {
+        "default": {
+            "BACKEND": "django_redis.cache.RedisCache",
+            "LOCATION": os.getenv('REDIS_CACHE_URL', f"redis://{REDIS_HOST}:6379/1"),
+            "OPTIONS": {
+                "CLIENT_CLASS": "django_redis.client.DefaultClient",
+            }
         }
     }
-}
+else:
+    CHANNEL_LAYERS = {
+        "default": {
+            "BACKEND": "channels.layers.InMemoryChannelLayer"
+        }
+    }
+    CACHES = {
+        "default": {
+            "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+            "LOCATION": "unique-snowflake",
+        }
+    }
+
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
