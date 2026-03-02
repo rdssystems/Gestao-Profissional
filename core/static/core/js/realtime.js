@@ -8,7 +8,7 @@ class RealTimeNotifications {
         this.usePolling = false;
         this.pollingTimer = null;
         this.container = null;
-        
+
         this.init();
     }
 
@@ -51,7 +51,7 @@ class RealTimeNotifications {
         this.socket.onmessage = (e) => {
             const data = JSON.parse(e.data);
             this.showNotification(data.message, data.type);
-            
+
             // Atualiza o conteúdo da página (Soft Reload)
             this.softReload();
         };
@@ -60,7 +60,7 @@ class RealTimeNotifications {
             console.error('WebSocket desconectado. Tentando reconectar em 5s...', e);
             this.updateConnectionBadge(false);
             setTimeout(() => this.connect(), this.reconnectInterval);
-            
+
             // Ativa polling como fallback enquanto o socket está fora
             if (!this.usePolling) {
                 this.startPolling();
@@ -83,7 +83,7 @@ class RealTimeNotifications {
             .then(html => {
                 const parser = new DOMParser();
                 const doc = parser.parseFromString(html, 'text/html');
-                
+
                 const newMain = doc.querySelector('main');
                 const currentMain = document.querySelector('main');
 
@@ -99,7 +99,7 @@ class RealTimeNotifications {
     showNotification(message, type = 'info') {
         // Cria o elemento HTML do Toast (Bootstrap 5)
         const toastId = 'toast-' + Date.now();
-        
+
         let bgClass = 'text-bg-primary';
         if (type === 'success') bgClass = 'text-bg-success';
         if (type === 'warning') bgClass = 'text-bg-warning';
@@ -134,6 +134,7 @@ class RealTimeNotifications {
         // Procura por um elemento visual (badge) para mostrar status
         const badge = document.getElementById('ws-status-badge');
         if (badge) {
+            badge.classList.remove('bg-secondary'); // Remove o cinza padrão de carregamento
             if (isConnected) {
                 badge.classList.remove('bg-danger');
                 badge.classList.add('bg-success');
