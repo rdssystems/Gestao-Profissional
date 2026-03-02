@@ -98,7 +98,7 @@ O sistema possui hierarquia de acesso para garantir segurança e organização:
 - **Tempo Real**: Django Channels & WebSockets (Comunicação bidirecional)
 - **Cache & Filas**: Redis
 - **Bancos de Dados**:
-  - **Desenvolvimento**: SQLite (padrão)
+  - **Desenvolvimento**: PostgreSQL 16+ (via Docker)
   - **Produção**: PostgreSQL 16+ (via Docker)
 - **Frontend**: HTML5, CSS3, Bootstrap 5 (Premium Design), JavaScript Vanilla.
 - **Infraestrutura**: Docker & Docker Compose.
@@ -199,4 +199,4 @@ O sistema estará disponível em `http://localhost:8000`.
 ---
 
 **Desenvolvido por:** Klisman rDs
-**Ano:** 2026
+**Ano:** 2025
