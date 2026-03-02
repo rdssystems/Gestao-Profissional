@@ -186,7 +186,6 @@ O sistema estará disponível em `http://localhost:8000`.
 
 ## 💾 Backup e Segurança
 - Integração com `django-dbbackup` para dumps periódicos do banco de dados e arquivos de mídia.
-- Scripts de automação incluídos (`deploy_servidor.sh`).
 
 ---
 
