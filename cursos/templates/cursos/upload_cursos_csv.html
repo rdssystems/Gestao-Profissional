@@ -15,10 +15,10 @@
         position: relative;
         border-radius: 1.2rem;
         background: #ffffff;
-        border: 1px solid rgba(0,0,0,0.05);
+        border: 1px solid rgba(0, 0, 0, 0.05);
         box-shadow:
-            0 3px 8px rgba(0,0,0,0.04),
-            0 14px 40px rgba(0,0,0,0.08);
+            0 3px 8px rgba(0, 0, 0, 0.04),
+            0 14px 40px rgba(0, 0, 0, 0.08);
         overflow: hidden;
         padding: 2rem;
     }
@@ -26,18 +26,21 @@
     .upload-card::before {
         content: "";
         position: absolute;
-        top: 0; left: 0; right: 0;
+        top: 0;
+        left: 0;
+        right: 0;
         height: 3px;
         background: linear-gradient(90deg,
-            rgba(75,93,255,0.35),
-            rgba(99,114,255,0.12)
-        );
+                rgba(75, 93, 255, 0.35),
+                rgba(99, 114, 255, 0.12));
     }
 
     .upload-card::after {
         content: "";
         position: absolute;
-        bottom: 0; left: 0; right: 0;
+        bottom: 0;
+        left: 0;
+        right: 0;
         height: 4px;
         background: #4B5DFF;
         border-radius: 0 0 1.2rem 1.2rem;
@@ -88,9 +91,8 @@
     .btn-upload:hover {
         background-color: #6372ff;
         transform: translateY(-2px);
-        box-shadow: 0 6px 24px rgba(75,93,255,0.25);
+        box-shadow: 0 6px 24px rgba(75, 93, 255, 0.25);
     }
-
 </style>
 
 
@@ -100,6 +102,12 @@
 
     <div class="upload-card">
         <p class="mb-4">Adicione ou atualize vários cursos de uma só vez com um arquivo CSV.</p>
+
+        <div class="mb-4">
+            <a href="{% url 'cursos:download_template_cursos' %}" class="btn btn-premium shadow-sm">
+                <i class="bi bi-file-earmark-excel me-1"></i> Baixar Template XLSX
+            </a>
+        </div>
 
         <div class="info-box mb-4">
             <span class="alert-title">Instruções do CSV:</span>

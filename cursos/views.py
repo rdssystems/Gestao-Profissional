@@ -1,6 +1,8 @@
 import csv
 import io
+import pandas as pd
 from datetime import date, time, datetime # Import datetime and time
+from django.http import HttpResponse
 
 from django.views.generic import ListView, DetailView, View
 from django.views.generic.edit import CreateView, UpdateView, DeleteView
@@ -746,3 +748,19 @@ class CursoCSVUploadView(LoginRequiredMixin, UserPassesTestMixin, View):
             return redirect('cursos:lista_cursos') # Redirect to course list or calendar after upload
         else:
             return render(request, self.template_name, {'form': form})
+
+class DownloadCursoTemplateView(LoginRequiredMixin, UserPassesTestMixin, View):
+    def test_func(self):
+        return self.request.user.is_superuser
+
+    def get(self, request, *args, **kwargs):
+        cols = [
+            'escola_nome', 'nome_curso', 'carga_horaria', 'data_inicio', 
+            'data_fim', 'turno', 'horario', 'tipo_curso_cor'
+        ]
+        df = pd.DataFrame(columns=cols)
+        response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        response['Content-Disposition'] = 'attachment; filename="template_importacao_cursos.xlsx"'
+        with pd.ExcelWriter(response, engine='openpyxl') as writer:
+            df.to_excel(writer, index=False, sheet_name='Template')
+        return response
