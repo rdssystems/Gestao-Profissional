@@ -187,44 +187,7 @@
         </div>
     </div>
 
-    {% if user.is_superuser %}
-    <!-- Ferramentas do Desenvolvedor -->
-    <div class="row mt-5 animate-up" style="animation-delay: 0.4s;">
-        <div class="col-12">
-            <div class="premium-card bg-dark text-white p-4">
-                <div class="d-flex align-items-center justify-content-between mb-3">
-                    <h5 class="mb-0 text-white"><i class="bi bi-terminal-fill me-2 text-info"></i>Centro de
-                        Desenvolvimento</h5>
-                    <span class="badge bg-secondary">Superuser Mode</span>
-                </div>
-                <div class="row g-3">
-                    <div class="col-md-6">
-                        <div class="p-3 border border-secondary rounded" style="background: rgba(255,255,255,0.05);">
-                            <h6 class="text-info mb-2">Deploy no Servidor</h6>
-                            <p class="small text-muted mb-3">Execute após o push:</p>
-                            <code class="d-block p-2 bg-black text-success rounded mb-2">sh deploy_servidor.sh</code>
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="p-3 border border-secondary rounded" style="background: rgba(255,255,255,0.05);">
-                            <h6 class="text-info mb-2">Ações Rápidas</h6>
-                            <div class="d-grid gap-2 d-md-flex justify-content-md-start">
-                                <a href="https://github.com/rdssystems" target="_blank"
-                                    class="btn btn-sm btn-outline-light">
-                                    <i class="bi bi-github me-1"></i> GitHub
-                                </a>
-                                <button type="button" class="btn btn-sm btn-outline-info"
-                                    onclick="alert('Script: deploy_servidor.sh na raiz')">
-                                    <i class="bi bi-info-circle me-1"></i> Info
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    {% endif %}
+
 </div>
 
 {% endblock %}
