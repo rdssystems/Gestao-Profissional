@@ -2,9 +2,15 @@
 
 ## 📘 Sobre o Projeto
 
-O **Sistema de Gestão de Qualificação Profissional** é uma plataforma web desenvolvida em **Django** para gerenciar cursos de qualificação, matrículas de alunos, escolas e controle de frequência. O sistema foi projetado para atender à Diretoria de Qualificação Profissional, permitindo o gerenciamento centralizado de múltiplas escolas/unidades de ensino, com foco em critérios socioeconômicos para priorização de vagas (Score).
+O **Sistema de Gestão de Qualificação Profissional** nasceu da necessidade real de centralização e modernização dos processos nos **Centros Profissionalizantes e Uditech** da cidade de Uberlândia, que conta com **9 unidades escolares**.
 
-O software oferece um fluxo completo desde o cadastro de alunos, criação de cursos, matrícula (com validação de conflitos de horário), lista de chamada e relatórios via dashboard.
+### 📜 A Evolução do Sistema
+Originalmente, o projeto era um simples formulário de inscrição que armazenava dados localmente em SQLite — sendo, inclusive, o meu primeiro software de inscrição! Com o tempo, a demanda operacional cresceu e revelou desafios críticos:
+- **Fragmentação**: Cada unidade possuía seu próprio banco de dados isolado.
+- **Segurança**: Dificuldade imensa em gerenciar backups descentralizados.
+- **Gestão**: Falta de uma visão global dos alunos e cursos da rede.
+
+Para suprir essas lacunas, o sistema evoluiu para uma plataforma completa de gerenciamento administrativo, abrangendo desde a inscrição e cálculo de score socioeconômico até a matrícula, controle de chamadas e geração de declarações com assinatura digital.
 
 ---
 
@@ -98,7 +104,7 @@ O sistema possui hierarquia de acesso para garantir segurança e organização:
 - **Tempo Real**: Django Channels & WebSockets (Comunicação bidirecional)
 - **Cache & Filas**: Redis
 - **Bancos de Dados**:
-  - **Desenvolvimento**: SQLite (padrão)
+  - **Desenvolvimento**: PostgreSQL 16+ (via Docker)
   - **Produção**: PostgreSQL 16+ (via Docker)
 - **Frontend**: HTML5, CSS3, Bootstrap 5 (Premium Design), JavaScript Vanilla.
 - **Infraestrutura**: Docker & Docker Compose.
@@ -198,5 +204,5 @@ O sistema estará disponível em `http://localhost:8000`.
 
 ---
 
-**Desenvolvido por:** Klisman rDs
-**Ano:** 2026
+**Desenvolvido por:** Klisman rDs  
+**Ano:** 2025 (Início) | **Atualização:** 2026
