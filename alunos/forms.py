@@ -109,7 +109,7 @@ class AlunoForm(forms.ModelForm):
             'data_nascimento': {'required': _("Este Campo é Obrigatório")},
             'sexo': {'required': _("Este Campo é Obrigatório")},
             'escola': {'required': _("Este Campo é Obrigatório")},
-            'email_principal': {'required': _("Este Campo é Obrigatório")},
+
             'whatsapp': {'required': _("Este Campo é Obrigatório")},
             'telefone_principal': {'required': _("Este Campo é Obrigatório")},
             'endereco_cep': {'required': _("Este Campo é Obrigatório")},

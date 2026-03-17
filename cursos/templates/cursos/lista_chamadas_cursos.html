@@ -138,18 +138,39 @@
                 <tbody>
                     {% for curso in cursos_para_chamada %}
                     <tr>
-                        <td>{{ curso.nome }}</td>
+                        <td>
+                            <strong>{{ curso.nome }}</strong>
+                            <div class="small text-muted">
+                                <i class="bi bi-calendar3 me-1"></i>{{ curso.data_inicio|date:"d/m/Y" }} - {{ curso.data_fim|date:"d/m/Y" }}
+                                {% if curso.nome_professor %}
+                                <br><i class="bi bi-person-badge me-1"></i>Prof: {{ curso.nome_professor }}
+                                {% endif %}
+                            </div>
+                        </td>
                         <td>{{ curso.tipo_curso.nome|default:"N/A" }}</td>
                         <td>{{ curso.get_turno_display|default:"N/A" }}</td>
                         <td>{{ curso.horario|date:"H:i"|default:"N/A" }}</td>
 
                         <td>
-                            {% if curso.status == 'Aberta' %}
-                                <span class="badge bg-success">{{ curso.status }}</span>
-                            {% elif curso.status == 'Em Andamento' %}
-                                <span class="badge bg-warning text-dark">{{ curso.status }}</span>
+                            {% if perms.cursos.change_curso or user|has_group:"Coordenador" %}
+                            <form method="post" action="{% url 'cursos:alterar_status_curso' pk=curso.pk %}">
+                                {% csrf_token %}
+                                <select name="status" class="form-select form-select-sm status-select"
+                                    onchange="this.form.submit()" data-current="{{ curso.status }}" style="font-size: 0.8rem; padding: 0.2rem 0.5rem; width: auto;">
+                                    <option value="Aberta" {% if curso.status == 'Aberta' %}selected{% endif %}>Aberta</option>
+                                    <option value="Em Andamento" {% if curso.status == 'Em Andamento' %}selected{% endif %}>Em Andamento</option>
+                                    <option value="Concluído" {% if curso.status == 'Concluído' %}selected{% endif %}>Concluído</option>
+                                    <option value="Arquivado" {% if curso.status == 'Arquivado' %}selected{% endif %}>Arquivado</option>
+                                </select>
+                            </form>
                             {% else %}
-                                <span class="badge bg-secondary">{{ curso.status }}</span>
+                                {% if curso.status == 'Aberta' %}
+                                    <span class="badge bg-success">{{ curso.status }}</span>
+                                {% elif curso.status == 'Em Andamento' %}
+                                    <span class="badge bg-warning text-dark">{{ curso.status }}</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">{{ curso.status }}</span>
+                                {% endif %}
                             {% endif %}
                         </td>
 
@@ -159,13 +180,18 @@
 
                         <td class="text-end">
                             <a href="{% url 'cursos:fazer_chamada' curso_pk=curso.pk %}"
-                               class="btn btn-sm btn-outline-primary btn-app me-2">
-                                Chamada
+                               class="btn btn-sm btn-outline-primary btn-app me-1" title="Nova Chamada">
+                                <i class="bi bi-plus-lg"></i> Chamada
                             </a>
 
                             <a href="{% url 'cursos:listar_chamadas_curso' curso_pk=curso.pk %}"
-                               class="btn btn-sm btn-outline-secondary btn-app">
-                                Ver Chamadas
+                               class="btn btn-sm btn-outline-secondary btn-app me-1" title="Histórico">
+                                <i class="bi bi-clock-history"></i>
+                            </a>
+
+                            <a href="{% url 'cursos:relatorio_frequencia' curso_pk=curso.pk %}"
+                               class="btn btn-sm btn-outline-info btn-app" title="Relatório Geral">
+                                <i class="bi bi-table"></i>
                             </a>
                         </td>
                     </tr>

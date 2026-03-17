@@ -32,6 +32,36 @@
                         <small>
                             Período do curso: {{ item.inscricao.curso.data_inicio|date:"d/m/Y" }} a {{ item.inscricao.curso.data_fim|date:"d/m/Y" }}
                         </small>
+
+                        {% if item.historico %}
+                            <div class="mt-3">
+                                <h6 class="text-primary mb-2"><i class="bi bi-clock-history me-1"></i> Histórico de Declarações</h6>
+                                <div class="table-responsive">
+                                    <table class="table table-sm table-hover border">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th>Data de Emissão</th>
+                                                <th>Status Aplicado</th>
+                                                <th>Ação</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for dec in item.historico %}
+                                                <tr>
+                                                    <td>{{ dec.data_emissao|date:"d/m/Y H:i" }}</td>
+                                                    <td>{{ dec.get_status_aplicado_display }}</td>
+                                                    <td>
+                                                        <a href="{% url 'declaracao:imprimir_declaracao' dec.hash_validacao %}" target="_blank" class="btn btn-sm btn-outline-primary py-0">
+                                                            <i class="bi bi-printer"></i> Re-imprimir
+                                                        </a>
+                                                    </td>
+                                                </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        {% endif %}
                     </div>
                     {% if item.pode_gerar %}
                         {% if item.status_raw == 'aguardando_regularizacao' %}

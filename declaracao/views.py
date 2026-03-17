@@ -69,11 +69,15 @@ def listar_cursos_view(request, aluno_id):
              # Fallback for statuses not in the model choices (like 'aguardando_regularizacao')
              status_display_text = "Aguardando Regularização" if status == 'aguardando_regularizacao' else "Status Inválido"
 
+        # Buscar histórico de declarações para esta inscrição
+        historico = Declaracao.objects.filter(inscricao=inscricao).order_by('-data_emissao')
+
         inscricoes_com_status.append({
             'inscricao': inscricao,
             'status_display': status_display_text,
             'status_raw': status,
-            'pode_gerar': pode_gerar
+            'pode_gerar': pode_gerar,
+            'historico': historico
         })
 
     return render(request, 'declaracao/listar_cursos.html', {

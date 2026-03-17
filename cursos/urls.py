@@ -32,6 +32,7 @@ urlpatterns = [
     path('chamadas/<int:curso_pk>/fazer/', views.FazerChamadaView.as_view(), name='fazer_chamada'),
     path('chamadas/<int:curso_pk>/fazer/<int:registro_aula_pk>/', views.FazerChamadaView.as_view(), name='fazer_chamada_editar'),
     path('chamadas/<int:curso_pk>/historico/', views.HistoricoChamadasCursoView.as_view(), name='listar_chamadas_curso'),
+    path('chamadas/<int:curso_pk>/relatorio/', views.RelatorioFrequenciaView.as_view(), name='relatorio_frequencia'),
 
     # URL para upload de CSV de cursos
     path('upload-csv/', views.CursoCSVUploadView.as_view(), name='upload_cursos_csv'),

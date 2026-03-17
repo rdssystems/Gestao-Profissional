@@ -17,6 +17,9 @@
     <div class="mb-2"><strong class="text-dark">Escola:</strong> {{ curso.escola.nome }}</div>
     <div class="mb-2"><strong class="text-dark">Tipo de Curso:</strong> {{ curso.tipo_curso.nome }}</div>
     <div class="mb-2"><strong class="text-dark">Carga Horária:</strong> {{ curso.carga_horaria }} horas</div>
+    {% if curso.nome_professor %}
+    <div class="mb-2"><strong class="text-dark">Professor:</strong> {{ curso.nome_professor }}</div>
+    {% endif %}
 
     <div class="mb-2"><strong class="text-dark">Turno:</strong> {{ curso.turno|default:"Não informado" }}</div>
     <div class="mb-2"><strong class="text-dark">Horário:</strong> {{ curso.horario|date:"H:i"|default:"Não informado" }}

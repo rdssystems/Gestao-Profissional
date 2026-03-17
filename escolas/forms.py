@@ -4,12 +4,13 @@ from .models import Escola
 class EscolaForm(forms.ModelForm):
     class Meta:
         model = Escola
-        fields = ['nome', 'endereco', 'email', 'telefone', 'coordenador_user']
+        fields = ['nome', 'endereco', 'email', 'telefone', 'whatsapp', 'coordenador_user']
         widgets = {
             'nome': forms.TextInput(attrs={'class': 'form-control'}),
             'endereco': forms.TextInput(attrs={'class': 'form-control'}),
             'email': forms.EmailInput(attrs={'class': 'form-control'}),
             'telefone': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '(99) 9999-9999 ou (99) 99999-9999'}),
+            'whatsapp': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '(99) 99999-9999'}),
             'coordenador_user': forms.Select(attrs={'class': 'form-control'}),
         }
 
@@ -25,3 +26,11 @@ class EscolaForm(forms.ModelForm):
             
             return apenas_numeros
         return telefone
+    def clean_whatsapp(self):
+        whatsapp = self.cleaned_data.get('whatsapp')
+        if whatsapp:
+            apenas_numeros = ''.join(filter(str.isdigit, whatsapp))
+            if not (10 <= len(apenas_numeros) <= 11):
+                raise forms.ValidationError("Número de WhatsApp inválido.")
+            return apenas_numeros
+        return whatsapp

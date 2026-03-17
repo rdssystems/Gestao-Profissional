@@ -6,11 +6,25 @@ class Escola(models.Model):
     endereco = models.CharField(max_length=200)
     email = models.EmailField(unique=True)
     telefone = models.CharField(max_length=20)
+    whatsapp = models.CharField(max_length=20, blank=True, null=True, verbose_name="WhatsApp")
     coordenador_user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='escola_coordenada')
     data_atualizacao = models.DateTimeField(auto_now=True, null=True, blank=True)
 
     def __str__(self):
         return self.nome
+
+    def get_whatsapp_formatado(self):
+        if not self.whatsapp:
+            return ""
+        
+        apenas_numeros = ''.join(filter(str.isdigit, self.whatsapp))
+
+        if len(apenas_numeros) == 10: 
+            return f"({apenas_numeros[0:2]}) {apenas_numeros[2:6]}-{apenas_numeros[6:10]}"
+        elif len(apenas_numeros) == 11: 
+            return f"({apenas_numeros[0:2]}) {apenas_numeros[2:7]}-{apenas_numeros[7:11]}"
+        else:
+            return self.whatsapp
 
     def get_telefone_formatado(self):
         # Remove todos os caracteres não numéricos
