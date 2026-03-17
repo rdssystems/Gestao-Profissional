@@ -531,69 +531,108 @@ class FazerChamadaView(LoginRequiredMixin, StaffRequiredMixin, View):
         if not request.user.is_superuser and hasattr(request.user, 'profile') and request.user.profile.escola != curso.escola:
             raise PermissionDenied("Você não tem permissão para acessar chamadas deste curso.")
 
+        # 1. Tentar encontrar ou definir o RegistroAula com base na data do POST
         registro_aula = None
+        data_str = request.POST.get('data_aula')
+        data_obj = None
+        
+        if data_str:
+            try:
+                data_obj = datetime.strptime(data_str, '%Y-%m-%d').date()
+            except ValueError:
+                pass
+
         if registro_aula_pk:
             registro_aula = get_object_or_404(RegistroAula, pk=registro_aula_pk, curso=curso)
-            
-        form = RegistroAulaForm(request.POST, instance=registro_aula)
+            # Se a data no POST for diferente da data original do registro_aula_pk,
+            # verifica se já existe outro registro para essa nova data
+            if data_obj and registro_aula.data_aula != data_obj:
+                registro_aula = RegistroAula.objects.filter(curso=curso, data_aula=data_obj).first()
+        elif data_obj:
+            registro_aula = RegistroAula.objects.filter(curso=curso, data_aula=data_obj).first()
+
+        # 2. TRATAMENTO CRITICAL: Se o usuário mudou a data, os IDs e Vínculos no formset estão obsoletos
+        # Precisamos limpá-los para evitar "Parent Mismatch" (O valor na linha não correspondeu com a instância pai).
+        post_data = request.POST.copy()
+        management_total = int(post_data.get('chamada-TOTAL_FORMS', 0))
         
-        # Passar a instância corretamente para o formset para que ele saiba qual RegistroAula está sendo modificado
-        # IMPORTANTE: Usar prefix='chamada' para corresponder ao que foi gerado no GET (seja dinâmico ou não)
-        formset = ChamadaFormSet(request.POST, instance=registro_aula, prefix='chamada') 
+        for i in range(management_total):
+            id_key = f'chamada-{i}-id'
+            parent_key = f'chamada-{i}-registro_aula' # O campo que causa o erro do usuário
+            form_cid = post_data.get(id_key)
+            
+            # Se a data mudou (registro_aula novo ou diferente), limpamos ID e o vínculo com o Pai antigo
+            if not registro_aula or (form_cid and not Chamada.objects.filter(pk=form_cid, registro_aula=registro_aula).exists()):
+                if id_key in post_data: post_data[id_key] = ''
+                if parent_key in post_data: post_data[parent_key] = '' # Limpa o vínculo do aluno com o dia anterior
+
+        form = RegistroAulaForm(request.POST, instance=registro_aula)
+        formset = ChamadaFormSet(post_data, instance=registro_aula, prefix='chamada') 
 
         if form.is_valid() and formset.is_valid():
             registro_aula_instance = form.save(commit=False)
-            registro_aula_instance.curso = curso # Garante que o curso está atribuído
-            registro_aula_instance.save() # Salva o RegistroAula antes de salvar o formset
+            registro_aula_instance.curso = curso 
+            registro_aula_instance.save() 
 
-            # Salvar o formset, que agora tem a instância pai (registro_aula_instance)
-            # formset.save() # Isso salva todos os objetos Chamada relacionados ao RegistroAula
+            formset.instance = registro_aula_instance
             
-            # Percorrer o formset para garantir que `registro_aula` está setado e lidar com novas instâncias
-            # E para garantir que a inscrição pertence ao curso correto
+            # Salvar chamadas
             for form_chamada in formset:
-                if form_chamada.instance.pk: # Se é uma instância existente
+                if form_chamada.instance.pk:
                     form_chamada.save()
-                elif form_chamada.has_changed(): # Se é uma nova instância e tem dados
-                    chamada = form_chamada.save(commit=False)
-                    chamada.registro_aula = registro_aula_instance
-                    
-                    # Garantir que a inscrição está presente (pode ter vindo do hidden field ou initial)
-                    if not chamada.inscricao_id:
-                         # Tenta pegar do cleaned_data se não estiver na instância (ex: campo hidden)
-                         inscricao = form_chamada.cleaned_data.get('inscricao')
-                         if inscricao:
-                             chamada.inscricao = inscricao
+                else:
+                    if any(form_chamada.cleaned_data.values()):
+                        chamada = form_chamada.save(commit=False)
+                        chamada.registro_aula = registro_aula_instance
+                        
+                        # Recuperar inscrição se não houver
+                        if not chamada.inscricao_id:
+                             inscricao = form_chamada.cleaned_data.get('inscricao')
+                             if inscricao:
+                                 chamada.inscricao = inscricao
+                        
+                        if chamada.inscricao:
+                             # Evitar duplicados para a mesma aula
+                             if not Chamada.objects.filter(registro_aula=registro_aula_instance, inscricao=chamada.inscricao).exists():
+                                 chamada.save()
 
-                    # Validação adicional: A inscrição deve ser do curso correto
-                    if chamada.inscricao and chamada.inscricao.curso == curso:
-                        chamada.save()
-                    else:
-                        messages.error(request, f"Inscrição {chamada.inscricao.aluno.nome_completo} não pertence ao curso {curso.nome}.")
-                        # Se houver um erro, precisamos renderizar o formulário novamente com os dados
-                        # e a mensagem de erro.
-                        context = {
-                            'curso': curso,
-                            'form': form,
-                            'formset': formset,
-                            'registro_aula': registro_aula_instance,
-                        }
-                        return render(request, self.template_name, context)
-
-            messages.success(request, f"Chamada para o curso '{curso.nome}' em {registro_aula_instance.data_aula.strftime('%d/%m/%Y')} salva com sucesso!")
-            # Redireciona para a edição do mesmo RegistroAula
-            return redirect('cursos:fazer_chamada_editar', curso_pk=curso.pk, registro_aula_pk=registro_aula_instance.pk) 
-
+            messages.success(request, f"Chamada para o dia {registro_aula_instance.data_aula.strftime('%d/%m/%Y')} salva com sucesso.")
+            return redirect('cursos:lista_cursos')
         else:
-            messages.error(request, "Houve um erro na submissão do formulário. Por favor, verifique os dados.")
-            # Para o contexto, é importante ter o `aluno_nome` para os forms no formset
-            for f in formset:
-                # É importante re-preencher 'aluno_nome' se o formset falhou na validação
-                # Verifica se a instância tem um ID (existe no banco) ou se tem a relação 'inscricao' setada
-                if f.instance.pk and hasattr(f.instance, 'inscricao'):
-                    f.fields['aluno_nome'].initial = f.instance.inscricao.aluno.nome_completo
-                elif f.cleaned_data and f.cleaned_data.get('inscricao'): # Se os dados limpos tem a inscrição
-                     f.fields['aluno_nome'].initial = f.cleaned_data['inscricao'].aluno.nome_completo
+            # Capturar erros específicos
+            error_list = []
+            if form.errors:
+                for field, errors in form.errors.items():
+                    error_list.append(f"{field}: {', '.join(errors)}")
+            
+            if formset.errors:
+                for i, f_errors in enumerate(formset.errors):
+                    if f_errors:
+                        aluno_n = f"Aluno #{i+1}"
+                        try:
+                             insc_id = request.POST.get(f'chamada-{i}-inscricao')
+                             if insc_id:
+                                 insc = Inscricao.objects.select_related('aluno').get(pk=insc_id)
+                                 aluno_n = insc.aluno.nome_completo
+                        except: pass
+                        
+                        for field, errors in f_errors.items():
+                            error_list.append(f"{aluno_n} ({field}): {', '.join(errors)}")
+            
+            if formset.non_form_errors():
+                error_list.extend(formset.non_form_errors())
+
+            messages.error(request, "Erro na submissão: " + " | ".join(error_list))
+            
+            # Repopular nomes para evitar 'None' no template
+            for i, f in enumerate(formset):
+                try:
+                    insc_id = request.POST.get(f'chamada-{i}-inscricao') or (f.initial.get('inscricao').pk if f.initial and f.initial.get('inscricao') else None)
+                    if insc_id:
+                        insc_obj = Inscricao.objects.select_related('aluno').filter(pk=insc_id).first()
+                        if insc_obj:
+                            f.fields['aluno_nome'].initial = insc_obj.aluno.nome_completo
+                except: pass
 
             context = {
                 'curso': curso,
@@ -607,7 +646,7 @@ class HistoricoChamadasCursoView(LoginRequiredMixin, StaffRequiredMixin, ListVie
     model = RegistroAula
     template_name = 'cursos/historico_chamadas_curso.html'
     context_object_name = 'registros_aula'
-    paginate_by = 10
+    paginate_by = 30 # Aumentado para ver mais dias
 
     def get_queryset(self):
         self.curso = get_object_or_404(Curso, pk=self.kwargs['curso_pk'])
@@ -622,6 +661,62 @@ class HistoricoChamadasCursoView(LoginRequiredMixin, StaffRequiredMixin, ListVie
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['curso'] = self.curso
+        return context
+
+class RelatorioFrequenciaView(LoginRequiredMixin, StaffRequiredMixin, DetailView):
+    model = Curso
+    template_name = 'cursos/relatorio_frequencia.html'
+    context_object_name = 'curso'
+    pk_url_kwarg = 'curso_pk'
+
+    def get_object(self, queryset=None):
+        return get_object_or_404(Curso, pk=self.kwargs['curso_pk'])
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        curso = self.get_object()
+        
+        # Verificar permissão de escola
+        user = self.request.user
+        if not user.is_superuser and hasattr(user, 'profile') and user.profile.escola != curso.escola:
+            raise PermissionDenied("Você não tem permissão para acessar o relatório deste curso.")
+
+        # Buscar todos os registros de aula do curso ordendos por data (antigas para novas)
+        registros = RegistroAula.objects.filter(curso=curso).order_by('data_aula')
+        
+        # Buscar alunos (foco nos ativos)
+        inscricoes = Inscricao.objects.filter(curso=curso).exclude(status='desistente').order_by('aluno__nome_completo').select_related('aluno')
+        
+        # Criar matriz de frequência
+        # Precisamos de uma lista de registros para o cabeçalho e para iterar na matriz
+        # Na matriz: { inscricao_id: [ status_presenca, ... ] } mantendo a ordem dos registros
+        matriz_frequencia = []
+        
+        # Cache das chamadas num dicionário de busca rápida: {(inscricao_id, registro_id): status}
+        resumo_chamadas = {
+            (c.inscricao_id, c.registro_aula_id): c.status_presenca 
+            for c in Chamada.objects.filter(registro_aula__curso=curso)
+        }
+
+        for inscricao in inscricoes:
+            linha_aluno = {
+                'aluno': inscricao.aluno.nome_completo,
+                'inscricao_id': inscricao.id,
+                'status': inscricao.status,
+                'presencas': []
+            }
+            presents = 0
+            absents = 0
+            for reg in registros:
+                status = resumo_chamadas.get((inscricao.id, reg.id), '—')
+                linha_aluno['presencas'].append({
+                    'status': status,
+                    'data': reg.data_aula
+                })
+            matriz_frequencia.append(linha_aluno)
+
+        context['registros'] = registros
+        context['matriz'] = matriz_frequencia
         return context
 
 class CursoCSVUploadView(LoginRequiredMixin, UserPassesTestMixin, View):

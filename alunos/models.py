@@ -54,7 +54,7 @@ class Aluno(models.Model):
     escolaridade = models.CharField(max_length=50, choices=ESCOLARIDADE_CHOICES, blank=True, null=True, verbose_name="Escolaridade")
 
     # Contato
-    email_principal = models.EmailField(verbose_name="Email Principal")
+    email_principal = models.EmailField(blank=True, null=True, verbose_name="Email Principal")
     whatsapp = models.CharField(max_length=20, blank=True, null=True, verbose_name="WhatsApp")
     telefone_principal = models.CharField(max_length=20, verbose_name="Telefone Principal")
 

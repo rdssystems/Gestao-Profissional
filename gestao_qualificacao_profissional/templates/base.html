@@ -115,11 +115,25 @@
             color: #4C5B7A;
         }
 
-        /* Ajuste de largura para os containers principal */
+        /* Ajuste de largura para os containers principal - Mais responsivo para telas menores que 1080p */
         .navbar-custom .container,
         main.container {
-            max-width: 90% !important;
-            /* Limita a largura a 90% */
+            max-width: 1320px !important; /* Padrão do Bootstrap XXL */
+            width: 95% !important;
+            margin-left: auto !important;
+            margin-right: auto !important;
+        }
+
+        /* Prevenir que a página "corra" para o lado em notebooks menores */
+        body {
+            overflow-x: hidden;
+            width: 100%;
+        }
+
+        .navbar-custom {
+            left: 0;
+            right: 0; /* Garante que a barra cubra as duas pontas */
+            width: 100%;
         }
 
 

@@ -152,7 +152,7 @@
                     <h5><i class="bi bi-lightning-charge-fill text-warning me-2"></i>Atividades Recentes</h5>
                     <span class="badge bg-light text-primary">Últimas 15 movimentações</span>
                 </div>
-                <div class="p-0">
+                <div class="p-0 overflow-auto" style="max-height: 400px;">
                     {% if historico_recente %}
                     {% for inscricao in historico_recente %}
                     <div class="feed-item">
@@ -165,8 +165,7 @@
                                 <span class="text-muted">foi matriculado no curso</span>
                                 <span class="badge bg-blue-soft text-primary">{{ inscricao.curso.nome }}</span>
                             </p>
-                            <span class="feed-time"><i class="bi bi-clock me-1"></i>{{
-                                inscricao.data_inscricao|timesince }} atrás</span>
+                            <span class="feed-time"><i class="bi bi-clock me-1"></i>{{ inscricao.data_inscricao|timesince }} atrás</span>
                         </div>
                         <div class="d-none d-md-block">
                             <a href="{% url 'alunos:detalhe_aluno' pk=inscricao.aluno.pk %}"

@@ -125,14 +125,25 @@
 
 
 
-        <div class="mb-3">
-            {{ form.telefone.label_tag }}
-            <div class="custom-field">
-                {{ form.telefone }}
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                {{ form.telefone.label_tag }}
+                <div class="custom-field">
+                    {{ form.telefone }}
+                </div>
+                {% if form.telefone.errors %}
+                    <div class="invalid-feedback d-block">{{ form.telefone.errors }}</div>
+                {% endif %}
             </div>
-            {% if form.telefone.errors %}
-                <div class="invalid-feedback d-block">{{ form.telefone.errors }}</div>
-            {% endif %}
+            <div class="col-md-6 mb-3">
+                {{ form.whatsapp.label_tag }}
+                <div class="custom-field">
+                    {{ form.whatsapp }}
+                </div>
+                {% if form.whatsapp.errors %}
+                    <div class="invalid-feedback d-block">{{ form.whatsapp.errors }}</div>
+                {% endif %}
+            </div>
         </div>
 
         <div class="d-flex justify-content-end mt-4">

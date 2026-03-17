@@ -1,4 +1,4 @@
-﻿{% extends "base.html" %}
+{% extends "base.html" %}
 {% load static %}
 {% load auth_extras %}
 
@@ -41,10 +41,18 @@
                 <tbody>
                     {% for curso in cursos_ativos %}
                     <tr>
-                        <td><strong>{{ curso.nome }}</strong></td>
+                        <td>
+                            <strong>{{ curso.nome }}</strong>
+                            <div class="small text-muted">
+                                <i class="bi bi-calendar3 me-1"></i>{{ curso.data_inicio|date:"d/m/Y" }} - {{ curso.data_fim|date:"d/m/Y" }}
+                                {% if curso.nome_professor %}
+                                <br><i class="bi bi-person-badge me-1"></i>Prof: {{ curso.nome_professor }}
+                                {% endif %}
+                            </div>
+                        </td>
                         <td>{{ curso.escola.nome }}</td>
                         <td>{{ curso.tipo_curso.nome }}</td>
-                        <td>{{ curso.data_inicio|date:"d/m/Y" }}</td>
+                        <td>{{ curso.get_turno_display }} • {{ curso.horario|date:"H:i" }}</td>
                         <td>
                             {% if perms.cursos.change_curso or user|has_group:"Coordenador" %}
                             <form method="post" action="{% url 'cursos:alterar_status_curso' pk=curso.pk %}">
@@ -61,12 +69,21 @@
                             {% endif %}
                         </td>
                         <td>
-                            <a href="{% url 'cursos:detalhe_curso' pk=curso.pk %}"
-                                class="btn btn-action-premium text-white"
-                                style="background-color: var(--brand-primary);"><i class="bi bi-eye"></i></a>
-                            <a href="{% url 'cursos:fazer_chamada' curso_pk=curso.pk %}"
-                                class="btn btn-action-premium text-white" style="background-color: #10b981;"><i
-                                    class="bi bi-person-check"></i> Chamada</a>
+                            <div class="d-flex gap-1">
+                                <a href="{% url 'cursos:detalhe_curso' pk=curso.pk %}"
+                                    class="btn btn-action-premium text-white"
+                                    style="background-color: var(--brand-primary);" title="Ver Detalhes">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                                <a href="{% url 'cursos:fazer_chamada' curso_pk=curso.pk %}"
+                                    class="btn btn-action-premium text-white" style="background-color: #10b981;" title="Realizar Chamada">
+                                    <i class="bi bi-person-check"></i>
+                                </a>
+                                <a href="{% url 'cursos:listar_chamadas_curso' curso_pk=curso.pk %}"
+                                    class="btn btn-action-premium text-white" style="background-color: #6366f1;" title="Histórico de Observações">
+                                    <i class="bi bi-journal-text"></i>
+                                </a>
+                            </div>
                         </td>
                     </tr>
                     {% empty %}

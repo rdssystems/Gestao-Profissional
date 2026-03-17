@@ -7,11 +7,12 @@ from django.forms import inlineformset_factory # Adicionar import
 class CursoForm(forms.ModelForm):
     class Meta:
         model = Curso
-        fields = ['escola', 'tipo_curso', 'nome', 'carga_horaria', 'data_inicio', 'data_fim', 'turno', 'horario', 'horario_fim', 'dia_inicio_semana', 'dia_fim_semana', 'status']
+        fields = ['escola', 'tipo_curso', 'nome', 'nome_professor', 'carga_horaria', 'data_inicio', 'data_fim', 'turno', 'horario', 'horario_fim', 'dia_inicio_semana', 'dia_fim_semana', 'status']
         widgets = {
             'escola': forms.Select(attrs={'class': 'form-select form-select-premium'}),
             'tipo_curso': forms.Select(attrs={'class': 'form-select form-select-premium'}),
             'nome': forms.TextInput(attrs={'class': 'form-control form-control-premium'}),
+            'nome_professor': forms.TextInput(attrs={'class': 'form-control form-control-premium', 'placeholder': 'Opcional'}),
             'carga_horaria': forms.NumberInput(attrs={'class': 'form-control form-control-premium'}),
             'data_inicio': forms.DateInput(attrs={'class': 'form-control form-control-premium', 'type': 'date'}),
             'data_fim': forms.DateInput(attrs={'class': 'form-control form-control-premium', 'type': 'date'}),
@@ -77,9 +78,15 @@ class RegistroAulaForm(forms.ModelForm):
         model = RegistroAula
         fields = ['data_aula', 'observacoes'] # Curso será definido na view
         widgets = {
-            'data_aula': forms.DateInput(attrs={'class': 'form-control form-control-premium', 'type': 'date'}),
+            'data_aula': forms.DateInput(attrs={'class': 'form-control form-control-premium', 'type': 'date'}, format='%Y-%m-%d'),
             'observacoes': forms.Textarea(attrs={'class': 'form-control form-control-premium', 'rows': 3}),
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if not self.instance.pk and not self.initial.get('data_aula'):
+            from datetime import date
+            self.initial['data_aula'] = date.today()
 
 class ChamadaForm(forms.ModelForm):
     class Meta:
@@ -87,7 +94,7 @@ class ChamadaForm(forms.ModelForm):
         fields = ['inscricao', 'status_presenca']
         widgets = {
             'inscricao': forms.HiddenInput(), # Ocultar o select, pois já exibimos o nome
-            'status_presenca': forms.Select(attrs={'class': 'form-select form-select-premium'}),
+            'status_presenca': forms.RadioSelect(attrs={'class': 'btn-check'}),
         }
     
     # Adiciona um campo apenas para exibir o nome do aluno no template
@@ -100,8 +107,7 @@ class ChamadaForm(forms.ModelForm):
             self.fields['inscricao'].queryset = Inscricao.objects.filter(pk=self.instance.inscricao.pk)
             # Preenche o campo de nome do aluno para exibição
             self.fields['aluno_nome'].initial = self.instance.inscricao.aluno.nome_completo
-            # Desabilita o campo inscricao para edição direta no formset
-            self.fields['inscricao'].widget.attrs['disabled'] = 'disabled'
+            # Não desativar, pois o navegador não envia campos desativados no POST
 
 
 # Usar modelformset_factory se Chamada não é diretamente "inline" de RegistroAula (ou seja, se a relação não é diretamente pai-filho no contexto da view)

@@ -19,6 +19,34 @@
         color: #1f2937;
     }
 
+    .btn-attendance {
+        width: 38px;
+        height: 38px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        border-radius: 8px;
+        padding: 0;
+        transition: all 0.2s ease;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+
+    .radio-attendance-group {
+        display: inline-flex;
+        background: #f8fafc;
+        padding: 4px;
+        border-radius: 12px;
+        gap: 6px;
+        border: 1px solid #e2e8f0;
+    }
+
+    .btn-check:checked + .btn-attendance.btn-outline-success { background-color: #198754; color: white; border-color: #198754; transform: translateY(-1px); box-shadow: 0 4px 6px rgba(25,135,84,0.2); }
+    .btn-check:checked + .btn-attendance.btn-outline-danger { background-color: #dc3545; color: white; border-color: #dc3545; transform: translateY(-1px); box-shadow: 0 4px 6px rgba(220,53,69,0.2); }
+    .btn-check:checked + .btn-attendance.btn-outline-warning { background-color: #ffc107; color: #000; border-color: #ffc107; transform: translateY(-1px); box-shadow: 0 4px 6px rgba(255,193,7,0.2); }
+
+    .x-small { font-size: 0.75rem; }
+
     /* Card Premium */
     .app-card {
         position: relative;
@@ -116,10 +144,16 @@
         </p>
     </div>
 
-    <a href="{% url 'cursos:lista_cursos_chamada' %}"
-       class="btn btn-outline-secondary btn-app">
-        Voltar
-    </a>
+    <div class="d-flex gap-2">
+        <a href="{% url 'cursos:relatorio_frequencia' curso_pk=curso.pk %}"
+           class="btn btn-outline-info btn-app">
+            <i class="bi bi-table me-2"></i>Relatório Geral
+        </a>
+        <a href="{% url 'cursos:lista_cursos' %}"
+           class="btn btn-outline-secondary btn-app">
+            Voltar
+        </a>
+    </div>
 </div>
 
 
@@ -137,7 +171,9 @@
                 <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
                 {{ field }}
                 {% if field.errors %}
-                <div class="text-danger mt-1 small">{{ field.errors|join:", " }}</div>
+                <div class="text-danger mt-1 small fw-bold">
+                    <i class="bi bi-exclamation-triangle"></i> {{ field.errors|join:", " }}
+                </div>
                 {% endif %}
             </div>
             {% endfor %}
@@ -153,21 +189,26 @@
             <table class="table align-middle">
                 <thead>
                     <tr>
-                        <th>Aluno</th>
-                        <th class="text-center">Status</th>
+                        <th style="min-width: 250px;">Aluno</th>
+                        <th class="text-center" style="width: 350px;">Status de Presença</th>
                     </tr>
                 </thead>
 
                 <tbody>
                     {% for form_chamada in formset %}
                     <tr>
-                        <td>
+                        <td class="py-2">
                             {{ form_chamada.id }}
-                            {{ form_chamada.inscricao }}
-                            {{ form_chamada.aluno_nome }}
-                            {% if registro_aula and form_chamada.instance.pk and form_chamada.instance.inscricao.aluno.whatsapp_link %}
-                            <a href="https://wa.me/{{ form_chamada.instance.inscricao.aluno.whatsapp_link }}" target="_blank" class="text-success ms-1" title="WhatsApp">
-                                <i class="bi bi-whatsapp"></i>
+                            <div class="fw-bold text-dark h6 mb-1">
+                                {% if form_chamada.instance.pk %}
+                                    {{ form_chamada.instance.inscricao.aluno.nome_completo|upper }}
+                                {% else %}
+                                    {{ form_chamada.fields.aluno_nome.initial|upper|default:"Aluno" }}
+                                {% endif %}
+                            </div>
+                            {% if form_chamada.instance.pk and form_chamada.instance.inscricao.aluno.whatsapp_link %}
+                            <a href="https://wa.me/{{ form_chamada.instance.inscricao.aluno.whatsapp_link }}" target="_blank" class="text-success small text-decoration-none" title="WhatsApp">
+                                <i class="bi bi-whatsapp"></i> Contato
                             </a>
                             {% endif %}
                             {% for hidden in form_chamada.hidden_fields %}
@@ -175,10 +216,23 @@
                             {% endfor %}
                         </td>
 
-                        <td class="text-center" style="width: 200px;">
-                            {{ form_chamada.status_presenca }}
+                        <td class="text-center py-2">
+                            <div class="d-flex justify-content-center radio-attendance-group">
+                                {% for choice in form_chamada.status_presenca %}
+                                    <input type="radio" 
+                                           name="{{ form_chamada.status_presenca.html_name }}" 
+                                           value="{{ choice.data.value }}" 
+                                           class="btn-check" 
+                                           id="{{ choice.id_for_label }}" 
+                                           {% if choice.data.selected %}checked{% endif %}>
+                                    <label class="btn btn-attendance btn-outline-{% if choice.data.value == 'P' %}success{% elif choice.data.value == 'A' %}danger{% else %}warning{% endif %}" 
+                                           for="{{ choice.id_for_label }}" title="{{ choice.choice_label }}">
+                                        {{ choice.data.value }}
+                                    </label>
+                                {% endfor %}
+                            </div>
                             {% if form_chamada.status_presenca.errors %}
-                            <span class="text-danger small mt-1 d-block">
+                            <span class="text-danger x-small d-block fw-bold mt-1">
                                 {{ form_chamada.status_presenca.errors|join:", " }}
                             </span>
                             {% endif %}

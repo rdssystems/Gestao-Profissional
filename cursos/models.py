@@ -62,6 +62,7 @@ class Curso(models.Model):
     dia_fim_semana = models.CharField(max_length=20, choices=DIAS_SEMANA_CHOICES, blank=True, null=True)
 
     status = models.CharField(max_length=20, choices=STATUS_CHOICES)
+    nome_professor = models.CharField(max_length=200, blank=True, null=True, verbose_name="Nome do Professor")
 
     def __str__(self):
         return self.nome
