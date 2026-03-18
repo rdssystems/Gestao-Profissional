@@ -465,3 +465,37 @@ label.form-label-premium {
     background-color: var(--bg-main);
     color: var(--text-main);
 }
+
+/* --------------------------------------------------------------------------
+   TABS E NAV-PILLS PREMIUM
+   -------------------------------------------------------------------------- */
+.nav-pills-premium {
+    gap: 0.5rem;
+    background: white !important;
+    padding: 0.5rem !important;
+    border-radius: 1rem !important;
+    display: inline-flex !important;
+    border: 1px solid #e2e8f0 !important;
+    margin-bottom: 1.5rem !important;
+}
+
+.nav-pills-premium .nav-link {
+    color: var(--text-muted) !important;
+    font-weight: 600 !important;
+    border-radius: 0.75rem !important;
+    padding: 0.5rem 1.25rem !important;
+    transition: all 0.2s !important;
+    border: 1px solid transparent !important;
+    font-size: 0.9rem !important;
+}
+
+.nav-pills-premium .nav-link:hover {
+    background: var(--bg-blue-soft) !important;
+    color: var(--brand-primary) !important;
+}
+
+.nav-pills-premium .nav-link.active {
+    background: var(--brand-primary) !important;
+    color: white !important;
+    box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.2) !important;
+}

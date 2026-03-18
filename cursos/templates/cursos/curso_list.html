@@ -21,79 +21,166 @@
         </div>
     </div>
 
-    <!-- Cursos Ativos -->
-    <div class="premium-card mb-4">
-        <div class="d-flex align-items-center justify-content-between mb-3">
-            <h5 class="text-muted fw-bold mb-0">Cursos Ativos</h5>
+    <!-- Navegação por Abas -->
+    <ul class="nav nav-pills nav-pills-premium mb-4" id="pills-tab" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="pills-ativos-tab" data-bs-toggle="pill" data-bs-target="#pills-ativos"
+                type="button" role="tab" aria-controls="pills-ativos" aria-selected="true">
+                <i class="bi bi-play-circle me-1"></i> Cursos Ativos
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="pills-concluidos-tab" data-bs-toggle="pill" data-bs-target="#pills-concluidos"
+                type="button" role="tab" aria-controls="pills-concluidos" aria-selected="false">
+                <i class="bi bi-check-circle me-1"></i> Concluídos/Arquivados
+            </button>
+        </li>
+    </ul>
+
+    <div class="tab-content" id="pills-tabContent">
+        <!-- Aba de Cursos Ativos -->
+        <div class="tab-pane fade show active" id="pills-ativos" role="tabpanel" aria-labelledby="pills-ativos-tab">
+            <div class="premium-card mb-4">
+                <div class="table-responsive-premium" style="max-height: 600px; overflow-y: auto;">
+                    <table class="table-premium">
+                        <thead>
+                            <tr>
+                                <th>Curso</th>
+                                <th>Escola</th>
+                                <th>Tipo</th>
+                                <th>Horário/Turno</th>
+                                <th>Status</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for curso in cursos_ativos %}
+                            <tr>
+                                <td>
+                                    <strong>{{ curso.nome }}</strong>
+                                    <div class="small text-muted">
+                                        <i class="bi bi-calendar3 me-1"></i>{{ curso.data_inicio|date:"d/m/Y" }} -
+                                        {{ curso.data_fim|date:"d/m/Y" }}
+                                        {% if curso.nome_professor %}
+                                        <br><i class="bi bi-person-badge me-1"></i>Prof: {{ curso.nome_professor }}
+                                        {% endif %}
+                                    </div>
+                                </td>
+                                <td>{{ curso.escola.nome }}</td>
+                                <td>{{ curso.tipo_curso.nome }}</td>
+                                <td>{{ curso.get_turno_display }} • {{ curso.horario|date:"H:i" }}</td>
+                                <td>
+                                    {% if perms.cursos.change_curso or user|has_group:"Coordenador" %}
+                                    <form method="post" action="{% url 'cursos:alterar_status_curso' pk=curso.pk %}">
+                                        {% csrf_token %}
+                                        <select name="status" class="form-select form-select-sm-premium status-select"
+                                            onchange="this.form.submit()" data-current="{{ curso.status }}">
+                                            <option value="Aberta" {% if curso.status == 'Aberta' %}selected{% endif %}>
+                                                Aberta</option>
+                                            <option value="Em Andamento" {% if curso.status == 'Em Andamento' %}selected{% endif %}>Em Andamento</option>
+                                            <option value="Concluído" {% if curso.status == 'Concluído' %}selected{% endif %}>Concluído</option>
+                                            <option value="Arquivado" {% if curso.status == 'Arquivado' %}selected{% endif %}>Arquivado</option>
+                                        </select>
+                                    </form>
+                                    {% else %}
+                                    {{ curso.status }}
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="d-flex gap-1">
+                                        <a href="{% url 'cursos:detalhe_curso' pk=curso.pk %}"
+                                            class="btn btn-action-premium text-white"
+                                            style="background-color: var(--brand-primary);" title="Ver Detalhes">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+                                        <a href="{% url 'cursos:fazer_chamada' curso_pk=curso.pk %}"
+                                            class="btn btn-action-premium text-white" style="background-color: #10b981;"
+                                            title="Realizar Chamada">
+                                            <i class="bi bi-person-check"></i>
+                                        </a>
+                                        <a href="{% url 'cursos:listar_chamadas_curso' curso_pk=curso.pk %}"
+                                            class="btn btn-action-premium text-white" style="background-color: #6366f1;"
+                                            title="Histórico de Observações">
+                                            <i class="bi bi-journal-text"></i>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="6" class="text-center p-4 text-muted">Nenhum curso ativo.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </div>
-        <div class="table-responsive-premium" style="max-height: 500px; overflow-y: auto;">
-            <table class="table-premium">
-                <thead>
-                    <tr>
-                        <th>Curso</th>
-                        <th>Escola</th>
-                        <th>Tipo</th>
-                        <th>Início</th>
-                        <th>Status</th>
-                        <th>Ações</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for curso in cursos_ativos %}
-                    <tr>
-                        <td>
-                            <strong>{{ curso.nome }}</strong>
-                            <div class="small text-muted">
-                                <i class="bi bi-calendar3 me-1"></i>{{ curso.data_inicio|date:"d/m/Y" }} - {{ curso.data_fim|date:"d/m/Y" }}
-                                {% if curso.nome_professor %}
-                                <br><i class="bi bi-person-badge me-1"></i>Prof: {{ curso.nome_professor }}
-                                {% endif %}
-                            </div>
-                        </td>
-                        <td>{{ curso.escola.nome }}</td>
-                        <td>{{ curso.tipo_curso.nome }}</td>
-                        <td>{{ curso.get_turno_display }} • {{ curso.horario|date:"H:i" }}</td>
-                        <td>
-                            {% if perms.cursos.change_curso or user|has_group:"Coordenador" %}
-                            <form method="post" action="{% url 'cursos:alterar_status_curso' pk=curso.pk %}">
-                                {% csrf_token %}
-                                <select name="status" class="form-select form-select-sm-premium status-select"
-                                    onchange="this.form.submit()" data-current="{{ curso.status }}">
-                                    <option value="Aberta" {% if curso.status == 'Aberta' %}selected{% endif %}>Aberta</option>
-                                    <option value="Em Andamento" {% if curso.status == 'Em Andamento' %}selected{% endif %}>Em Andamento</option>
-                                    <option value="Concluído" {% if curso.status == 'Concluído' %}selected{% endif %}>Concluído</option>
-                                    <option value="Arquivado" {% if curso.status == 'Arquivado' %}selected{% endif %}>Arquivado</option>
-                                </select>
-                            </form>
-                            {% else %}
-                            {{ curso.status }}
-                            {% endif %}
-                        </td>
-                        <td>
-                            <div class="d-flex gap-1">
-                                <a href="{% url 'cursos:detalhe_curso' pk=curso.pk %}"
-                                    class="btn btn-action-premium text-white"
-                                    style="background-color: var(--brand-primary);" title="Ver Detalhes">
-                                    <i class="bi bi-eye"></i>
-                                </a>
-                                <a href="{% url 'cursos:fazer_chamada' curso_pk=curso.pk %}"
-                                    class="btn btn-action-premium text-white" style="background-color: #10b981;" title="Realizar Chamada">
-                                    <i class="bi bi-person-check"></i>
-                                </a>
-                                <a href="{% url 'cursos:listar_chamadas_curso' curso_pk=curso.pk %}"
-                                    class="btn btn-action-premium text-white" style="background-color: #6366f1;" title="Histórico de Observações">
-                                    <i class="bi bi-journal-text"></i>
-                                </a>
-                            </div>
-                        </td>
-                    </tr>
-                    {% empty %}
-                    <tr>
-                        <td colspan="6" class="text-center p-4 text-muted">Nenhum curso ativo.</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+
+        <!-- Aba de Cursos Concluídos -->
+        <div class="tab-pane fade" id="pills-concluidos" role="tabpanel" aria-labelledby="pills-concluidos-tab">
+            <div class="premium-card mb-4">
+                <div class="table-responsive-premium" style="max-height: 600px; overflow-y: auto;">
+                    <table class="table-premium">
+                        <thead>
+                            <tr>
+                                <th>Curso</th>
+                                <th>Escola</th>
+                                <th>Tipo</th>
+                                <th>Data Fim</th>
+                                <th>Status</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for curso in cursos_concluidos %}
+                            <tr>
+                                <td>
+                                    <strong>{{ curso.nome }}</strong>
+                                    <div class="small text-muted">
+                                        <i class="bi bi-calendar3 me-1"></i>Início: {{ curso.data_inicio|date:"d/m/Y" }}
+                                    </div>
+                                </td>
+                                <td>{{ curso.escola.nome }}</td>
+                                <td>{{ curso.tipo_curso.nome }}</td>
+                                <td>{{ curso.data_fim|date:"d/m/Y" }}</td>
+                                <td>
+                                    {% if perms.cursos.change_curso or user|has_group:"Coordenador" %}
+                                    <form method="post" action="{% url 'cursos:alterar_status_curso' pk=curso.pk %}">
+                                        {% csrf_token %}
+                                        <select name="status" class="form-select form-select-sm-premium status-select"
+                                            onchange="this.form.submit()" data-current="{{ curso.status }}">
+                                            <option value="Aberta" {% if curso.status == 'Aberta' %}selected{% endif %}>
+                                                Aberta</option>
+                                            <option value="Em Andamento" {% if curso.status == 'Em Andamento' %}selected{% endif %}>Em Andamento</option>
+                                            <option value="Concluído" {% if curso.status == 'Concluído' %}selected{% endif %}>Concluído</option>
+                                            <option value="Arquivado" {% if curso.status == 'Arquivado' %}selected{% endif %}>Arquivado</option>
+                                        </select>
+                                    </form>
+                                    {% else %}
+                                    <span class="badge {% if curso.status == 'Concluído' %}bg-success{% else %}bg-secondary{% endif %}">
+                                        {{ curso.status }}
+                                    </span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <a href="{% url 'cursos:detalhe_curso' pk=curso.pk %}"
+                                        class="btn btn-action-premium text-white"
+                                        style="background-color: var(--brand-primary);" title="Ver Detalhes">
+                                        <i class="bi bi-eye"></i> Eventos
+                                    </a>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="6" class="text-center p-4 text-muted">Nenhum curso concluído ou arquivado.
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </div>
     </div>
 </div>

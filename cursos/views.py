@@ -67,7 +67,7 @@ class CursoListView(LoginRequiredMixin, ListView):
 
         # Separa os cursos em ativos e concluídos
         context['cursos_ativos'] = all_cursos.filter(status__in=['Aberta', 'Em Andamento'])
-        context['cursos_concluidos'] = all_cursos.filter(status='Concluído')
+        context['cursos_concluidos'] = all_cursos.filter(status__in=['Concluído', 'Arquivado'])
 
         # Adiciona os tipos de curso ao contexto, como antes
         user = self.request.user
