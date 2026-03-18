@@ -137,11 +137,19 @@
                             {% endif %}
                         </div>
 
-                        <div class="col-md-12 mb-4 form-check ps-4">
+                        <div class="col-md-6 mb-4 form-check ps-4">
                             {{ form.deficiencia }}
                             {{ form.deficiencia.label_tag }}
                             {% if form.deficiencia.errors %}
                                 <div class="invalid-feedback d-block">{{ form.deficiencia.errors }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="col-md-6 mb-4" id="div_tipo_deficiencia" style="display: none;">
+                            {{ form.tipo_deficiencia.label_tag }}
+                            <div class="custom-input">{{ form.tipo_deficiencia }}</div>
+                            {% if form.tipo_deficiencia.errors %}
+                                <div class="invalid-feedback d-block">{{ form.tipo_deficiencia.errors }}</div>
                             {% endif %}
                         </div>
                     </div>
@@ -315,12 +323,23 @@
                 <h5 class="text-muted fw-bold mb-4">Inscrição e Interesses</h5>
                 <div>
 
-                    <div class="mb-4">
-                        {{ form.como_soube.label_tag }}
-                        <div class="custom-input">{{ form.como_soube }}</div>
-                        {% if form.como_soube.errors %}
-                            <div class="invalid-feedback d-block">{{ form.como_soube.errors }}</div>
-                        {% endif %}
+                    <div class="row">
+                        <div class="col-md-6 mb-4">
+                            {{ form.como_soube.label_tag }}
+                            <div class="custom-input">{{ form.como_soube }}</div>
+                            {% if form.como_soube.errors %}
+                                <div class="invalid-feedback d-block">{{ form.como_soube.errors }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6 mb-4 mt-auto">
+                            <div class="form-check pb-2">
+                                {{ form.receber_notificacoes }}
+                                {{ form.receber_notificacoes.label_tag }}
+                            </div>
+                            {% if form.receber_notificacoes.errors %}
+                                <div class="invalid-feedback d-block">{{ form.receber_notificacoes.errors }}</div>
+                            {% endif %}
+                        </div>
                     </div>
 
                     <div class="mb-4">
@@ -356,7 +375,19 @@
 
 {% block extra_js %}
 <script>
+    function toggleDeficiencia(checked) {
+        const div = document.getElementById('div_tipo_deficiencia');
+        if (div) {
+            div.style.display = checked ? 'block' : 'none';
+        }
+    }
+
     document.addEventListener('DOMContentLoaded', function () {
+        const defInput = document.getElementById('{{ form.deficiencia.id_for_label }}');
+        if (defInput) {
+            toggleDeficiencia(defInput.checked);
+        }
+
         const cepInput = document.getElementById('{{ form.endereco_cep.id_for_label }}');
         const ruaInput = document.getElementById('{{ form.endereco_rua.id_for_label }}');
         const bairroInput = document.getElementById('{{ form.endereco_bairro.id_for_label }}');

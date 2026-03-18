@@ -1,12 +1,9 @@
 {% extends "base.html" %}
+{% load static %}
 
-{% block title %}Detalhes do Aluno: {{ aluno.nome_completo }}<!-- djlint:on -->
-<!-- prettier-ignore-end -->
-{% endblock %}
+{% block title %}Detalhes do Aluno: {{ aluno.nome_completo }}{% endblock %}
 
 {% block content %}
-<!-- prettier-ignore-start -->
-<!-- djlint:off -->
 
 <style>
     .info-line {
@@ -23,6 +20,19 @@
 
     .text-justify {
         text-align: justify;
+    }
+
+    .border-start-md {
+        border-left: 1px solid rgba(0,0,0,0.1);
+    }
+    
+    @media (max-width: 768px) {
+        .border-start-md {
+            border-left: none;
+            border-top: 1px solid rgba(0,0,0,0.1);
+            padding-top: 1rem;
+            margin-top: 1rem;
+        }
     }
 
     @media print {
@@ -58,121 +68,69 @@
             margin: 0 !important;
         }
 
+        .page-header-premium {
+            display: block !important;
+            text-align: center;
+            margin-bottom: 10px !important;
+        }
+
         .page-title {
             font-size: 1.4rem !important;
             margin-bottom: 0.5rem !important;
-            text-align: center;
         }
 
-        /* Force Main Grid Layout (2 Columns) */
         .row {
             display: flex !important;
-            flex-wrap: nowrap !important;
-        }
-
-        .col-lg-8 {
-            width: 65% !important;
-            flex: 0 0 65% !important;
-            padding-right: 10px !important;
-        }
-
-        .col-lg-4 {
-            width: 35% !important;
-            flex: 0 0 35% !important;
-        }
-
-        /* Fix Internal Grid (2 cols inside cards) */
-        .card-body .row {
             flex-wrap: wrap !important;
-            /* Allow wrapping inside cards if needed, but prefer side-by-side */
-            display: flex !important;
         }
 
-        .col-md-6 {
-            width: 50% !important;
-            flex: 0 0 50% !important;
-        }
+        .col-lg-8 { width: 65% !important; flex: 0 0 65% !important; }
+        .col-lg-4 { width: 35% !important; flex: 0 0 35% !important; }
+        .col-12 { width: 100% !important; flex: 0 0 100% !important; }
+        .col-md-6 { width: 50% !important; flex: 0 0 50% !important; }
 
-        /* Compact Cards */
-        .card-section {
+        .premium-card {
             box-shadow: none !important;
             border: 1px solid #bbb !important;
             break-inside: avoid;
             margin-bottom: 8px !important;
-            /* Tighter spacing */
             border-radius: 6px !important;
+            padding: 10px !important;
         }
 
-        .card-section .card-header {
-            padding: 0.3rem 0.8rem !important;
+        .premium-card h5 {
             font-size: 0.9rem !important;
-            background-color: #f5f5f5 !important;
-            border-bottom: 1px solid #ccc !important;
-            font-weight: 700 !important;
+            margin-bottom: 8px !important;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 4px;
         }
 
-        .card-section .card-body {
-            padding: 0.5rem 0.8rem !important;
-        }
-
-        /* Compact Content */
         .info-line {
             margin-bottom: 0.2rem !important;
-            font-size: 0.85rem !important;
+            font-size: 8.5pt !important;
             line-height: 1.2;
             color: #000 !important;
         }
 
-        .info-line strong {
+        .badge-sm-premium {
+            font-size: 7.5pt !important;
+            padding: 1pt 3pt !important;
+            border: 0.5pt solid #ccc !important;
+            background: #fff !important;
             color: #000 !important;
         }
 
-        /* Adjust Score Box */
-        .bg-light {
-            background: transparent !important;
-            border: 1px solid #eee !important;
-            padding: 0.5rem !important;
-            margin-bottom: 0.5rem !important;
-        }
-
-        .display-4 {
-            font-size: 1.4rem !important;
-            color: #000 !important;
-        }
-
-        h6.text-uppercase {
-            font-size: 0.7rem !important;
-            margin-bottom: 0 !important;
-        }
-
-        hr {
-            margin: 0.4rem 0 !important;
-            border-color: #ccc !important;
-            opacity: 1 !important;
-        }
-
-        /* Hide URL print headers/footers usually added by browser (cannot fully control, but margins help) */
-        @page {
-            margin: 0.5cm;
-            size: A4;
-        }
-
-        .mb-4 {
-            margin-bottom: 0.5rem !important;
-        }
-
-        html,
-        body {
-            height: auto !important;
-            min-height: 0 !important;
-            overflow: visible !important;
-            font-size: 8.5pt !important;
+        .display-4 { font-size: 1.4rem !important; color: #000 !important; }
+        hr { margin: 0.4rem 0 !important; opacity: 1 !important; border-color: #eee !important; }
+        
+        .termo-compromisso {
+            margin-top: 15px !important;
+            background-color: #fff !important;
         }
     }
 </style>
 
-
-<div class="d-flex justify-content-between align-items-center mb-4">
+<div class="d-flex justify-content-between align-items-center mb-4 no-print">
     <h1 class="page-header-premium mb-0">Detalhes do Aluno</h1>
 
     <div class="action-btns d-flex gap-2">
@@ -200,21 +158,20 @@
 </div>
 
 <div class="row">
+    <!-- Coluna da Esquerda -->
     <div class="col-lg-8">
-
         <div class="premium-card mb-4">
             <h5 class="text-muted fw-bold mb-3">Identificação</h5>
-            <div class="card-body">
+            <div class="card-body p-0">
                 <div class="row">
                     <div class="col-md-6">
                         <p class="info-line"><strong>Nome:</strong> {{ aluno.nome_completo }}</p>
-                        <p class="info-line"><strong>CPF:</strong> {{ aluno.cpf }}</p>
-                        <p class="info-line"><strong>RG:</strong> {% if aluno.rg %}{{ aluno.rg }}{% else %}Não
-                            informado{% endif %}</p>
+                        <p class="info-line"><strong>CPF:</strong> {{ aluno.cpf_formatado }}</p>
+                        <p class="info-line"><strong>RG:</strong> {{ aluno.rg|default:"Não informado" }}</p>
                     </div>
                     <div class="col-md-6">
-                        <p class="info-line"><strong>Órgão Expedidor:</strong> {% if aluno.orgao_exp %}{{ aluno.orgao_exp }}{% else %}Não informado{% endif %}</p>
-                        <p class="info-line"><strong>Data de Emissão:</strong> {% if aluno.data_emissao %}{{ aluno.data_emissao|date:"d/m/Y" }}{% else %}Não informado{% endif %}</p>
+                        <p class="info-line"><strong>Órgão Expedidor:</strong> {{ aluno.orgao_exp|default:"Não informado" }}</p>
+                        <p class="info-line"><strong>Data de Emissão:</strong> {{ aluno.data_emissao|date:"d/m/Y"|default:"Não informado" }}</p>
                     </div>
                 </div>
             </div>
@@ -222,27 +179,17 @@
 
         <div class="premium-card mb-4">
             <h5 class="text-muted fw-bold mb-3">Informações Pessoais</h5>
-            <div class="card-body">
+            <div class="card-body p-0">
                 <div class="row">
                     <div class="col-md-6">
-                        <p class="info-line"><strong>Data de Nascimento:</strong> {{ aluno.data_nascimento|date:"d/m/Y" }} ({{ aluno.idade }} anos)</p>
+                        <p class="info-line"><strong>Nascimento:</strong> {{ aluno.data_nascimento|date:"d/m/Y" }} ({{ aluno.idade }} anos)</p>
                         <p class="info-line"><strong>Sexo:</strong> {{ aluno.get_sexo_display }}</p>
                         <p class="info-line"><strong>Estado Civil:</strong> {{ aluno.get_estado_civil_display }}</p>
-                        <p class="info-line"><strong>Cor/Raça:</strong> {{ aluno.get_cor_raca_display|default:"Não informado" }}</p>
                     </div>
                     <div class="col-md-6">
-                        <p class="info-line"><strong>Nome da Mãe:</strong> {{ aluno.nome_mae|default:"Não informado" }}
-                        </p>
-                        <p class="info-line"><strong>Naturalidade:</strong> {{ aluno.naturalidade|default:"Não informado" }} - {{ aluno.uf_naturalidade|default:"N/A" }}</p>
-                        <p class="info-line">
-                            <strong>Deficiência:</strong>
-                            {% if aluno.deficiencia %}
-                            Sim
-                            {% else %}
-                            Não
-                            {% endif %}
-                        </p>
+                        <p class="info-line"><strong>Nome da Mãe:</strong> {{ aluno.nome_mae|default:"Não informado" }}</p>
                         <p class="info-line"><strong>Escolaridade:</strong> {{ aluno.get_escolaridade_display|default:"Não informado" }}</p>
+                        <p class="info-line"><strong>Deficiência:</strong> {% if aluno.deficiencia %}Sim ({{ aluno.tipo_deficiencia }}){% else %}Não{% endif %}</p>
                     </div>
                 </div>
             </div>
@@ -250,7 +197,7 @@
 
         <div class="premium-card mb-4">
             <h5 class="text-muted fw-bold mb-3">Endereço</h5>
-            <div class="card-body">
+            <div class="card-body p-0">
                 <div class="row">
                     <div class="col-md-6">
                         <p class="info-line"><strong>CEP:</strong> {{ aluno.endereco_cep }}</p>
@@ -258,23 +205,21 @@
                         <p class="info-line"><strong>Bairro:</strong> {{ aluno.endereco_bairro }}</p>
                     </div>
                     <div class="col-md-6">
-                        <p class="info-line"><strong>Cidade/Estado:</strong> {{ aluno.endereco_cidade }} / {{ aluno.endereco_estado }}</p>
-                        <p class="info-line"><strong>Tempo de Moradia:</strong> {{ aluno.get_tempo_moradia_display|default:"Não informado" }}</p>
-                        <p class="info-line"><strong>Tipo de Moradia:</strong> {{ aluno.get_tipo_moradia_display|default:"Não informado" }}</p>
-                        <p class="info-line"><strong>Valor da Moradia:</strong> R$ {{ aluno.valor_moradia|default:"0,00" }}</p>
+                        <p class="info-line"><strong>Cidade/UF:</strong> {{ aluno.endereco_cidade }} / {{ aluno.endereco_estado }}</p>
+                        <p class="info-line"><strong>Moradia:</strong> {{ aluno.get_tipo_moradia_display }} ({{ aluno.get_tempo_moradia_display }})</p>
+                        <p class="info-line"><strong>Valor:</strong> R$ {{ aluno.valor_moradia|default:"0,00" }}</p>
                     </div>
                 </div>
             </div>
         </div>
-
     </div>
 
+    <!-- Coluna da Direita -->
     <div class="col-lg-4">
-
         <div class="premium-card mb-4">
             <h5 class="text-muted fw-bold mb-3">Contato</h5>
-            <div class="card-body">
-                <p class="info-line"><strong>Email:</strong> {{ aluno.email_principal }}</p>
+            <div class="card-body p-0">
+                <p class="info-line"><strong>Email:</strong> {{ aluno.email_principal|default:"Não informado" }}</p>
                 <p class="info-line"><strong>WhatsApp:</strong> {{ aluno.whatsapp|default:"Não informado" }}</p>
                 <p class="info-line"><strong>Telefone:</strong> {{ aluno.telefone_principal }}</p>
             </div>
@@ -282,46 +227,44 @@
 
         <div class="premium-card mb-4">
             <h5 class="text-muted fw-bold mb-3">Dados Socioeconômicos</h5>
-            <div class="card-body">
-                <div class="text-center mb-4 p-3 bg-light rounded-3 border border-light">
-                    <h6 class="mb-1 text-uppercase text-muted fw-bold" style="font-size: 0.75rem;">Score Total</h6>
-                    <p class="display-4 fw-bold mb-0">{{ aluno.score_total }}</p>
+            <div class="card-body p-0">
+                <div class="text-center mb-3 p-2 bg-light rounded border">
+                    <small class="text-uppercase text-muted fw-bold" style="font-size: 0.7rem;">Score Total</small>
+                    <h4 class="fw-bold mb-0">{{ aluno.score_total }}</h4>
                 </div>
-
-                <p class="info-line"><strong>Situação Profissional:</strong> {{ aluno.get_situacao_profissional_display|default:"Não informado" }}</p>
-                <p class="info-line"><strong>Renda Individual:</strong> R$ {{ aluno.renda_individual|default:"0,00" }}
-                </p>
-
-                <hr class="my-3 opacity-25">
-
-                <p class="info-line"><strong>Nº de Moradores:</strong> {{ aluno.num_moradores|default:"N/A" }}</p>
-                <p class="info-line"><strong>Quantos Trabalham:</strong> {{ aluno.quantos_trabalham|default:"N/A" }}</p>
-                <p class="info-line"><strong>Renda (outros):</strong> R$ {{ aluno.renda_moradores|default:"0,00" }}</p>
+                <p class="info-line"><strong>Profissão:</strong> {{ aluno.get_situacao_profissional_display }}</p>
                 <p class="info-line"><strong>Renda Familiar:</strong> R$ {{ aluno.renda_familiar }}</p>
-                <p class="info-line"><strong>Renda Per Capita:</strong> R$ {{ aluno.renda_per_capita|floatformat:2 }}
-                </p>
+                <p class="info-line"><strong>Per Capita:</strong> R$ {{ aluno.renda_per_capita|floatformat:2 }}</p>
             </div>
         </div>
+    </div>
+</div>
 
+<!-- Inscrição e Interesses (Full Width) -->
+<div class="row">
+    <div class="col-12">
         <div class="premium-card mb-4">
             <h5 class="text-muted fw-bold mb-3">Inscrição e Interesses</h5>
-            <div class="card-body">
-                <p class="info-line"><strong>Escola de Origem:</strong> {{ aluno.escola.nome }}</p>
-                <p class="info-line"><strong>Como Soube:</strong> {{ aluno.get_como_soube_display|default:"Não informado" }}</p>
-
-                <hr class="my-3 opacity-25">
-
-                <p class="info-line mb-2"><strong>Cursos de Interesse:</strong></p>
-                <div class="d-flex flex-wrap gap-2">
-                    {% for tipo in aluno.cursos_interesse.all %}
-                    <span class="badge-premium bg-{{ tipo.cor }} text-white">{{ tipo.nome }}</span>
-                    {% empty %}
-                    <span class="text-muted small">Nenhum interesse cadastrado.</span>
-                    {% endfor %}
+            <div class="card-body p-0">
+                <div class="row">
+                    <div class="col-md-6">
+                        <p class="info-line"><strong>Escola:</strong> {{ aluno.escola.nome }}</p>
+                        <p class="info-line"><strong>Como Soube:</strong> {{ aluno.get_como_soube_display|default:"Não informado" }}</p>
+                        <p class="info-line"><strong>Atualizações:</strong> {% if aluno.receber_notificacoes %}Sim{% else %}Não{% endif %}</p>
+                    </div>
+                    <div class="col-md-6 border-start-md">
+                        <p class="info-line mb-2"><strong>Cursos de Interesse:</strong></p>
+                        <div class="d-flex flex-wrap gap-2">
+                            {% for tipo in aluno.cursos_interesse.all %}
+                            <span class="badge-sm-premium bg-{{ tipo.cor }} text-white">{{ tipo.nome }}</span>
+                            {% empty %}
+                            <span class="text-muted small">Nenhum interesse cadastrado.</span>
+                            {% endfor %}
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
-
     </div>
 </div>
 
@@ -330,12 +273,12 @@
     <h5 class="text-muted fw-bold mb-3 text-center">📄 Comprovante de Inscrição e Termo de Compromisso</h5>
     <div class="card-body">
         <p class="mb-2 text-justify">
-            Eu, <strong>{{ aluno.nome_completo }}</strong>, portador(a) do CPF <strong>{{ aluno.cpf }}</strong>, declaro
+            Eu, <strong>{{ aluno.nome_completo }}</strong>, portador(a) do CPF <strong>{{ aluno.cpf_formatado }}</strong>, declaro
             que as informações por mim fornecidas neste ato são verdadeiras e que estou ciente e de acordo com as
             condições a seguir:
         </p>
 
-        <ul class="ps-3 mb-3 text-justify" style="list-style-type: disc;">
+        <ul class="ps-3 mb-3 text-justify" style="list-style-type: disc; font-size: 0.9rem;">
             <li class="mb-1">Confirmo minha inscrição no(s) curso(s) oferecido(s) pela Diretoria de Qualificação
                 Profissional, entendendo que este documento tem validade para todos os cursos em que eu venha a
                 participar futuramente, mediante minha solicitação e aprovação de vaga.</li>
@@ -343,11 +286,9 @@
                 quando previamente autorizado pela coordenação da unidade.</li>
             <li class="mb-1">Declaro que ( ) autorizo / ( ) não autorizo o uso da minha imagem, voz e nome em materiais
                 institucionais, educacionais ou de divulgação da Prefeitura Municipal de Uberlândia e da Diretoria de
-                Qualificação Profissional, sem fins comerciais.</li>
+                Qualificação Profissional.</li>
             <li class="mb-1">Comprometo-me a respeitar as normas da unidade de ensino, prezar pela boa convivência e
                 zelar pelos equipamentos e materiais disponibilizados.</li>
-            <li class="mb-1">Estou ciente de que o descumprimento das regras acima poderá resultar no cancelamento da
-                minha participação no curso.</li>
         </ul>
 
         <div class="row mt-4 align-items-end">
@@ -356,22 +297,21 @@
             </div>
         </div>
 
-        <div class="row mt-4">
-            <div class="col-6">
-                <div style="border-bottom: 1px solid #000; width: 90%; margin-bottom: 5px;"></div>
+        <div class="row mt-5">
+            <div class="col-6 text-center">
+                <div style="border-bottom: 1px solid #000; width: 80%; margin: 0 auto 5px auto;"></div>
                 <p class="small fw-bold mb-0">Assinatura do Entrevistador</p>
                 <p class="small mb-0 text-uppercase">{{ user.get_full_name|default:user.username }}</p>
             </div>
-            <div class="col-6">
-                <div style="border-bottom: 1px solid #000; width: 90%; margin-bottom: 5px;"></div>
-                <p class="small fw-bold mb-0">Assinatura do(a) Aluno(a) ou Responsável</p>
+            <div class="col-6 text-center">
+                <div style="border-bottom: 1px solid #000; width: 80%; margin: 0 auto 5px auto;"></div>
+                <p class="small fw-bold mb-0">Assinatura do(a) Aluno(a)</p>
+                <p class="small mb-0 text-uppercase">{{ aluno.nome_completo }}</p>
             </div>
         </div>
     </div>
 </div>
 
-<!-- djlint:on -->
-<!-- prettier-ignore-end -->
 {% endblock %}
 
 {% block extra_js %}
@@ -383,6 +323,4 @@
         }
     });
 </script>
-<!-- djlint:on -->
-<!-- prettier-ignore-end -->
 {% endblock %}

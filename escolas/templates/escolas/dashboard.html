@@ -154,24 +154,29 @@
                 </div>
                 <div class="p-0 overflow-auto" style="max-height: 400px;">
                     {% if historico_recente %}
-                    {% for inscricao in historico_recente %}
-                    <div class="feed-item">
-                        <div class="feed-icon">
-                            <i class="bi bi-person-plus-fill text-primary"></i>
+                    {% for log in historico_recente %}
+                    <div class="feed-item d-flex align-items-center p-3 border-bottom">
+                        <div class="feed-icon me-3">
+                            {% if log.acao == 'CREATE' %}
+                            <i class="bi bi-plus-circle-fill text-success fs-5"></i>
+                            {% elif log.acao == 'UPDATE' %}
+                            <i class="bi bi-pencil-fill text-primary fs-5"></i>
+                            {% elif log.acao == 'DELETE' %}
+                            <i class="bi bi-trash-fill text-danger fs-5"></i>
+                            {% else %}
+                            <i class="bi bi-activity text-info fs-5"></i>
+                            {% endif %}
                         </div>
                         <div class="feed-content">
                             <p class="mb-0">
-                                <strong>{{ inscricao.aluno.nome_completo }}</strong>
-                                <span class="text-muted">foi matriculado no curso</span>
-                                <span class="badge bg-blue-soft text-primary">{{ inscricao.curso.nome }}</span>
+                                <strong>{% if log.usuario %}{{ log.usuario.first_name|default:log.usuario.username }}{% else %}Sistema{% endif %}</strong>
+                                <span class="text-muted">{{ log.get_acao_display|lower }}</span>
+                                <span class="fw-bold">{{ log.content_type.name }}</span>
+                                {% if log.content_object %}
+                                    <span class="badge bg-blue-soft text-primary">{{ log.content_object }}</span>
+                                {% endif %}
                             </p>
-                            <span class="feed-time"><i class="bi bi-clock me-1"></i>{{ inscricao.data_inscricao|timesince }} atrás</span>
-                        </div>
-                        <div class="d-none d-md-block">
-                            <a href="{% url 'alunos:detalhe_aluno' pk=inscricao.aluno.pk %}"
-                                class="btn btn-sm btn-outline-light text-muted border-0">
-                                <i class="bi bi-chevron-right"></i>
-                            </a>
+                            <span class="feed-time small text-muted"><i class="bi bi-clock me-1"></i>{{ log.data_hora|timesince }} atrás</span>
                         </div>
                     </div>
                     {% endfor %}

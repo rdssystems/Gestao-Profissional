@@ -94,8 +94,20 @@ class DashboardView(LoginRequiredMixin, ListView):
         # Nova métrica: Alunos Cursando
         context['alunos_cursando'] = inscricao_scope.filter(status='cursando').count()
 
-        # Histórico recente
-        context['historico_recente'] = inscricao_scope.order_by('-data_inscricao')[:15]
+        # Histórico recente usando AuditLog para capturar tudo (Criações, Edições, Deletados)
+        from core.models import AuditLog
+        
+        # Filtrar logs de auditoria
+        audit_scope = AuditLog.objects.select_related('usuario', 'usuario__profile', 'content_type').order_by('-data_hora')
+        
+        if not user.is_superuser:
+            # Usuários comuns veem apenas logs de outros usuários de sua escola
+            audit_scope = audit_scope.filter(usuario__profile__escola=user.profile.escola)
+        elif escola_id_filter and escola_id_filter != 'all':
+            # Superuser filtrando uma escola específica
+            audit_scope = audit_scope.filter(usuario__profile__escola_id=escola_id_filter)
+            
+        context['historico_recente'] = audit_scope[:15]
         
         # Dados para o formulário de filtro no template
         context['todas_escolas'] = Escola.objects.all().order_by('nome') # Para superusers no select

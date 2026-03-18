@@ -52,12 +52,12 @@ class CursoListView(LoginRequiredMixin, ListView):
         user = self.request.user
         base_queryset = super().get_queryset()
         if user.is_superuser:
-            return base_queryset
+            return base_queryset.order_by('-data_inicio')
         
         if hasattr(user, 'profile') and user.profile.escola:
-            return base_queryset.filter(escola=user.profile.escola)
+            return base_queryset.filter(escola=user.profile.escola).order_by('-data_inicio')
         
-        return base_queryset.none()
+        return base_queryset.none().order_by('-data_inicio')
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -227,8 +227,8 @@ class InscricaoCreateView(AuditLogMixin, LoginRequiredMixin, StaffRequiredMixin,
             messages.error(self.request, f'O aluno {aluno.nome_completo} já está inscrito no curso {curso.nome}.')
             return self.form_invalid(form)
         
-        if curso.status != 'Aberta':
-            messages.error(self.request, f'Não é possível inscrever alunos no curso {curso.nome} pois o status não é "Aberta".')
+        if curso.status not in ['Aberta', 'Em Andamento']:
+            messages.error(self.request, f'Não é possível inscrever alunos no curso {curso.nome} pois o status é "{curso.status}".')
             return self.form_invalid(form)
 
         # --- Lógica de validação de conflitos de matrícula usando a função auxiliar ---
@@ -289,7 +289,7 @@ class MatriculaView(LoginRequiredMixin, CoordenadorRequiredMixin, ListView):
         if not curso_id:
             return Aluno.objects.none()
 
-        curso = get_object_or_404(Curso, pk=curso_id, status='Aberta')
+        curso = get_object_or_404(Curso, pk=curso_id, status__in=['Aberta', 'Em Andamento'])
         
         # Filtrar alunos que têm o tipo de curso do curso selecionado em seus interesses
         # e que ainda não estão inscritos neste curso.
@@ -312,8 +312,8 @@ class MatriculaView(LoginRequiredMixin, CoordenadorRequiredMixin, ListView):
         context = super().get_context_data(**kwargs)
         user = self.request.user
         
-        # Queryset de cursos abertos para o seletor
-        cursos_abertos_qs = Curso.objects.filter(status='Aberta')
+        # Queryset de cursos abertos ou em andamento para o seletor
+        cursos_abertos_qs = Curso.objects.filter(status__in=['Aberta', 'Em Andamento'])
         if not user.is_superuser and hasattr(user, 'profile') and user.profile.escola:
             cursos_abertos_qs = cursos_abertos_qs.filter(escola=user.profile.escola)
         

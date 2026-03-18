@@ -414,6 +414,15 @@ label.form-label-premium {
     border-radius: 6px;
 }
 
+.badge-sm-premium {
+    font-size: 0.72rem !important;
+    padding: 0.15rem 0.4rem !important;
+    font-weight: 600 !important;
+    border-radius: 4px !important;
+    letter-spacing: 0.01em;
+    display: inline-block;
+}
+
 /* --------------------------------------------------------------------------
    FORMULÁRIOS PEQUENOS (Filtros)
    -------------------------------------------------------------------------- */

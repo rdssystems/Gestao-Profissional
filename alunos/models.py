@@ -41,6 +41,7 @@ class Aluno(models.Model):
     uf_naturalidade = models.CharField(max_length=2, blank=True, null=True, verbose_name="UF da Naturalidade")
     
     deficiencia = models.BooleanField(default=False, verbose_name="Possui alguma deficiência?")
+    tipo_deficiencia = models.CharField(max_length=255, blank=True, null=True, verbose_name="Qual a deficiência?")
 
     ESCOLARIDADE_CHOICES = (
         ('Analfabeto', 'Analfabeto'),
@@ -56,7 +57,7 @@ class Aluno(models.Model):
     # Contato
     email_principal = models.EmailField(blank=True, null=True, verbose_name="Email Principal")
     whatsapp = models.CharField(max_length=20, blank=True, null=True, verbose_name="WhatsApp")
-    telefone_principal = models.CharField(max_length=20, verbose_name="Telefone Principal")
+    telefone_principal = models.CharField(max_length=20, blank=True, null=True, verbose_name="Telefone Principal")
 
     # Endereço
     endereco_cep = models.CharField(max_length=9, verbose_name="CEP")
@@ -108,6 +109,7 @@ class Aluno(models.Model):
     # Inscrição
     COMO_SOUBE_CHOICES = (('Redes Sociais', 'Redes Sociais'), ('Site Prefeitura', 'Site Prefeitura'), ('Amigo', 'Amigo'), ('Panfleto', 'Panfleto'), ('Outros', 'Outros'))
     como_soube = models.CharField(max_length=50, choices=COMO_SOUBE_CHOICES, blank=True, null=True, verbose_name="Como soube do curso?")
+    receber_notificacoes = models.BooleanField(default=True, verbose_name="Deseja receber atualizações de cursos?")
     
     # Campos de controle
     data_criacao = models.DateTimeField(auto_now_add=True)
@@ -115,5 +117,20 @@ class Aluno(models.Model):
 
     score_total = models.IntegerField(default=0, editable=False, verbose_name="Score Total")
 
+    def save(self, *args, **kwargs):
+        if self.nome_completo:
+            self.nome_completo = self.nome_completo.title()
+        super().save(*args, **kwargs)
+
     def __str__(self):
         return self.nome_completo
+
+    @property
+    def cpf_formatado(self):
+        if self.cpf:
+            # Remove qualquer formatação existente primeiro
+            import re
+            cpf = re.sub(r'\D', '', self.cpf)
+            if len(cpf) == 11:
+                return f"{cpf[:3]}.{cpf[3:6]}.{cpf[6:9]}-{cpf[9:]}"
+        return self.cpf
