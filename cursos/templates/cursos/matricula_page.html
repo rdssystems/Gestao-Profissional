@@ -25,18 +25,12 @@
                         <label class="form-label fw-semibold text-secondary">
                             Selecione um Curso Aberto
                         </label>
-                        <select name="curso_id" class="form-select form-select-lg">
-                            <option value="">— Escolha um curso —</option>
+                        <select name="curso_id" class="form-select form-select-premium shadow-sm">
+                            <option value="">— Selecione um curso disponível —</option>
                             {% for curso in cursos_abertos %}
-                            {% if curso.pk == selected_curso.pk %}
-                            <option value="{{ curso.pk }}" selected>
-                                {{ curso.nome }} • {{ curso.get_turno_display }} • {{ curso.horario|date:"H:i" }}
+                            <option value="{{ curso.pk }}" {% if selected_curso and curso.pk == selected_curso.pk %}selected{% endif %}>
+                                {{ curso.nome }} • Início: {{ curso.data_inicio|date:"d/m/Y" }} • {{ curso.get_turno_display }} [{{ curso.horario|date:"H:i" }}]
                             </option>
-                            {% else %}
-                            <option value="{{ curso.pk }}">
-                                {{ curso.nome }} • {{ curso.get_turno_display }} • {{ curso.horario|date:"H:i" }}
-                            </option>
-                            {% endif %}
                             {% endfor %}
                         </select>
                     </div>
