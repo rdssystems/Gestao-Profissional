@@ -25,11 +25,11 @@ class AlunoForm(forms.ModelForm):
         fields = [
             'escola', 'cursos_interesse', 'nome_completo', 'cpf', 'rg', 'orgao_exp', 'data_emissao',
             'data_nascimento', 'sexo', 'estado_civil', 'cor_raca', 'nome_mae', 'naturalidade',
-            'uf_naturalidade', 'deficiencia', 'escolaridade', 'email_principal', 'whatsapp',
+            'uf_naturalidade', 'deficiencia', 'tipo_deficiencia', 'escolaridade', 'email_principal', 'whatsapp',
             'telefone_principal', 'endereco_cep', 'endereco_rua', 'endereco_numero', 'endereco_bairro',
             'endereco_cidade', 'endereco_estado', 'tempo_moradia', 'tipo_moradia', 'valor_moradia',
             'situacao_profissional', 'renda_individual', 'num_moradores', 'quantos_trabalham',
-            'renda_moradores', 'como_soube'
+            'renda_moradores', 'como_soube', 'receber_notificacoes'
         ]
         widgets = {
             'escola': forms.Select(attrs={'class': 'form-select form-select-premium'}),
@@ -46,7 +46,8 @@ class AlunoForm(forms.ModelForm):
             'nome_mae': forms.TextInput(attrs={'class': 'form-control form-control-premium'}),
             'naturalidade': forms.TextInput(attrs={'class': 'form-control form-control-premium'}),
             'uf_naturalidade': forms.TextInput(attrs={'class': 'form-control form-control-premium'}),
-            'deficiencia': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'deficiencia': forms.CheckboxInput(attrs={'class': 'form-check-input', 'onchange': 'toggleDeficiencia(this.checked)'}),
+            'tipo_deficiencia': forms.TextInput(attrs={'class': 'form-control form-control-premium', 'placeholder': 'Descreva a deficiência'}),
             'escolaridade': forms.Select(attrs={'class': 'form-select form-select-premium'}),
             'email_principal': forms.EmailInput(attrs={'class': 'form-control form-control-premium'}),
             'whatsapp': forms.TextInput(attrs={'class': 'form-control form-control-premium'}),
@@ -66,6 +67,7 @@ class AlunoForm(forms.ModelForm):
             'quantos_trabalham': forms.NumberInput(attrs={'class': 'form-control form-control-premium'}),
             'renda_moradores': forms.NumberInput(attrs={'class': 'form-control form-control-premium'}),
             'como_soube': forms.Select(attrs={'class': 'form-select form-select-premium'}),
+            'receber_notificacoes': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }
         labels = {
             'escola': _("Escola"),
@@ -83,6 +85,7 @@ class AlunoForm(forms.ModelForm):
             'naturalidade': _("Naturalidade"),
             'uf_naturalidade': _("UF Naturalidade"),
             'deficiencia': _("Pessoa com Deficiência?"),
+            'tipo_deficiencia': _("Qual a deficiência?"),
             'escolaridade': _("Escolaridade"),
             'email_principal': _("Email Principal"),
             'whatsapp': _("WhatsApp"),
@@ -102,6 +105,7 @@ class AlunoForm(forms.ModelForm):
             'quantos_trabalham': _("Quantos Trabalham na Casa"),
             'renda_moradores': _("Renda de Outros Moradores (R$)"),
             'como_soube': _("Como Soube do Programa"),
+            'receber_notificacoes': _("Deseja receber atualizações de cursos?"),
         }
         error_messages = {
             'nome_completo': {'required': _("Este Campo é Obrigatório")},
@@ -111,7 +115,6 @@ class AlunoForm(forms.ModelForm):
             'escola': {'required': _("Este Campo é Obrigatório")},
 
             'whatsapp': {'required': _("Este Campo é Obrigatório")},
-            'telefone_principal': {'required': _("Este Campo é Obrigatório")},
             'endereco_cep': {'required': _("Este Campo é Obrigatório")},
             'endereco_rua': {'required': _("Este Campo é Obrigatório")},
             'endereco_numero': {'required': _("Este Campo é Obrigatório")},
@@ -199,14 +202,14 @@ class AuxiliarAlunoForm(AlunoForm):
         fields = [
             'cursos_interesse',
             'sexo', 'estado_civil', 'cor_raca', 'nome_mae', 'naturalidade', 'uf_naturalidade',
-            'deficiencia', 'escolaridade',
+            'deficiencia', 'tipo_deficiencia', 'escolaridade',
             'email_principal', 'whatsapp', 'telefone_principal',
             'endereco_cep', 'endereco_rua', 'endereco_numero', 'endereco_bairro',
             'endereco_cidade', 'endereco_estado',
             'tempo_moradia', 'tipo_moradia', 'valor_moradia',
             'situacao_profissional', 'renda_individual', 
             'num_moradores', 'quantos_trabalham', 'renda_moradores',
-            'como_soube'
+            'como_soube', 'receber_notificacoes'
         ]
         # Widgets e Labels são herdados de AlunoForm.Meta
 

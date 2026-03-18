@@ -85,13 +85,13 @@
                     </a>
                     {% endif %}
                 </td>
-                <td>{{ aluno.cpf }}</td>
+                <td>{{ aluno.cpf_formatado }}</td>
                 <td>
                     <span class="badge bg-light text-dark border">{{ aluno.score_total }}</span>
                 </td>
                 <td>
                     {% for curso in aluno.cursos_interesse.all %}
-                    <span class="badge-premium bg-{{ curso.cor }} text-white">{{ curso.nome }}</span>
+                    <span class="badge-sm-premium bg-{{ curso.cor }} text-white">{{ curso.nome }}</span>
                     {% if not forloop.last %} {% endif %}
                     {% empty %}
                     <span class="text-muted small">-</span>

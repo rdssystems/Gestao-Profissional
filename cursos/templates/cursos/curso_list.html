@@ -26,7 +26,7 @@
         <div class="d-flex align-items-center justify-content-between mb-3">
             <h5 class="text-muted fw-bold mb-0">Cursos Ativos</h5>
         </div>
-        <div class="table-responsive-premium">
+        <div class="table-responsive-premium" style="max-height: 500px; overflow-y: auto;">
             <table class="table-premium">
                 <thead>
                     <tr>
@@ -59,9 +59,10 @@
                                 {% csrf_token %}
                                 <select name="status" class="form-select form-select-sm-premium status-select"
                                     onchange="this.form.submit()" data-current="{{ curso.status }}">
-                                    <option value="Aberta">Aberta</option>
-                                    <option value="Em Andamento">Em Andamento</option>
-                                    <option value="Concluído">Concluído</option>
+                                    <option value="Aberta" {% if curso.status == 'Aberta' %}selected{% endif %}>Aberta</option>
+                                    <option value="Em Andamento" {% if curso.status == 'Em Andamento' %}selected{% endif %}>Em Andamento</option>
+                                    <option value="Concluído" {% if curso.status == 'Concluído' %}selected{% endif %}>Concluído</option>
+                                    <option value="Arquivado" {% if curso.status == 'Arquivado' %}selected{% endif %}>Arquivado</option>
                                 </select>
                             </form>
                             {% else %}
