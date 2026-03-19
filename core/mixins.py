@@ -96,7 +96,7 @@ class AuditLogMixin:
                 usuario=user,
                 acao=action,
                 content_type=ContentType.objects.get_for_model(obj),
-                object_id=str(obj.pk),
+                object_id=str(obj.pk) if obj.pk else None,
                 detalhes=json.dumps(details, cls=DjangoJSONEncoder, ensure_ascii=False) if details else None,
                 ip_address=self.get_client_ip()
             )
