@@ -102,10 +102,18 @@ class DashboardView(LoginRequiredMixin, ListView):
         
         if not user.is_superuser:
             # Usuários comuns veem apenas logs de outros usuários de sua escola
-            audit_scope = audit_scope.filter(usuario__profile__escola=user.profile.escola)
+            if hasattr(user, 'profile') and user.profile.escola:
+                audit_scope = audit_scope.filter(usuario__profile__escola=user.profile.escola)
+            else:
+                audit_scope = audit_scope.none()
         elif escola_id_filter and escola_id_filter != 'all':
             # Superuser filtrando uma escola específica
-            audit_scope = audit_scope.filter(usuario__profile__escola_id=escola_id_filter)
+            try:
+                # Garantir que o filtro seja um número válido para evitar ValueError
+                escola_id_int = int(escola_id_filter)
+                audit_scope = audit_scope.filter(usuario__profile__escola_id=escola_id_int)
+            except (ValueError, TypeError):
+                pass
             
         context['historico_recente'] = audit_scope[:15]
         
@@ -117,7 +125,7 @@ class DashboardView(LoginRequiredMixin, ListView):
             'last_3_months': 'Últimos 3 Meses',
             'current_year': 'Ano Atual',
         }
-        context['selected_escola_id'] = escola_id_filter
+        context['selected_escola_id'] = str(escola_id_filter) if escola_id_filter else 'all'
         context['selected_period'] = period_filter
 
         # Calcular is_filter_expanded (boolean) e filter_collapse_class (string) aqui na view
@@ -197,5 +205,3 @@ class EscolaListView(LoginRequiredMixin, ListView):
             # Para todos os usuários autenticados que não são superusuários,
             # mostrar todas as escolas globalmente para visualização.
             return Escola.objects.all().order_by('nome')
-
-        return context
