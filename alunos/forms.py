@@ -1,4 +1,5 @@
 from django import forms
+from datetime import date
 from django.contrib.auth.models import User, Group
 from escolas.models import Escola
 from django.contrib.auth.forms import AuthenticationForm
@@ -189,6 +190,15 @@ class AlunoForm(forms.ModelForm):
             if not cep_digits.isdigit():
                  raise forms.ValidationError('O CEP deve conter apenas números.')
         return cep
+
+    def clean_data_nascimento(self):
+        data_nascimento = self.cleaned_data.get('data_nascimento')
+        if data_nascimento:
+            hoje = date.today()
+            idade = hoje.year - data_nascimento.year - ((hoje.month, hoje.day) < (data_nascimento.month, data_nascimento.day))
+            if idade < 16:
+                raise forms.ValidationError('O aluno deve ter pelo menos 16 anos para realizar a inscrição.')
+        return data_nascimento
 
 # Existing AuxiliarAlunoForm
 class AuxiliarAlunoForm(AlunoForm):

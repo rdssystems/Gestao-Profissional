@@ -252,7 +252,7 @@
                         <a class="nav-link {% if request.path == declaracoes_url or request.path|startswith:declaracoes_url %}active-nav-link{% endif %}"
                             href="{{ declaracoes_url }}">Declarações</a>
                     </li>
-                    {% if user.is_superuser or user|has_group:'Coordenador' %}
+                    {% if user.is_superuser or user|has_group:'Coordenador' or user|has_group:'Auxiliar Administrativo' %}
                     <li class="nav-item">
                         {% url 'cursos:matricula' as matriculas_url %}
                         <a class="nav-link {% if request.path == matriculas_url or request.path|startswith:matriculas_url %}active-nav-link{% endif %}"

@@ -116,6 +116,7 @@ class Aluno(models.Model):
     data_atualizacao = models.DateTimeField(auto_now=True)
 
     score_total = models.IntegerField(default=0, editable=False, verbose_name="Score Total")
+    observacoes = models.TextField(blank=True, null=True, verbose_name="Observações do Histórico")
 
     def save(self, *args, **kwargs):
         if self.nome_completo:

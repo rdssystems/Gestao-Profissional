@@ -388,6 +388,34 @@
             toggleDeficiencia(defInput.checked);
         }
 
+        const dataNascimentoInput = document.getElementById('{{ form.data_nascimento.id_for_label }}');
+        if (dataNascimentoInput) {
+            dataNascimentoInput.addEventListener('change', function () {
+                if (!this.value) return;
+                
+                const birthDate = new Date(this.value);
+                const today = new Date();
+                
+                // Ajuste para fuso horário ao criar objeto Date da string YYYY-MM-DD
+                const birthDateAdjusted = new Date(birthDate.getTime() + birthDate.getTimezoneOffset() * 60000);
+                
+                let age = today.getFullYear() - birthDateAdjusted.getFullYear();
+                const m = today.getMonth() - birthDateAdjusted.getMonth();
+                if (m < 0 || (m === 0 && today.getDate() < birthDateAdjusted.getDate())) {
+                    age--;
+                }
+                
+                if (age < 16) {
+                    alert('Atenção: O aluno possui ' + age + ' anos. A idade mínima recomendada é de 16 anos. O formulário não será aceito se a idade for inferior a 16.');
+                    this.classList.add('is-invalid');
+                    this.style.borderColor = '#dc2626';
+                } else {
+                    this.classList.remove('is-invalid');
+                    this.style.borderColor = '';
+                }
+            });
+        }
+
         const cepInput = document.getElementById('{{ form.endereco_cep.id_for_label }}');
         const ruaInput = document.getElementById('{{ form.endereco_rua.id_for_label }}');
         const bairroInput = document.getElementById('{{ form.endereco_bairro.id_for_label }}');
