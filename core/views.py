@@ -112,26 +112,13 @@ O software oferece um fluxo completo desde o cadastro de alunos, criação de cu
 - Validação de datas (Início e Fim).
 - **Importação de Cursos**: Upload em massa via CSV.
 
-### <i class="bi bi-pencil-square"></i> Matrículas e Inscrições
-- Processo de matrícula inteligente.
-- **Validação de Conflitos**: O sistema impede que um aluno se matricule em dois cursos que ocorrem no mesmo horário/período.
-- Lista de espera/sugestão baseada no **Score** do aluno e seus cursos de interesse.
-- Gestão de status da matrícula: Cursando, Concluído, Desistente.
-
-### <i class="bi bi-check-circle"></i> Frequência e Chamada
-- Registro diário de aulas.
-- Lista de chamada digital para marcar presença, falta ou ausência justificada.
-- Histórico de chamadas por curso.
-
-### <i class="bi bi-gear"></i> Configuração de Score (Ranking)
-- Interface administrativa para definir pesos e pontuações dos critérios socioeconômicos.
-- Critérios configuráveis:
-  - Renda Familiar
-  - Renda Per Capita
-  - Número de Moradores
-  - Membros que Trabalham
-  - Tempo de Moradia
-  - Tipo de Moradia
+### <i class="bi bi-file-earmark-pdf"></i> Documentos e Declarações
+- **Geração Automática**: Emissão de declarações de matrícula, cursando ou concluído.
+- **Validação de Regras**: 
+  - O sistema impede a emissão de declarações para alunos menores de 16 anos.
+  - Bloqueio automático para alunos com status de **Desistente**.
+- **Assinatura Digital**: Recurso para coleta de assinatura digital no momento da emissão.
+- **Validação por QR/Hash**: Cada declaração emitida possui um código único de autenticidade para verificação posterior.
 
 ---
 
@@ -147,16 +134,17 @@ O sistema possui hierarquia de acesso para garantir segurança e organização:
 
 ### 2. Coordenador de Escola
 - **Escopo Local**: Acesso restrito aos dados da sua escola vinculada.
-- **Gestão Completa da Escola**: Pode criar cursos, matricular alunos, editar dados e gerenciar a equipe daquela unidade.
-- **Relatórios**: Acesso ao Dashboard da sua escola.
+- **Documentação**: Pode emitir, assinar e salvar novas declarações para os alunos.
+- **Gestão Completa da Escola**: Pode criar cursos, matricular alunos, editar dados de identificação e gerenciar a equipe daquela unidade.
 
 ### 3. Auxiliar Administrativo
 - **Operacional**: Focado no dia a dia da secretaria da escola.
 - **Permissões**:
-  - Pode cadastrar e editar alunos.
-  - Pode realizar matrículas.
+  - Pode cadastrar e editar dados de contato/endereço dos alunos (os campos CPF, RG e Nome são fixos).
+  - Pode realizar matrículas através da guia específica.
+  - Pode consultar e imprimir histórico de declarações já existentes.
   - Pode lançar chamadas/frequência.
-- **Restrições**: **Não pode excluir** registros críticos (como apagar um aluno do sistema) para evitar perda acidental de dados.
+- **Restrições**: **Não pode emitir/salvar** novas declarações e não pode excluir registros críticos.
 
 ---
 

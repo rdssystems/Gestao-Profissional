@@ -155,6 +155,17 @@ class CursoStatusUpdateView(LoginRequiredMixin, StaffRequiredMixin, View):
 
         return redirect('cursos:lista_cursos')
 
+class CursoConcluintesView(LoginRequiredMixin, StaffRequiredMixin, DetailView):
+    model = Curso
+    template_name = 'cursos/curso_concluintes.html'
+    context_object_name = 'curso'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        # Filtrar apenas as inscrições com status 'concluido'
+        context['concluintes'] = self.object.inscricao_set.filter(status='concluido').select_related('aluno').order_by('aluno__nome_completo')
+        return context
+
 # Views para TipoCurso
 class TipoCursoListView(LoginRequiredMixin, CoordenadorRequiredMixin, ListView):
     model = TipoCurso
@@ -278,7 +289,7 @@ class UpdateInscricaoStatusView(LoginRequiredMixin, StaffRequiredMixin, SingleOb
             
         return redirect('cursos:detalhe_curso', pk=inscricao.curso.pk)
 
-class MatriculaView(LoginRequiredMixin, CoordenadorRequiredMixin, ListView):
+class MatriculaView(LoginRequiredMixin, StaffRequiredMixin, ListView):
     model = Aluno
     template_name = 'cursos/matricula_page.html'
     context_object_name = 'alunos_sugeridos'
@@ -325,7 +336,7 @@ class MatriculaView(LoginRequiredMixin, CoordenadorRequiredMixin, ListView):
             
         return context
 
-class MatricularAlunoDiretoView(LoginRequiredMixin, CoordenadorRequiredMixin, View):
+class MatricularAlunoDiretoView(LoginRequiredMixin, StaffRequiredMixin, View):
     def post(self, request, *args, **kwargs):
         aluno_id = request.POST.get('aluno_id')
         curso_id = request.POST.get('curso_id')
@@ -385,7 +396,7 @@ class MatricularAlunoDiretoView(LoginRequiredMixin, CoordenadorRequiredMixin, Vi
 
         return redirect(redirect_url)
 
-class CancelarMatriculaDiretoView(LoginRequiredMixin, CoordenadorRequiredMixin, View):
+class CancelarMatriculaDiretoView(LoginRequiredMixin, StaffRequiredMixin, View):
     def post(self, request, *args, **kwargs):
         inscricao_id = request.POST.get('inscricao_id')
         inscricao = get_object_or_404(Inscricao, pk=inscricao_id)

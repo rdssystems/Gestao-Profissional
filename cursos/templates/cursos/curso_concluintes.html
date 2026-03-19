@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% block title %}Lista de Concluintes: {{ curso.nome }}{% endblock %}
+
+{% block content %}
+<style>
+    @media print {
+        .no-print { display: none !important; }
+        .container { max-width: 100% !important; width: 100% !important; margin: 0 !important; padding: 0 !important; }
+        body { background: white !important; font-size: 12pt; }
+        .card { border: none !important; box-shadow: none !important; }
+        table { width: 100% !important; border-collapse: collapse; }
+        th, td { border: 1px solid #ddd !important; padding: 8px !important; }
+    }
+    .header-info {
+        background-color: #f8fafc;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 30px;
+        border: 1px solid #e2e8f0;
+    }
+</style>
+
+<div class="d-flex justify-content-between align-items-center mb-4 no-print">
+    <h1 class="page-header-premium mb-0">Lista de Concluintes</h1>
+    <div class="d-flex gap-2">
+        <button onclick="window.print()" class="btn btn-premium">
+            <i class="bi bi-printer me-2"></i>Imprimir Lista
+        </button>
+        <a href="{% url 'cursos:detalhe_curso' pk=curso.pk %}" class="btn btn-premium-outline">
+            Voltar
+        </a>
+    </div>
+</div>
+
+<div class="header-info">
+    <div class="row">
+        <div class="col-md-8">
+            <h2 class="fw-bold text-dark mb-2">{{ curso.nome }}</h2>
+            <p class="text-muted mb-1"><strong>Escola:</strong> {{ curso.escola.nome }}</p>
+            <p class="text-muted mb-0"><strong>Tipo:</strong> {{ curso.tipo_curso.nome }}</p>
+        </div>
+        <div class="col-md-4 text-md-end">
+            <p class="text-muted mb-1"><strong>Período:</strong> {{ curso.data_inicio|date:"d/m/Y" }} - {{ curso.data_fim|date:"d/m/Y" }}</p>
+            <p class="text-muted mb-0"><strong>Carga Horária:</strong> {{ curso.carga_horaria }}h</p>
+        </div>
+    </div>
+</div>
+
+<div class="premium-card p-0 overflow-hidden">
+    <table class="table table-hover align-middle mb-0">
+        <thead class="bg-light">
+            <tr>
+                <th style="width: 60px;" class="ps-4">#</th>
+                <th>Nome do Aluno</th>
+                <th>Telefone / WhatsApp</th>
+                <th class="text-center">Data de Conclusão</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for insc in concluintes %}
+            <tr>
+                <td class="ps-4 text-muted">{{ forloop.counter }}</td>
+                <td class="fw-bold">{{ insc.aluno.nome_completo }}</td>
+                <td>
+                    {{ insc.aluno.telefone_principal }}
+                    {% if insc.aluno.whatsapp %}
+                        / {{ insc.aluno.whatsapp }}
+                    {% endif %}
+                </td>
+                <td class="text-center">
+                    {{ insc.data_inscricao|date:"d/m/Y" }} {# Ou outra data relevante #}
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="4" class="text-center py-5 text-muted">
+                    Nenhum concluinte registrado para este curso.
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<div class="mt-4 text-end text-muted small no-print">
+    Gerado em {% now "d/m/Y H:i" %}
+</div>
+
+{% endblock %}

@@ -11,7 +11,7 @@ urlpatterns = [
     path('gerar/<int:inscricao_id>/', views.gerar_declaracao_view, name='gerar_declaracao'),
     
     # New path for generating declaration with an optional declaration_type
-    re_path(r'^gerar/(?P<inscricao_id>\d+)/(?:(?P<declaration_type>matriculado|cursando)/)?$', views.gerar_declaracao_view, name='gerar_declaracao_com_tipo'),
+    re_path(r'^gerar/(?P<inscricao_id>\d+)/(?:(?P<declaration_type>matriculado|cursando|concluido)/)?$', views.gerar_declaracao_view, name='gerar_declaracao_com_tipo'),
 
     path('salvar/<int:inscricao_id>/', views.salvar_declaracao_view, name='salvar_declaracao'),
     path('sucesso/<int:declaracao_id>/', views.declaracao_sucesso_view, name='declaracao_sucesso'),

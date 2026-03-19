@@ -126,78 +126,167 @@
 
 <h1 class="mb-4 page-title">Histórico de Aluno</h1>
 
-<div class="card info-card mb-4">
-    <div class="card-header">
-        <i class="bi bi-person-badge me-2"></i> {{ aluno.nome_completo }}
-    </div>
-    <div class="card-body">
-        <div class="row">
-            <div class="col-md-6">
-                <p class="mb-2 text-muted small text-uppercase fw-bold">CPF</p>
-                <p class="fw-medium text-dark">{{ aluno.cpf }}</p>
+<div class="row">
+    <div class="col-lg-8">
+        <!-- Informações Básicas (Mini) -->
+        <div class="card info-card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center text-white">
+                <span><i class="bi bi-person-badge me-2"></i> {{ aluno.nome_completo }}</span>
+                <span class="badge bg-white text-primary rounded-pill px-3">{{ aluno.cpf }}</span>
             </div>
-            <div class="col-md-6">
-                <p class="mb-2 text-muted small text-uppercase fw-bold">Escola</p>
-                <p class="fw-medium text-dark">{{ aluno.escola.nome }}</p>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <p class="mb-1 text-muted small text-uppercase">Escola de Origem</p>
+                        <p class="fw-bold mb-0 text-dark">{{ aluno.escola.nome }}</p>
+                    </div>
+                    <div class="col-md-6 text-md-end">
+                        <p class="mb-1 text-muted small text-uppercase">Data de Cadastro</p>
+                        <p class="fw-bold mb-0 text-dark">{{ aluno.data_criacao|date:"d/m/Y" }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Observações do Histórico -->
+        <div class="card table-card mb-4 shadow-sm border-0">
+            <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center py-3">
+                <h5 class="mb-0 text-primary fw-bold"><i class="bi bi-journal-text me-2"></i>Observações do Histórico</h5>
+                <button type="button" class="btn btn-sm btn-primary rounded-pill px-3" data-bs-toggle="modal" data-bs-target="#modalObservacoes">
+                    <i class="bi bi-pencil-square me-1"></i> Editar
+                </button>
+            </div>
+            <div class="card-body p-4">
+                {% if aluno.observacoes %}
+                    <div class="bg-light p-4 rounded-3 border-start border-4 border-primary">
+                        <p class="mb-0" style="white-space: pre-wrap; line-height: 1.6;">{{ aluno.observacoes }}</p>
+                    </div>
+                {% else %}
+                    <div class="text-center py-4 text-muted border rounded-3 border-dashed">
+                        <i class="bi bi-chat-left-dots display-6 opacity-25 d-block mb-2"></i>
+                        Nenhuma observação registrada para este aluno.
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Cursos e Status -->
+        <div class="card table-card shadow-sm border-0">
+            <div class="card-header bg-white border-bottom py-3">
+                <h5 class="mb-0 text-primary fw-bold"><i class="bi bi-mortarboard-fill me-2"></i>Cursos Matriculados</h5>
+            </div>
+
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table align-middle mb-0">
+                        <thead class="bg-light">
+                            <tr>
+                                <th scope="col" class="px-4">Curso</th>
+                                <th scope="col">Período</th>
+                                <th scope="col" class="text-center">Status Atual</th>
+                            </tr>
+                        </thead>
+
+                        <tbody>
+                            {% for inscricao in inscricoes %}
+                            <tr>
+                                <td class="px-4">
+                                    <div class="fw-bold text-dark">{{ inscricao.curso.nome }}</div>
+                                    <small class="text-muted">{{ inscricao.curso.escola.nome }}</small>
+                                </td>
+                                <td>
+                                    <div class="small fw-medium">{{ inscricao.curso.data_inicio|date:"d/m/Y" }}</div>
+                                    <div class="small text-muted">{{ inscricao.curso.data_fim|date:"d/m/Y" }}</div>
+                                </td>
+                                <td class="text-center">
+                                    <span class="badge status-badge 
+                                        {% if inscricao.status == 'concluido' %}bg-success text-white
+                                        {% elif inscricao.status == 'desistente' %}bg-danger text-white
+                                        {% else %}bg-info text-white{% endif %}
+                                        shadow-sm
+                                    ">
+                                        {{ inscricao.get_status_display }}
+                                    </span>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="3" class="text-center py-5">
+                                    <div class="text-muted">
+                                        <i class="bi bi-journal-x display-4 d-block mb-3 opacity-25"></i>
+                                        Nenhuma inscrição encontrada.
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     </div>
-</div>
 
-<div class="card table-card">
-    <div class="card-header">
-        Cursos Matriculados
-    </div>
-
-    <div class="card-body p-0">
-        <div class="table-responsive">
-            <table class="table align-middle mb-0">
-                <thead>
-                    <tr>
-                        <th scope="col">Curso</th>
-                        <th scope="col">Período</th>
-                        <th scope="col">Frequência</th>
-                        <th scope="col">Status</th>
-                    </tr>
-                </thead>
-
-                <tbody>
-                    {% for inscricao in inscricoes %}
-                    <tr>
-                        <td class="fw-medium">{{ inscricao.curso.nome }}</td>
-                        <td>{{ inscricao.curso.data_inicio|date:"d/m/Y" }} a {{ inscricao.curso.data_fim|date:"d/m/Y" }}</td>
-                        <td class="text-muted">—</td>
-                        <td>
-                            <span class="badge status-badge 
-                                {% if inscricao.status == 'concluido' %}bg-success bg-opacity-10 text-success border border-success border-opacity-10
-                                {% elif inscricao.status == 'desistente' %}bg-danger bg-opacity-10 text-danger border border-danger border-opacity-10
-                                {% else %}bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-10{% endif %}
-                            ">
-                                {{ inscricao.get_status_display }}
-                            </span>
-                        </td>
-                    </tr>
-
+    <!-- Linha do Tempo (Logs de Status) -->
+    <div class="col-lg-4">
+        <div class="card table-card shadow-sm border-0 sticky-top" style="top: 2rem;">
+            <div class="card-header bg-white border-bottom py-3">
+                <h5 class="mb-0 text-primary fw-bold"><i class="bi bi-activity me-2"></i>Timeline de Eventos</h5>
+            </div>
+            <div class="card-body p-4">
+                <ul class="list-unstyled mb-0">
+                    {% for event in timeline %}
+                    <li class="mb-4 ps-4 border-start border-2 border-primary position-relative">
+                        <i class="bi bi-circle-fill text-primary position-absolute" style="left: -7px; top: 0; font-size: 12px; background: white;"></i>
+                        <div class="small text-muted mb-1">{{ event.data_hora|date:"d/m/Y H:i" }}</div>
+                        <div class="fw-bold mb-1" style="font-size: 0.9rem;">
+                            Status Atualizado
+                        </div>
+                        <div class="small text-secondary mb-2">
+                             Por: <strong>{{ event.usuario.username }}</strong>
+                        </div>
+                        <div class="text-dark bg-light p-2 rounded border-start border-3 border-success" style="font-size: 0.85rem;">
+                            <i class="bi bi-check2-circle text-success me-1"></i> Alterado para: <span class="fw-bold">{{ event.status }}</span>
+                        </div>
+                    </li>
                     {% empty %}
-                    <tr>
-                        <td colspan="4" class="text-center py-5">
-                            <div class="text-muted">
-                                <i class="bi bi-journal-x display-4 d-block mb-3 opacity-25"></i>
-                                O aluno não se inscreveu em nenhum curso.
-                            </div>
-                        </td>
-                    </tr>
+                    <div class="text-center py-4 text-muted border rounded-3 border-dashed">
+                        Nenhum evento registrado.
+                    </div>
                     {% endfor %}
-                </tbody>
-
-            </table>
+                </ul>
+            </div>
         </div>
     </div>
 </div>
 
-<div class="mt-4">
-    <a href="{% url 'alunos:detalhe_aluno' pk=aluno.pk %}" class="btn back-btn">
-        <i class="bi bi-arrow-left me-1"></i> Voltar aos Detalhes
+<!-- Modal para Editar Observações -->
+<div class="modal fade" id="modalObservacoes" tabindex="-1" aria-labelledby="modalObservacoesLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 20px;">
+            <div class="modal-header bg-primary text-white border-0 py-3" style="border-top-left-radius: 20px; border-top-right-radius: 20px;">
+                <h5 class="modal-title fw-bold" id="modalObservacoesLabel"><i class="bi bi-pencil-square me-2"></i>Editar Observações do Aluno</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form action="{% url 'alunos:aluno_update_observacoes' pk=aluno.pk %}" method="POST">
+                {% csrf_token %}
+                <div class="modal-body p-4">
+                    <div class="mb-3">
+                        <label for="observacoes" class="form-label fw-bold text-muted small text-uppercase">Notas e Observações</label>
+                        <textarea class="form-control border-0 bg-light p-3" id="observacoes" name="observacoes" rows="8" placeholder="Digite aqui o histórico, observações ou notas relevantes sobre este aluno..." style="border-radius: 12px; line-height: 1.6;">{{ aluno.observacoes|default:'' }}</textarea>
+                    </div>
+                </div>
+                <div class="modal-footer border-0 p-4">
+                    <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary rounded-pill px-5 fw-bold shadow-sm">Salvar Alterações</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="mt-5 pb-5">
+    <a href="{% url 'alunos:detalhe_aluno' pk=aluno.pk %}" class="btn back-btn border-0 shadow-sm" style="border-radius: 50px;">
+        <i class="bi bi-arrow-left-circle-fill me-2"></i> Voltar ao Perfil do Aluno
     </a>
 </div>
 

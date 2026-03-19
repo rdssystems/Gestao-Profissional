@@ -52,7 +52,7 @@ def listar_cursos_view(request, aluno_id):
     aluno = get_object_or_404(aluno_query) # Use the filtered query
 
     # Filter inscricoes by school of the current user
-    inscricoes = Inscricao.objects.filter(aluno=aluno).select_related('curso')
+    inscricoes = Inscricao.objects.filter(aluno=aluno).exclude(status='desistente').select_related('curso')
     if not request.user.is_superuser and hasattr(request.user, 'profile') and request.user.profile.escola:
         inscricoes = inscricoes.filter(curso__escola=request.user.profile.escola)
     
@@ -62,12 +62,17 @@ def listar_cursos_view(request, aluno_id):
     for inscricao in inscricoes:
         status = get_aluno_status_para_inscricao(inscricao)
         # Include all inscriptions, but mark which ones can generate a declaration
-        pode_gerar = status in ['matriculado', 'cursando', 'concluido']
+        pode_gerar = status in ['matriculado', 'cursando', 'concluido', 'aguardando_regularizacao']
         
         status_display_text = dict(Declaracao.STATUS_CHOICES).get(status)
         if not status_display_text:
-             # Fallback for statuses not in the model choices (like 'aguardando_regularizacao')
-             status_display_text = "Aguardando Regularização" if status == 'aguardando_regularizacao' else "Status Inválido"
+             # Fallbacks for statuses not in the model choices
+             if status == 'aguardando_regularizacao':
+                 status_display_text = "Aguardando Regularização"
+             elif status == 'desistente':
+                 status_display_text = "Desistente"
+             else:
+                 status_display_text = "Status Inválido"
 
         # Buscar histórico de declarações para esta inscrição
         historico = Declaracao.objects.filter(inscricao=inscricao).order_by('-data_emissao')
@@ -85,8 +90,13 @@ def listar_cursos_view(request, aluno_id):
         'inscricoes': inscricoes_com_status
     })
 
-def _check_inscricao_permission(request, inscricao_id):
+def _check_inscricao_permission(request, inscricao_id, block_auxiliar=False):
     inscricao = get_object_or_404(Inscricao, id=inscricao_id)
+
+    # If requested, block Auxiliar Administrativo from issuing certificates
+    if block_auxiliar and request.user.groups.filter(name='Auxiliar Administrativo').exists():
+        messages.error(request, "Você não tem permissão para emitir novas declarações. Apenas Coordenadores podem realizar esta ação.")
+        return None, redirect('declaracao:listar_cursos_aluno', aluno_id=inscricao.aluno.id)
 
     # Check if not superuser and if the enrollment's course belongs to the user's school
     if not request.user.is_superuser and hasattr(request.user, 'profile') and request.user.profile.escola:
@@ -98,7 +108,7 @@ def _check_inscricao_permission(request, inscricao_id):
 
 @login_required
 def gerar_declaracao_view(request, inscricao_id, declaration_type=None): # Added declaration_type parameter
-    inscricao, redirect_response = _check_inscricao_permission(request, inscricao_id)
+    inscricao, redirect_response = _check_inscricao_permission(request, inscricao_id, block_auxiliar=True)
     if redirect_response:
         return redirect_response
 
@@ -107,7 +117,7 @@ def gerar_declaracao_view(request, inscricao_id, declaration_type=None): # Added
 
     # If the original status is 'aguardando_regularizacao', allow override by declaration_type
     if original_status == 'aguardando_regularizacao':
-        if declaration_type in ['matriculado', 'cursando']:
+        if declaration_type in ['matriculado', 'cursando', 'concluido']:
             status_for_declaration = declaration_type
         elif declaration_type: # Provided but invalid
             messages.error(request, f"Tipo de declaração inválido: {declaration_type}.")
@@ -131,7 +141,7 @@ def gerar_declaracao_view(request, inscricao_id, declaration_type=None): # Added
 
 @login_required
 def salvar_declaracao_view(request, inscricao_id):
-    inscricao, redirect_response = _check_inscricao_permission(request, inscricao_id)
+    inscricao, redirect_response = _check_inscricao_permission(request, inscricao_id, block_auxiliar=True)
     if redirect_response:
         return redirect_response
     

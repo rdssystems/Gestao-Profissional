@@ -9,6 +9,7 @@ urlpatterns = [
     path('<int:pk>/', views.CursoDetailView.as_view(), name='detalhe_curso'),
     path('<int:pk>/editar/', views.CursoUpdateView.as_view(), name='editar_curso'),
     path('<int:pk>/excluir/', views.CursoDeleteView.as_view(), name='excluir_curso'),
+    path('<int:pk>/concluintes/', views.CursoConcluintesView.as_view(), name='curso_concluintes'),
     path('<int:pk>/alterar_status/', views.CursoStatusUpdateView.as_view(), name='alterar_status_curso'),
 
     # URLs para TipoCurso

@@ -301,24 +301,68 @@ class AlunoDeleteView(AuditLogMixin, StaffRequiredMixin, DeleteView):
 
 
 class AlunoHistoricoView(StaffRequiredMixin, DetailView):
-
     model = Aluno
-
     template_name = 'alunos/aluno_historico.html'
-
     context_object_name = 'aluno'
 
-
-
     def get_context_data(self, **kwargs):
-
         context = super().get_context_data(**kwargs)
+        aluno = self.object
+        
+        # Inscrições atuais
+        inscricoes = aluno.inscricao_set.all().select_related('curso__escola')
+        context['inscricoes'] = inscricoes
 
-        # Pré-carrega o curso e a escola para evitar queries extras no template
+        # Logs de mudança de status (Historico de Deferimentos/Desistências)
+        from django.contrib.contenttypes.models import ContentType
+        from core.models import AuditLog
+        from cursos.models import Inscricao
+        
+        insc_ct = ContentType.objects.get_for_model(Inscricao)
+        insc_ids = [str(i.id) for i in inscricoes]
+        
+        logs_status_raw = AuditLog.objects.filter(
+            content_type=insc_ct,
+            object_id__in=insc_ids,
+            acao='UPDATE'
+        ).select_related('usuario', 'content_type').order_by('-data_hora')
 
-        context['inscricoes'] = self.object.inscricao_set.all().select_related('curso__escola')
+        # Extraír apenas mudanças de status
+        import json
+        timeline = []
+        for log in logs_status_raw:
+            try:
+                details = json.loads(log.detalhes)
+                if 'alteracoes' in details and 'status' in details['alteracoes']:
+                    novo_status = details['alteracoes']['status']
+                    # Mapear status para texto legível
+                    from cursos.models import Inscricao
+                    status_text = dict(Inscricao.STATUS_CHOICES).get(novo_status, novo_status)
+                    
+                    timeline.append({
+                        'data_hora': log.data_hora,
+                        'usuario': log.usuario,
+                        'status': status_text,
+                        'inscricao_id': log.object_id
+                    })
+            except:
+                continue
 
+        context['timeline'] = timeline
         return context
+
+class AlunoUpdateObservacoesView(AuditLogMixin, StaffRequiredMixin, View):
+    def post(self, request, pk):
+        aluno = get_object_or_404(Aluno, pk=pk)
+        observacoes = request.POST.get('observacoes')
+        aluno.observacoes = observacoes
+        aluno.save()
+        
+        # Log manual
+        self.save_log(aluno, 'UPDATE', {'campo': 'observacoes', 'valor': 'atualizado'})
+        
+        messages.success(request, "Observações do histórico atualizadas com sucesso.")
+        return redirect('alunos:historico_aluno', pk=aluno.pk)
 
 
 from core.models import AuditLog # Import AuditLog

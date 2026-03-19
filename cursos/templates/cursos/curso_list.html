@@ -167,7 +167,12 @@
                                     <a href="{% url 'cursos:detalhe_curso' pk=curso.pk %}"
                                         class="btn btn-action-premium text-white"
                                         style="background-color: var(--brand-primary);" title="Ver Detalhes">
-                                        <i class="bi bi-eye"></i> Eventos
+                                        <i class="bi bi-eye"></i> Detalhes
+                                    </a>
+                                    <a href="{% url 'cursos:curso_concluintes' pk=curso.pk %}"
+                                        class="btn btn-action-premium text-white"
+                                        style="background-color: #334155;" title="Lista de Concluintes">
+                                        <i class="bi bi-person-check"></i>
                                     </a>
                                 </td>
                             </tr>

@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load auth_extras %}
 {% block title %}Cursos de {{ aluno.nome_completo }} - Declarações{% endblock %}
 
 {% block content %}
@@ -64,20 +65,27 @@
                         {% endif %}
                     </div>
                     {% if item.pode_gerar %}
-                        {% if item.status_raw == 'aguardando_regularizacao' %}
-                            <div class="dropdown">
-                                <button class="btn btn-primary dropdown-toggle" type="button" id="dropdownMenuButton-{{ item.inscricao.id }}" data-bs-toggle="dropdown" aria-expanded="false">
-                                    Gerar Declaração <i class="bi bi-file-earmark-text ms-2"></i>
-                                </button>
-                                <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton-{{ item.inscricao.id }}">
-                                    <li><a class="dropdown-item" href="{% url 'declaracao:gerar_declaracao_com_tipo' item.inscricao.id 'matriculado' %}">Matriculado</a></li>
-                                    <li><a class="dropdown-item" href="{% url 'declaracao:gerar_declaracao_com_tipo' item.inscricao.id 'cursando' %}">Cursando</a></li>
-                                </ul>
-                            </div>
+                        {% if not user|has_group:'Auxiliar Administrativo' %}
+                            {% if item.status_raw == 'aguardando_regularizacao' %}
+                                <div class="dropdown">
+                                    <button class="btn btn-primary dropdown-toggle" type="button" id="dropdownMenuButton-{{ item.inscricao.id }}" data-bs-toggle="dropdown" aria-expanded="false">
+                                        Gerar Declaração <i class="bi bi-file-earmark-text ms-2"></i>
+                                    </button>
+                                    <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton-{{ item.inscricao.id }}">
+                                        <li><a class="dropdown-item" href="{% url 'declaracao:gerar_declaracao_com_tipo' item.inscricao.id 'matriculado' %}">Matriculado</a></li>
+                                        <li><a class="dropdown-item" href="{% url 'declaracao:gerar_declaracao_com_tipo' item.inscricao.id 'cursando' %}">Cursando</a></li>
+                                        <li><a class="dropdown-item" href="{% url 'declaracao:gerar_declaracao_com_tipo' item.inscricao.id 'concluido' %}">Concluído</a></li>
+                                    </ul>
+                                </div>
+                            {% else %}
+                                <a href="{% url 'declaracao:gerar_declaracao' item.inscricao.id %}" class="btn btn-primary">
+                                    Gerar Declaração<i class="bi bi-file-earmark-text ms-2"></i>
+                                </a>
+                            {% endif %}
                         {% else %}
-                            <a href="{% url 'declaracao:gerar_declaracao' item.inscricao.id %}" class="btn btn-primary">
-                                Gerar Declaração<i class="bi bi-file-earmark-text ms-2"></i>
-                            </a>
+                            <button class="btn btn-secondary" disabled title="Apenas coordenadores podem emitir novas declarações">
+                                Acesso Restrito <i class="bi bi-lock ms-2"></i>
+                            </button>
                         {% endif %}
                     {% else %}
                         <button class="btn btn-secondary" disabled>

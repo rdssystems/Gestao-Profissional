@@ -91,13 +91,11 @@
     </div>
     {% endif %}
 
-    {% if curso.status == 'Aberta' %}
-    {% if perms.cursos.change_curso or user|has_group:"Coordenador" or user|has_group:"Auxiliar Administrativo" %}
-    <a href="{% url 'cursos:inscrever_aluno' curso_pk=curso.pk %}" class="btn btn-action-premium text-white"
-        style="background-color: #10b981;">Inscrever Aluno</a>
-    {% endif %}
-    {% endif %}
 
+    {% if curso.status == 'Concluído' or curso.status == 'Arquivado' %}
+    <a href="{% url 'cursos:curso_concluintes' pk=curso.pk %}" class="btn btn-action-premium text-white"
+        style="background-color: #334155;"><i class="bi bi-person-check"></i> Lista de Concluintes</a>
+    {% endif %}
 </div>
 
 
