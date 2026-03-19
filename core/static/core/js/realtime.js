@@ -74,9 +74,25 @@ class RealTimeNotifications {
     }
 
     softReload() {
-        console.log('Atualizando conteúdo da página...');
+        // Se houver qualquer elemento de formulário focado, ignoramos o reload
+        const activeElement = document.activeElement;
+        const isEditing = activeElement && ['INPUT', 'TEXTAREA', 'SELECT', 'BUTTON'].includes(activeElement.tagName);
+        
+        // Se houver um formulário de envio (POST) dentro do main, presume-se que é uma página de cadastro/edição
+        // Nunca devemos recarregar essas páginas automaticamente para evitar perda de dados.
+        const postForm = document.querySelector('main form[method="post"], main form[method="POST"]');
+        
+        // Verifica se qualquer campo do formulário foi tocado
+        const isDirty = this._isFormDirty();
+
+        if (isEditing || postForm || isDirty) {
+            console.log('Soft Reload cancelado: Usuário interagindo com dados (Focado:', isEditing, '| POST Form:', !!postForm, '| Dirty:', isDirty, ')');
+            return;
+        }
+
+        console.log('Iniciando Soft Reload seguro...');
         const url = new URL(window.location.href);
-        url.searchParams.set('t', new Date().getTime()); // Adiciona timestamp para evitar cache
+        url.searchParams.set('t', new Date().getTime());
 
         fetch(url.toString(), { cache: "no-store" })
             .then(response => response.text())
@@ -87,13 +103,51 @@ class RealTimeNotifications {
                 const newMain = doc.querySelector('main');
                 const currentMain = document.querySelector('main');
 
-                if (newMain && currentMain) {
-                    currentMain.innerHTML = newMain.innerHTML;
-                    // Re-inicializar componentes Bootstrap se necessário (ex: tooltips, dropdowns)
-                    // mas como dropdowns usam delegação ou data-attributes, geralmente funcionam.
+                if (!newMain || !currentMain) return;
+
+                // Tenta ser o mais cirúrgico possível:
+                // Se estivermos no dashboard, talvez só queiramos atualizar o feed de atividades
+                const newFeed = doc.querySelector('.feed-card');
+                const currentFeed = document.querySelector('.feed-card');
+                
+                if (currentFeed && newFeed) {
+                    console.log('Atualizando apenas o feed de atividades...');
+                    currentFeed.innerHTML = newFeed.innerHTML;
+                } else {
+                    // Fallback para atualizar todo o conteúdo do main se não for dashboard
+                    // mas só se não houver NENHUM formulário (mesmo GET) sendo editado agora
+                    if (!document.activeElement || !['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName)) {
+                        console.log('Atualizando conteúdo principal...');
+                        currentMain.innerHTML = newMain.innerHTML;
+                    }
                 }
             })
             .catch(err => console.error('Erro ao atualizar página:', err));
+    }
+
+    _isFormDirty() {
+        const forms = document.querySelectorAll('main form');
+        for (const form of forms) {
+            const elements = form.elements;
+            for (let i = 0; i < elements.length; i++) {
+                const el = elements[i];
+                // Ignora campos ocultos e botões
+                if (['hidden', 'submit', 'button', 'reset'].includes(el.type)) continue;
+                
+                if (el.type === 'checkbox' || el.type === 'radio') {
+                    if (el.checked !== el.defaultChecked) return true;
+                } else if (el.tagName === 'SELECT') {
+                    // Verifica se a opção selecionada mudou do padrão
+                    for (let j = 0; j < el.options.length; j++) {
+                        if (el.options[j].selected !== el.options[j].defaultSelected) return true;
+                    }
+                } else {
+                    // Para text, textarea, etc.
+                    if (el.value !== el.defaultValue) return true;
+                }
+            }
+        }
+        return false;
     }
 
     showNotification(message, type = 'info') {
