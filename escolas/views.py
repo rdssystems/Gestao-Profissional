@@ -1,79 +1,75 @@
 from django.shortcuts import render, get_object_or_404
-from django.views.generic import ListView, DetailView
+from django.views.generic import ListView, DetailView, TemplateView
 from django.views.generic.edit import CreateView, UpdateView, DeleteView
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.urls import reverse_lazy
-from datetime import date, timedelta # Importar date e timedelta
-from django.db import models # Importar models para Q object
+from datetime import date, timedelta
+from django.db import models
 from core.mixins import AuditLogMixin
 
 from escolas.models import Escola
 from cursos.models import Curso, Inscricao
 from alunos.models import Aluno
+from core.models import Profile, AuditLog
 from cursos.views import CursoListView as CursosViewBase
 from alunos.views import AlunoListView as AlunosViewBase
-from .forms import EscolaForm # Adicionar este import
+from .forms import EscolaForm
 
 class SuperuserRequiredMixin(UserPassesTestMixin):
     def test_func(self):
         return self.request.user.is_superuser
 
-class DashboardView(LoginRequiredMixin, ListView):
-    model = Escola
+class DashboardView(LoginRequiredMixin, TemplateView):
     template_name = 'escolas/dashboard.html'
-    context_object_name = 'escolas'
-
-    def get_queryset(self):
-        user = self.request.user
-        if user.is_superuser:
-            return Escola.objects.all().order_by('nome') # Ordenar escolas para o filtro
-        
-        if hasattr(user, 'profile') and user.profile.escola_id:
-            return Escola.objects.filter(pk=user.profile.escola_id)
-        
-        return Escola.objects.none()
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         user = self.request.user
         
-        # Obter filtros da requisição
+        # Obter filtros com defaults seguros
         escola_id_filter = self.request.GET.get('escola_id')
-        period_filter = self.request.GET.get('period', 'all') # Padrão 'all'
+        if not escola_id_filter or escola_id_filter == 'None':
+            escola_id_filter = 'all'
+        
+        period_filter = self.request.GET.get('period', 'all')
 
-        # Definir o escopo inicial
+        # Escopos iniciais
         aluno_scope = Aluno.objects.all()
         curso_scope = Curso.objects.all()
         inscricao_scope = Inscricao.objects.all()
         context['dashboard_title'] = "Visão Geral do Sistema"
 
-        # Aplicar filtro de escola (apenas para superusuários ou se uma escola específica for selecionada)
-        if user.is_superuser and escola_id_filter and escola_id_filter != 'all':
-            selected_escola = get_object_or_404(Escola, pk=escola_id_filter)
-            aluno_scope = aluno_scope.filter(escola=selected_escola)
-            curso_scope = curso_scope.filter(escola=selected_escola)
-            inscricao_scope = inscricao_scope.filter(curso__escola=selected_escola)
-            context['dashboard_title'] = f"Dashboard: {selected_escola.nome}"
-        elif hasattr(user, 'profile') and user.profile.escola_id:
-            # Para usuários comuns, o escopo é sempre a sua escola
-            escola = user.profile.escola
-            aluno_scope = aluno_scope.filter(escola=escola)
-            curso_scope = curso_scope.filter(escola=escola)
-            inscricao_scope = inscricao_scope.filter(curso__escola=escola)
-            context['dashboard_title'] = escola.nome
-            escola_id_filter = str(escola.pk) # Define o filtro da escola para o selectbox como string
+        # Identificar escola do usuário logado
+        user_escola_id = None
+        if hasattr(user, 'profile') and user.profile.escola_id:
+            user_escola_id = user.profile.escola_id
+
+        # Lógica de Filtragem de Escopo
+        if user.is_superuser:
+            if escola_id_filter != 'all':
+                try:
+                    target_escola = Escola.objects.get(pk=escola_id_filter)
+                    aluno_scope = aluno_scope.filter(escola=target_escola)
+                    curso_scope = curso_scope.filter(escola=target_escola)
+                    inscricao_scope = inscricao_scope.filter(curso__escola=target_escola)
+                    context['dashboard_title'] = f"Dashboard: {target_escola.nome}"
+                except (Escola.DoesNotExist, ValueError):
+                    escola_id_filter = 'all'
         else:
-            # Se não for superuser e não tiver escola, escopo vazio
-            if not user.is_superuser:
+            if user_escola_id:
+                aluno_scope = aluno_scope.filter(escola_id=user_escola_id)
+                curso_scope = curso_scope.filter(escola_id=user_escola_id)
+                inscricao_scope = inscricao_scope.filter(curso__escola_id=user_escola_id)
+                context['dashboard_title'] = user.profile.escola.nome
+                escola_id_filter = str(user_escola_id)
+            else:
                 aluno_scope = Aluno.objects.none()
                 curso_scope = Curso.objects.none()
                 inscricao_scope = Inscricao.objects.none()
 
-        # Aplicar filtro de período
+        # Filtro de Período
         today = date.today()
         start_date = None
-        end_date = today
-
         if period_filter == 'current_month':
             start_date = today.replace(day=1)
         elif period_filter == 'last_3_months':
@@ -82,40 +78,44 @@ class DashboardView(LoginRequiredMixin, ListView):
             start_date = today.replace(month=1, day=1)
 
         if start_date:
-            inscricao_scope = inscricao_scope.filter(data_inscricao__date__range=[start_date, end_date])
+            inscricao_scope = inscricao_scope.filter(data_inscricao__date__range=[start_date, today])
             curso_scope = curso_scope.filter(
-                models.Q(data_inicio__range=[start_date, end_date]) | 
-                models.Q(data_fim__range=[start_date, end_date])
+                models.Q(data_inicio__range=[start_date, today]) | 
+                models.Q(data_fim__range=[start_date, today])
             ).distinct()
 
-        # Calcula as métricas
-        context['total_alunos'] = aluno_scope.count()
-        context['alunos_concluintes'] = inscricao_scope.filter(status='concluido').count()
-        context['alunos_desistentes'] = inscricao_scope.filter(status='desistente').count()
-        context['cursos_ativos'] = curso_scope.filter(status__in=['Aberta', 'Em Andamento']).count()
-        context['cursos_concluidos'] = curso_scope.filter(status='Concluído').count()
-        context['alunos_cursando'] = inscricao_scope.filter(status='cursando').count()
+        # Métricas (com tratamento de erro individual)
+        try:
+            context['total_alunos'] = aluno_scope.count()
+            context['alunos_cursando'] = inscricao_scope.filter(status='cursando').count()
+            context['alunos_concluintes'] = inscricao_scope.filter(status='concluido').count()
+            context['alunos_desistentes'] = inscricao_scope.filter(status='desistente').count()
+            context['cursos_ativos'] = curso_scope.filter(status__in=['Aberta', 'Em Andamento']).count()
+            context['cursos_concluidos'] = curso_scope.filter(status='Concluído').count()
+        except:
+            context['total_alunos'] = 0
+            context['alunos_cursando'] = 0
+            context['alunos_concluintes'] = 0
+            context['alunos_desistentes'] = 0
+            context['cursos_ativos'] = 0
+            context['cursos_concluidos'] = 0
 
-        # Histórico recente
-        from core.models import AuditLog
+        # Histórico Recente
         audit_scope = AuditLog.objects.select_related('usuario', 'usuario__profile', 'content_type').order_by('-data_hora')
-        
         if not user.is_superuser:
-            if hasattr(user, 'profile') and user.profile.escola_id:
-                audit_scope = audit_scope.filter(usuario__profile__escola_id=user.profile.escola_id)
+            if user_escola_id:
+                audit_scope = audit_scope.filter(usuario__profile__escola_id=user_escola_id)
             else:
                 audit_scope = audit_scope.none()
-        elif escola_id_filter and escola_id_filter != 'all':
+        elif escola_id_filter != 'all':
             try:
-                # Segurança contra IDs inválidos
-                escola_id_int = int(escola_id_filter)
-                audit_scope = audit_scope.filter(usuario__profile__escola_id=escola_id_int)
-            except (ValueError, TypeError):
+                audit_scope = audit_scope.filter(usuario__profile__escola_id=int(escola_id_filter))
+            except:
                 pass
-            
+        
         context['historico_recente'] = audit_scope[:15]
         
-        # Dados para o formulário
+        # Filtros para o Template
         context['todas_escolas'] = Escola.objects.all().order_by('nome')
         context['period_options'] = {
             'all': 'Todo o Período',
@@ -123,15 +123,12 @@ class DashboardView(LoginRequiredMixin, ListView):
             'last_3_months': 'Últimos 3 Meses',
             'current_year': 'Ano Atual',
         }
-        context['selected_escola_id'] = str(escola_id_filter) if escola_id_filter else 'all'
+        context['selected_escola_id'] = str(escola_id_filter)
         context['selected_period'] = period_filter
-
-        is_filter_active = (escola_id_filter and escola_id_filter != 'all') or (period_filter and period_filter != 'all')
-        context['is_filter_expanded'] = is_filter_active
-        context['filter_collapse_class'] = 'show' if is_filter_active else ''
+        context['is_filter_expanded'] = (escola_id_filter != 'all' or period_filter != 'all')
+        context['filter_collapse_class'] = 'show' if context['is_filter_expanded'] else ''
         
         return context
-
 
 class EscolaDetailView(LoginRequiredMixin, DetailView):
     model = Escola
