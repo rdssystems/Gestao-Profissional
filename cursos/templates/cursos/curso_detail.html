@@ -127,29 +127,39 @@
                 </span>
             </div>
 
-            {% if inscricao.status == 'cursando' and perms.cursos.change_inscricao %}
+            {% if perms.cursos.change_inscricao or user|has_group:"Coordenador" or user|has_group:"Auxiliar Administrativo" %}
             <div class="btn-group">
 
-                <form method="post" action="{% url 'cursos:alterar_status_inscricao' pk=inscricao.pk %}"
-                    class="d-inline">
-                    {% csrf_token %}
-                    <input type="hidden" name="status" value="concluido">
-                    <button type="submit" class="btn btn-sm btn-action-premium text-white"
-                        style="background-color: #10b981;">Concluído</button>
-                </form>
+                {% if inscricao.status == 'cursando' %}
+                    <form method="post" action="{% url 'cursos:alterar_status_inscricao' pk=inscricao.pk %}"
+                        class="d-inline">
+                        {% csrf_token %}
+                        <input type="hidden" name="status" value="concluido">
+                        <button type="submit" class="btn btn-sm btn-action-premium text-white"
+                            style="background-color: #10b981;">Concluído</button>
+                    </form>
 
-                <form method="post" action="{% url 'cursos:alterar_status_inscricao' pk=inscricao.pk %}"
-                    class="d-inline ms-1">
-                    {% csrf_token %}
-                    <input type="hidden" name="status" value="desistente">
-                    <button type="submit" class="btn btn-sm btn-action-premium text-white"
-                        style="background-color: #f59e0b;">Desistente</button>
-                </form>
+                    <form method="post" action="{% url 'cursos:alterar_status_inscricao' pk=inscricao.pk %}"
+                        class="d-inline ms-1">
+                        {% csrf_token %}
+                        <input type="hidden" name="status" value="desistente">
+                        <button type="submit" class="btn btn-sm btn-action-premium text-white"
+                            style="background-color: #f59e0b;">Desistente</button>
+                    </form>
+                {% else %}
+                    <form method="post" action="{% url 'cursos:alterar_status_inscricao' pk=inscricao.pk %}"
+                        class="d-inline">
+                        {% csrf_token %}
+                        <input type="hidden" name="status" value="cursando">
+                        <button type="submit" class="btn btn-sm btn-action-premium text-white"
+                            style="background-color: #6366f1;">Reverter p/ Cursando</button>
+                    </form>
+                {% endif %}
 
                 <form method="post" action="{% url 'cursos:excluir_inscricao' pk=inscricao.pk %}" class="d-inline ms-1">
                     {% csrf_token %}
                     <button type="submit" class="btn btn-sm btn-action-premium text-white"
-                        style="background-color: #dc2626;">
+                        style="background-color: #dc2626;" onclick="return confirm('Tem certeza que deseja remover este aluno do curso?')">
                         Remover
                     </button>
                 </form>

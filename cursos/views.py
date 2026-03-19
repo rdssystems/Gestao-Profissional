@@ -249,7 +249,7 @@ class UpdateInscricaoStatusView(LoginRequiredMixin, StaffRequiredMixin, SingleOb
         inscricao = self.get_object()
         
         novo_status = request.POST.get('status')
-        if novo_status in ['concluido', 'desistente']:
+        if novo_status in ['concluido', 'desistente', 'cursando']:
             inscricao.status = novo_status
             inscricao.save()
 
@@ -267,7 +267,6 @@ class UpdateInscricaoStatusView(LoginRequiredMixin, StaffRequiredMixin, SingleOb
                 print(f"Erro log status inscricao: {e}")
 
             # Se o aluno concluiu o curso, removemos este tipo de curso dos interesses dele
-            # para que ele não apareça mais nas sugestões para este tipo.
             if novo_status == 'concluido':
                 tipo_curso = inscricao.curso.tipo_curso
                 if tipo_curso in inscricao.aluno.cursos_interesse.all():
