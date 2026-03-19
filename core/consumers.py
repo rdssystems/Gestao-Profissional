@@ -3,23 +3,35 @@ from channels.generic.websocket import AsyncWebsocketConsumer
 
 class NotificationConsumer(AsyncWebsocketConsumer):
     async def connect(self):
-        # Entra no grupo "global_notifications"
-        # Em um sistema mais complexo, poderia ser específico por escola ou usuário
-        self.group_name = "global_notifications"
+        self.user = self.scope.get('user')
+        self.groups_to_join = ["global_notifications"]
 
-        await self.channel_layer.group_add(
-            self.group_name,
-            self.channel_name
-        )
+        # Se o usuário estiver logado e tiver uma escola associada, entra no grupo da escola
+        if self.user and self.user.is_authenticated:
+            try:
+                # Tentamos pegar a escola do perfil
+                if hasattr(self.user, 'profile') and self.user.profile.escola:
+                    escola_id = self.user.profile.escola.id
+                    self.groups_to_join.append(f"school_notifications_{escola_id}")
+            except Exception:
+                pass
+
+        # Entra em todos os grupos necessários
+        for group in self.groups_to_join:
+            await self.channel_layer.group_add(
+                group,
+                self.channel_name
+            )
 
         await self.accept()
 
     async def disconnect(self, close_code):
-        # Sai do grupo
-        await self.channel_layer.group_discard(
-            self.group_name,
-            self.channel_name
-        )
+        # Sai de todos os grupos
+        for group in getattr(self, 'groups_to_join', []):
+            await self.channel_layer.group_discard(
+                group,
+                self.channel_name
+            )
 
     # Recebe mensagem do WebSocket (do cliente) - não usado neste caso, mas bom ter
     async def receive(self, text_data):
