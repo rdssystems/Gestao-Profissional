@@ -51,9 +51,12 @@
         <thead class="bg-light">
             <tr>
                 <th style="width: 60px;" class="ps-4">#</th>
-                <th>Nome do Aluno</th>
-                <th>Telefone / WhatsApp</th>
-                <th class="text-center">Data de Conclusão</th>
+                <th>Nome</th>
+                <th>Curso</th>
+                <th>Carga Horária</th>
+                <th>Data Início</th>
+                <th>Data Fim</th>
+                <th>Parceiro</th>
             </tr>
         </thead>
         <tbody>
@@ -61,15 +64,11 @@
             <tr>
                 <td class="ps-4 text-muted">{{ forloop.counter }}</td>
                 <td class="fw-bold">{{ insc.aluno.nome_completo }}</td>
-                <td>
-                    {{ insc.aluno.telefone_principal }}
-                    {% if insc.aluno.whatsapp %}
-                        / {{ insc.aluno.whatsapp }}
-                    {% endif %}
-                </td>
-                <td class="text-center">
-                    {{ insc.data_inscricao|date:"d/m/Y" }} {# Ou outra data relevante #}
-                </td>
+                <td>{{ curso.nome }}</td>
+                <td>{{ curso.carga_horaria }}h</td>
+                <td>{{ curso.data_inicio|date:"d/m/Y" }}</td>
+                <td>{{ curso.data_fim|date:"d/m/Y" }}</td>
+                <td>{{ curso.parceiro|default:"-" }}</td>
             </tr>
             {% empty %}
             <tr>

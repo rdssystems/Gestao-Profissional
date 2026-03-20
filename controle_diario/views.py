@@ -31,37 +31,37 @@ def preencher_controle_diario_view(request):
     instance = None
     if escola:
         instance = ControleDiario.objects.filter(escola=escola, data=hoje).first()
-    elif request.user.is_superuser: # Superusuário: pode selecionar a escola no formulário
-        # Não há instância para pré-carregar para o superusuário aqui, ele deve selecionar.
-        # ou, se for um formulário POST, ele pode já ter selecionado.
-        pass
 
     if request.method == 'POST':
-        form = ControleDiarioForm(request.POST, instance=instance)
+        if instance:
+            messages.warning(request, "O controle diário para hoje já foi preenchido.")
+            return redirect('controle_diario:preencher')
+
+        form = ControleDiarioForm(request.POST)
         if form.is_valid():
             controle_diario = form.save(commit=False)
-            controle_diario.data = hoje # Garante que a data seja sempre a atual
-            controle_diario.usuario = request.user # Registra quem fez o lançamento
-
-            if escola: # Usuário de escola
+            controle_diario.data = hoje
+            controle_diario.usuario = request.user
+            if escola:
                 controle_diario.escola = escola
-            elif request.user.is_superuser: # Superusuário: precisa garantir que a escola seja selecionada
-                # A escola deveria vir do formulário para superusuário
-                # Por simplicidade, para superusuário ele preenche para UMA escola, não pra todas
-                # Se o superusuário precisa preencher para uma escola específica, precisaria de um campo de escola no form
-                # Ou ele gerencia via Admin
-                messages.error(request, "Superusuários devem usar o Admin para gerenciar controles diários de outras escolas, ou vincular-se a uma escola para preenchimento direto.")
+            elif request.user.is_superuser:
+                messages.error(request, "Superusuários devem usar o Admin para gerenciar controles diários.")
                 return render(request, 'controle_diario/preencher_controle_diario.html', {'form': form, 'hoje': hoje})
-
+            
             controle_diario.save()
             messages.success(request, "Controle Diário salvo com sucesso!")
-            return redirect('controle_diario:preencher') # Redireciona para a mesma página
+            return redirect('controle_diario:preencher')
         else:
-            messages.error(request, "Erro ao salvar o Controle Diário. Verifique os dados.")
+            messages.error(request, "Erro ao salvar. Verique os dados.")
     else:
         form = ControleDiarioForm(instance=instance, initial=initial_data)
-    
-    return render(request, 'controle_diario/preencher_controle_diario.html', {'form': form, 'hoje': hoje, 'escola': escola})
+
+    return render(request, 'controle_diario/preencher_controle_diario.html', {
+        'form': form, 
+        'hoje': hoje, 
+        'escola': escola,
+        'ja_enviado': True if instance else False
+    })
 
 @login_required
 @user_passes_test(lambda u: u.is_superuser) # Apenas superusuários

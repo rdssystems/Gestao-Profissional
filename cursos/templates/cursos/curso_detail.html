@@ -16,6 +16,9 @@
 
     <div class="mb-2"><strong class="text-dark">Escola:</strong> {{ curso.escola.nome }}</div>
     <div class="mb-2"><strong class="text-dark">Tipo de Curso:</strong> {{ curso.tipo_curso.nome }}</div>
+    {% if curso.parceiro %}
+    <div class="mb-2"><strong class="text-dark">Parceiro:</strong> {{ curso.parceiro }}</div>
+    {% endif %}
     <div class="mb-2"><strong class="text-dark">Carga Horária:</strong> {{ curso.carga_horaria }} horas</div>
     {% if curso.nome_professor %}
     <div class="mb-2"><strong class="text-dark">Professor:</strong> {{ curso.nome_professor }}</div>
@@ -47,17 +50,17 @@
 
     <a href="{% url 'cursos:lista_cursos' %}" class="btn btn-premium-outline">Voltar</a>
 
-    {% if perms.cursos.change_curso or user|has_group:"Coordenador" %}
+    {% if perms.cursos.change_curso or user.is_staff %}
     <a href="{% url 'cursos:editar_curso' pk=curso.pk %}" class="btn btn-action-premium text-white"
         style="background-color: #f59e0b;"><i class="bi bi-pencil"></i> Editar</a>
     {% endif %}
 
-    {% if perms.cursos.delete_curso or user|has_group:"Coordenador" %}
+    {% if perms.cursos.delete_curso or user.is_staff %}
     <a href="{% url 'cursos:excluir_curso' pk=curso.pk %}" class="btn btn-action-premium text-white"
         style="background-color: #dc2626;"><i class="bi bi-trash"></i> Excluir</a>
     {% endif %}
 
-    {% if perms.cursos.change_curso or user|has_group:"Coordenador" %}
+    {% if perms.cursos.change_curso or user.is_staff %}
     <div class="btn-group">
         <button type="button" class="btn btn-premium dropdown-toggle" data-bs-toggle="dropdown">
             Alterar Status
@@ -96,6 +99,9 @@
     <a href="{% url 'cursos:curso_concluintes' pk=curso.pk %}" class="btn btn-action-premium text-white"
         style="background-color: #334155;"><i class="bi bi-person-check"></i> Lista de Concluintes</a>
     {% endif %}
+
+    <a href="{% url 'cursos:curso_imprimir_lista' pk=curso.pk %}" target="_blank" class="btn btn-action-premium text-dark border"
+        style="background-color: #f8fafc;"><i class="bi bi-printer"></i> Imprimir Lista</a>
 </div>
 
 
@@ -125,7 +131,7 @@
                 </span>
             </div>
 
-            {% if perms.cursos.change_inscricao or user|has_group:"Coordenador" or user|has_group:"Auxiliar Administrativo" %}
+            {% if perms.cursos.change_inscricao or user.is_staff %}
             <div class="btn-group">
 
                 {% if inscricao.status == 'cursando' %}

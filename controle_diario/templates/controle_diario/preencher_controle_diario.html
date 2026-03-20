@@ -44,6 +44,16 @@
     <div class="card border-0 shadow-sm rounded-4">
         <div class="card-body p-4 p-lg-5">
 
+            {% if ja_enviado %}
+                <div class="alert alert-info border-0 shadow-sm rounded-3 mb-4 d-flex align-items-center">
+                    <i class="bi bi-info-circle-fill fs-4 me-3"></i>
+                    <div>
+                        <h6 class="fw-bold mb-0">Controle Diário Concluído</h6>
+                        <p class="mb-0 small opacity-75">O envio para o dia de hoje já foi realizado. Os dados abaixo são apenas para consulta.</p>
+                    </div>
+                </div>
+            {% endif %}
+
             <form method="post">
                 {% csrf_token %}
 
@@ -64,7 +74,11 @@
                                 {{ field.label }}
                             </label>
 
-                            {{ field|add_class:"form-control form-control-lg" }}
+                            {% if ja_enviado %}
+                                {{ field|add_class:"form-control form-control-lg bg-light"|attr:"disabled:disabled" }}
+                            {% else %}
+                                {{ field|add_class:"form-control form-control-lg" }}
+                            {% endif %}
 
                             {% if field.help_text %}
                                 <div class="form-text">
@@ -84,10 +98,16 @@
 
                 <!-- Ações -->
                 <div class="d-flex justify-content-end mt-5">
-                    <button type="submit"
-                            class="btn btn-primary btn-lg px-5 fw-semibold shadow-sm">
-                        Salvar Controle
-                    </button>
+                    {% if ja_enviado %}
+                        <a href="{% url 'escolas:dashboard' %}" class="btn btn-secondary btn-lg px-5 fw-semibold shadow-sm">
+                            Voltar ao Dashboard
+                        </a>
+                    {% else %}
+                        <button type="submit"
+                                class="btn btn-primary btn-lg px-5 fw-semibold shadow-sm">
+                            Salvar Controle
+                        </button>
+                    {% endif %}
                 </div>
 
             </form>

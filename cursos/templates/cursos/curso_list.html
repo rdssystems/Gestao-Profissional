@@ -10,7 +10,7 @@
     <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
         <h1 class="page-header-premium mb-0">Gestão de Cursos</h1>
         <div class="d-flex gap-2">
-            {% if user.is_superuser or user|has_group:"Coordenador" %}
+            {% if user.is_superuser or user.is_staff %}
             <a href="{% url 'cursos:criar_curso' %}" class="btn btn-premium">Novo Curso</a>
             <a href="{% url 'cursos:lista_tipos_curso' %}" class="btn btn-premium-outline">Tipos de Curso</a>
             {% endif %}
@@ -70,7 +70,7 @@
                                 <td>{{ curso.tipo_curso.nome }}</td>
                                 <td>{{ curso.get_turno_display }} • {{ curso.horario|date:"H:i" }}</td>
                                 <td>
-                                    {% if perms.cursos.change_curso or user|has_group:"Coordenador" %}
+                                    {% if perms.cursos.change_curso or user.is_staff %}
                                     <form method="post" action="{% url 'cursos:alterar_status_curso' pk=curso.pk %}">
                                         {% csrf_token %}
                                         <select name="status" class="form-select form-select-sm-premium status-select"
@@ -145,7 +145,7 @@
                                 <td>{{ curso.tipo_curso.nome }}</td>
                                 <td>{{ curso.data_fim|date:"d/m/Y" }}</td>
                                 <td>
-                                    {% if perms.cursos.change_curso or user|has_group:"Coordenador" %}
+                                    {% if perms.cursos.change_curso or user.is_staff %}
                                     <form method="post" action="{% url 'cursos:alterar_status_curso' pk=curso.pk %}">
                                         {% csrf_token %}
                                         <select name="status" class="form-select form-select-sm-premium status-select"

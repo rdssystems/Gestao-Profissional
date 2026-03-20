@@ -32,6 +32,9 @@ ALLOWED_HOSTS = ['*']
 CSRF_TRUSTED_ORIGINS = [
     'http://localhost:8000',
     'http://127.0.0.1:8000',
+    'http://100.93.40.101',
+    'http://100.93.40.101:8000',
+    'http://100.93.40.101:7681',
 ]
 
 
@@ -55,6 +58,7 @@ INSTALLED_APPS = [
     'score_config',
     'declaracao.apps.DeclaracaoConfig',
     'controle_diario', # Novo app
+    'whatsapp',
 
     # Apps de terceiros
     'dbbackup',

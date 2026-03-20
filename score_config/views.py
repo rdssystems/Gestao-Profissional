@@ -90,10 +90,10 @@ class ConfiguracaoScoreView(SuperuserRequiredMixin, View):
 
     def _get_forms(self, data=None):
         return {
-            'Renda Familiar': RendaFamiliarScoreForm(data, initial=self._get_initial_valor(RendaFamiliarFaixa)),
-            'Renda Per Capita': RendaPerCapitaScoreForm(data, initial=self._get_initial_valor(RendaPerCapitaFaixa)),
-            'Número de Moradores': NumeroMoradoresScoreForm(data, initial=self._get_initial_qtd(NumeroMoradoresFaixa)),
-            'Membros que Trabalham': MembrosTrabalhamScoreForm(data, initial=self._get_initial_qtd(MembrosTrabalhamFaixa)),
+            'Renda Familiar': RendaFamiliarScoreForm(data, prefix='renda_familiar', initial=self._get_initial_valor(RendaFamiliarFaixa)),
+            'Renda Per Capita': RendaPerCapitaScoreForm(data, prefix='renda_per_capita', initial=self._get_initial_valor(RendaPerCapitaFaixa)),
+            'Número de Moradores': NumeroMoradoresScoreForm(data, prefix='num_moradores', initial=self._get_initial_qtd(NumeroMoradoresFaixa)),
+            'Membros que Trabalham': MembrosTrabalhamScoreForm(data, prefix='membros_trabalham', initial=self._get_initial_qtd(MembrosTrabalhamFaixa)),
         }
 
     def _get_formsets(self, data=None):

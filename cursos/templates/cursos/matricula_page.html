@@ -57,16 +57,9 @@
                 <small class="text-muted">
                     Interessados em {{ selected_curso.tipo_curso.nome }}
                 </small>
-            </div>
-
-            <div class="d-flex gap-2 flex-wrap">
+             <div class="d-flex gap-2 flex-wrap">
                 <button type="button" class="btn btn-outline-primary btn-sm fw-semibold" onclick="selectTop(20)">
                     Selecionar Top 20
-                </button>
-
-                <button type="button" class="btn btn-success btn-sm fw-semibold" onclick="openWhatsappModal()">
-                    <i class="bi bi-whatsapp me-1"></i>
-                    Contatar Selecionados
                 </button>
 
                 <button type="button" class="btn btn-info btn-sm fw-semibold text-white"
@@ -93,8 +86,7 @@
                 </thead>
                 <tbody>
                     {% for aluno in alunos_sugeridos %}
-                    <tr class="aluno-row" data-id="{{ aluno.pk }}" data-nome="{{ aluno.nome_completo }}"
-                        data-whatsapp="{{ aluno.whatsapp_link|default:'' }}">
+                    <tr class="aluno-row" data-id="{{ aluno.pk }}" data-nome="{{ aluno.nome_completo }}">
 
                         <td class="text-center">
                             <input type="checkbox" class="form-check-input aluno-select" value="{{ aluno.pk }}">
@@ -102,11 +94,6 @@
 
                         <td class="fw-semibold">
                             {{ aluno.nome_completo }}
-                            {% if aluno.whatsapp_link %}
-                            <a href="https://wa.me/{{ aluno.whatsapp_link }}" target="_blank" class="text-success ms-1">
-                                <i class="bi bi-whatsapp"></i>
-                            </a>
-                            {% endif %}
                         </td>
 
                         <td>{{ aluno.cpf }}</td>
@@ -206,34 +193,6 @@
 
 </div>
 
-<!-- Modal do WhatsApp -->
-<div class="modal fade" id="whatsappModal" tabindex="-1" aria-labelledby="whatsappModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="whatsappModalLabel">Contatar Alunos via WhatsApp</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <form id="whatsapp-form">
-                    <div class="mb-3">
-                        <label for="whatsapp-message" class="form-label">Mensagem</label>
-                        <textarea class="form-control" id="whatsapp-message" rows="5"
-                            placeholder="Digite sua mensagem aqui..."></textarea>
-                    </div>
-                    <p class="text-muted small">
-                        A mensagem será enviada para os <strong id="selected-count">0</strong> alunos selecionados.
-                    </p>
-                </form>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                <button type="button" class="btn btn-success" onclick="sendWhatsappMessages()">Enviar Mensagens</button>
-            </div>
-        </div>
-    </div>
-</div>
-
 {% endblock %}
 
 {% block extra_js %}
@@ -260,45 +219,12 @@
             selected.push({
                 id: row.dataset.id,
                 nome: row.dataset.nome,
-                whatsapp: row.dataset.whatsapp,
                 cpf: row.cells[2].textContent,
                 telefone: row.cells[3].textContent,
                 score: row.cells[4].textContent,
             });
         });
         return selected;
-    }
-
-    function openWhatsappModal() {
-        const selectedStudents = getSelectedStudents();
-        if (selectedStudents.length === 0) {
-            alert('Por favor, selecione ao menos um aluno.');
-            return;
-        }
-
-        const countSpan = document.getElementById('selected-count');
-        countSpan.textContent = selectedStudents.length;
-
-        const whatsappModal = new bootstrap.Modal(document.getElementById('whatsappModal'));
-        whatsappModal.show();
-    }
-
-    function sendWhatsappMessages() {
-        const message = document.getElementById('whatsapp-message').value;
-        if (!message) {
-            alert('Por favor, digite uma mensagem.');
-            return;
-        }
-
-        const selectedStudents = getSelectedStudents();
-        const encodedMessage = encodeURIComponent(message);
-
-        selectedStudents.forEach(student => {
-            if (student.whatsapp) {
-                const whatsappUrl = `https://wa.me/${student.whatsapp}?text=${encodedMessage}`;
-                window.open(whatsappUrl, '_blank');
-            }
-        });
     }
 
     function printSelectedStudents() {

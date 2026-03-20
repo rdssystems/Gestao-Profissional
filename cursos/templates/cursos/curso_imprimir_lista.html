@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lista de Alunos - {{ curso.nome }}</title>
+    <style>
+        body { font-family: Arial, sans-serif; font-size: 12pt; margin: 20px; color: #000; }
+        .header { margin-bottom: 20px; border-bottom: 2px solid #ccc; padding-bottom: 10px; }
+        .header h1 { margin: 0 0 5px 0; font-size: 18pt; }
+        .header p { margin: 2px 0; font-size: 10pt; color: #333; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th, td { border: 1px solid #777; padding: 6px 8px; text-align: left; font-size: 11pt; }
+        th { background-color: #f2f2f2; font-weight: bold; }
+        .text-center { text-align: center; }
+        .timestamp { font-size: 9pt; color: #666; text-align: right; margin-top: 20px; }
+        @media print {
+            body { margin: 0; }
+            .no-print { display: none; }
+        }
+    </style>
+</head>
+<!-- Autoprint on load -->
+<body onload="window.print()">
+    <div class="header">
+        <h1>Lista de Alunos Inscritos</h1>
+        <p><strong>Curso:</strong> {{ curso.nome }}</p>
+        <p><strong>Professor:</strong> {{ curso.nome_professor|default:"-" }}</p>
+        <p><strong>Carga Horária:</strong> {{ curso.carga_horaria }}h</p>
+        <p><strong>Período:</strong> {{ curso.data_inicio|date:"d/m/Y" }} a {{ curso.data_fim|date:"d/m/Y" }}</p>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th style="width: 40px;" class="text-center">#</th>
+                <th>Nome Completo</th>
+                <th>CPF</th>
+                <th>Telefone / WhatsApp</th>
+                <th>Assinatura</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for inscricao in inscricoes %}
+            <tr>
+                <td class="text-center">{{ forloop.counter }}</td>
+                <td>{{ inscricao.aluno.nome_completo }}</td>
+                <td>{{ inscricao.aluno.cpf_formatado }}</td>
+                <td>
+                    {{ inscricao.aluno.telefone_principal }}
+                    {% if inscricao.aluno.whatsapp and inscricao.aluno.whatsapp != inscricao.aluno.telefone_principal %}
+                        / {{ inscricao.aluno.whatsapp }}
+                    {% endif %}
+                </td>
+                <td style="width: 250px;"></td> <!-- Espaço para assinatura -->
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="5" class="text-center">Nenhum aluno ativo neste curso.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="timestamp no-print">
+        <button onclick="window.print()" style="padding: 5px 10px; cursor: pointer;">Imprimir Novamente</button>
+    </div>
+    
+    <div class="timestamp">
+        Gerado em {% now "d/m/Y H:i" %}
+    </div>
+</body>
+</html>

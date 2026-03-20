@@ -7,12 +7,13 @@ from django.forms import inlineformset_factory # Adicionar import
 class CursoForm(forms.ModelForm):
     class Meta:
         model = Curso
-        fields = ['escola', 'tipo_curso', 'nome', 'nome_professor', 'carga_horaria', 'data_inicio', 'data_fim', 'turno', 'horario', 'horario_fim', 'dia_inicio_semana', 'dia_fim_semana', 'status']
+        fields = ['escola', 'tipo_curso', 'nome', 'nome_professor', 'parceiro', 'carga_horaria', 'data_inicio', 'data_fim', 'turno', 'horario', 'horario_fim', 'dia_inicio_semana', 'dia_fim_semana', 'status']
         widgets = {
             'escola': forms.Select(attrs={'class': 'form-select form-select-premium'}),
             'tipo_curso': forms.Select(attrs={'class': 'form-select form-select-premium'}),
             'nome': forms.TextInput(attrs={'class': 'form-control form-control-premium'}),
             'nome_professor': forms.TextInput(attrs={'class': 'form-control form-control-premium', 'placeholder': 'Opcional'}),
+            'parceiro': forms.TextInput(attrs={'class': 'form-control form-control-premium', 'placeholder': 'Opcional'}),
             'carga_horaria': forms.NumberInput(attrs={'class': 'form-control form-control-premium'}),
             'data_inicio': forms.DateInput(attrs={'class': 'form-control form-control-premium', 'type': 'date'}),
             'data_fim': forms.DateInput(attrs={'class': 'form-control form-control-premium', 'type': 'date'}),
@@ -83,10 +84,18 @@ class RegistroAulaForm(forms.ModelForm):
         }
 
     def __init__(self, *args, **kwargs):
+        self.curso = kwargs.pop('curso', None)
         super().__init__(*args, **kwargs)
         if not self.instance.pk and not self.initial.get('data_aula'):
             from datetime import date
             self.initial['data_aula'] = date.today()
+
+    def clean_data_aula(self):
+        data_aula = self.cleaned_data.get('data_aula')
+        if self.curso and data_aula:
+            if data_aula < self.curso.data_inicio or data_aula > self.curso.data_fim:
+                raise forms.ValidationError(f"A data da aula deve estar entre o início ({self.curso.data_inicio.strftime('%d/%m/%Y')}) e fim ({self.curso.data_fim.strftime('%d/%m/%Y')}) do curso.")
+        return data_aula
 
 class ChamadaForm(forms.ModelForm):
     class Meta:
