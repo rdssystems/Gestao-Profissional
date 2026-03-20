@@ -20,8 +20,8 @@
     .app-card {
         border-radius: 1.2rem;
         background: #ffffff;
-        border: 1px solid rgba(0,0,0,0.05);
-        box-shadow: 0 14px 40px rgba(0,0,0,0.08);
+        border: 1px solid rgba(0, 0, 0, 0.05);
+        box-shadow: 0 14px 40px rgba(0, 0, 0, 0.08);
         padding: 1.5rem;
         margin-bottom: 2rem;
     }
@@ -38,14 +38,18 @@
     .freq-table {
         border-collapse: separate;
         border-spacing: 0;
-        width: auto; /* Deixa as colunas compactas no lado esquerdo */
+        width: auto;
+        /* Deixa as colunas compactas no lado esquerdo */
     }
 
-    .freq-table th, .freq-table td {
-        padding: 0.4rem 0.2rem; /* Much tighter padding */
+    .freq-table th,
+    .freq-table td {
+        padding: 0.4rem 0.2rem;
+        /* Much tighter padding */
         border: 1px solid #edf2f7;
         text-align: center;
-        min-width: 45px; /* Slightly adjusted */
+        min-width: 45px;
+        /* Slightly adjusted */
         font-size: 0.85rem;
     }
 
@@ -55,7 +59,8 @@
         left: 0;
         background-color: #f8fafc;
         z-index: 2;
-        min-width: 180px; /* Reduced width */
+        min-width: 180px;
+        /* Reduced width */
         max-width: 180px;
         text-align: left !important;
         font-weight: 600;
@@ -69,7 +74,8 @@
         background-color: #f1f5f9;
         z-index: 3;
         font-weight: 700;
-        min-width: 45px; /* Compact columns */
+        min-width: 45px;
+        /* Compact columns */
         width: 45px;
     }
 
@@ -91,10 +97,27 @@
         border-radius: 4px;
     }
 
-    .status-P { color: #15803d; background: #dcfce7; } /* Presente */
-    .status-A { color: #b91c1c; background: #fee2e2; } /* Ausente */
-    .status-J { color: #854d0e; background: #fef9c3; } /* Justificado */
-    .status-empty { color: #94a3b8; }
+    .status-P {
+        color: #15803d;
+        background: #dcfce7;
+    }
+
+    /* Presente */
+    .status-A {
+        color: #b91c1c;
+        background: #fee2e2;
+    }
+
+    /* Ausente */
+    .status-J {
+        color: #854d0e;
+        background: #fef9c3;
+    }
+
+    /* Justificado */
+    .status-empty {
+        color: #94a3b8;
+    }
 
     .aluno-nome {
         white-space: nowrap;
@@ -116,56 +139,65 @@
             size: landscape;
             margin: 1cm;
         }
-        
+
         /* Hide EVERYTHING from the main app */
-        nav, .navbar, .no-print, .btn-app, footer, .navbar-custom, .navbar-toggler { 
-            display: none !important; 
+        nav,
+        .navbar,
+        .no-print,
+        .btn-app,
+        footer,
+        .navbar-custom,
+        .navbar-toggler {
+            display: none !important;
         }
-        
+
         main {
             padding-top: 0 !important;
             margin: 0 !important;
         }
-        
+
         body {
             background: white !important;
             padding: 0 !important;
         }
 
-        .table-container { 
-            max-height: none !important; 
-            overflow: visible !important; 
-            border: none !important; 
+        .table-container {
+            max-height: none !important;
+            overflow: visible !important;
+            border: none !important;
             width: 100% !important;
         }
-        
+
         .freq-table {
             width: 100% !important;
             border: 1px solid #000 !important;
         }
-        
-        .freq-table th, .freq-table td {
+
+        .freq-table th,
+        .freq-table td {
             border: 1px solid #000 !important;
             color: #000 !important;
             padding: 2px !important;
             font-size: 0.75rem !important;
         }
 
-        .sticky-col, .sticky-header, .sticky-intersect { 
-            position: static !important; 
-            background: white !important; 
+        .sticky-col,
+        .sticky-header,
+        .sticky-intersect {
+            position: static !important;
+            background: white !important;
         }
-        
-        .print-header { 
-            display: block !important; 
+
+        .print-header {
+            display: block !important;
         }
-        
-        .app-card { 
-            box-shadow: none !important; 
-            border: none !important; 
-            padding: 0 !important; 
+
+        .app-card {
+            box-shadow: none !important;
+            border: none !important;
+            padding: 0 !important;
         }
-        
+
         .status-badge {
             border: 1px solid #000 !important;
             print-color-adjust: exact;
@@ -184,7 +216,7 @@
             </div>
         </div>
         <div class="text-end small">
-            <div class="fw-bold">Prefeitura Municipal de Ubatuba</div>
+            <div class="fw-bold">Prefeitura Municipal de Uberlândia</div>
             <div><strong>Emissão:</strong> {% now "d/m/Y H:i" %}</div>
         </div>
     </div>
@@ -196,7 +228,8 @@
             <strong>Período:</strong> {{ curso.data_inicio|date:"d/m/Y" }} a {{ curso.data_fim|date:"d/m/Y" }}
         </div>
         <div class="col-6 mt-1">
-            <strong>Turno/Horário:</strong> {{ curso.get_turno_display }} ({{ curso.horario|date:"H:i" }} - {{ curso.horario_fim|date:"H:i" }})
+            <strong>Turno/Horário:</strong> {{ curso.get_turno_display }} ({{ curso.horario|date:"H:i" }} - {{
+            curso.horario_fim|date:"H:i" }})
         </div>
         <div class="col-6 mt-1">
             <strong>Escola:</strong> {{ curso.escola.nome }}
@@ -250,13 +283,13 @@
                     {% for presenca in linha.presencas %}
                     <td>
                         {% if presenca.status == 'P' %}
-                            <span class="status-badge status-P">P</span>
+                        <span class="status-badge status-P">P</span>
                         {% elif presenca.status == 'A' %}
-                            <span class="status-badge status-A">A</span>
+                        <span class="status-badge status-A">A</span>
                         {% elif presenca.status == 'J' %}
-                            <span class="status-badge status-J">J</span>
+                        <span class="status-badge status-J">J</span>
                         {% else %}
-                            <span class="status-empty">—</span>
+                        <span class="status-empty">—</span>
                         {% endif %}
                     </td>
                     {% endfor %}

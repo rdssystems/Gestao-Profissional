@@ -30,7 +30,7 @@ class Aluno(models.Model):
     SEXO_CHOICES = (('M', 'Masculino'), ('F', 'Feminino'))
     sexo = models.CharField(max_length=1, choices=SEXO_CHOICES, verbose_name="Sexo")
     
-    ESTADO_CIVIL_CHOICES = (('Solteiro', 'Solteiro'), ('Casado', 'Casado'), ('Divorciado', 'Divorciado'), ('Viúvo', 'Viúvo'))
+    ESTADO_CIVIL_CHOICES = (('Solteiro', 'Solteiro'), ('Casado', 'Casado'), ('Divorciado', 'Divorciado'), ('Viúvo', 'Viúvo'), ('Uniao Estavel', 'União Estável'))
     estado_civil = models.CharField(max_length=20, choices=ESTADO_CIVIL_CHOICES, verbose_name="Estado Civil")
 
     COR_RACA_CHOICES = (('Branca', 'Branca'), ('Preta', 'Preta'), ('Parda', 'Parda'), ('Amarela', 'Amarela'), ('Indigena', 'Indígena'))
@@ -42,6 +42,9 @@ class Aluno(models.Model):
     
     deficiencia = models.BooleanField(default=False, verbose_name="Possui alguma deficiência?")
     tipo_deficiencia = models.CharField(max_length=255, blank=True, null=True, verbose_name="Qual a deficiência?")
+    
+    # ...
+    # (Existing fields continue)
 
     ESCOLARIDADE_CHOICES = (
         ('Analfabeto', 'Analfabeto'),
@@ -75,7 +78,7 @@ class Aluno(models.Model):
     valor_moradia = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True, verbose_name="Valor da Moradia")
 
     # Dados Profissionais
-    SITUACAO_PROFISSIONAL_CHOICES = (('Desempregado', 'Desempregado'), ('Autonomo', 'Autônomo'), ('Empregado', 'Empregado'), ('Estudante', 'Estudante'), ('Auxilio', 'Auxílio'), ('INSS', 'INSS'))
+    SITUACAO_PROFISSIONAL_CHOICES = (('Desempregado', 'Desempregado'), ('Autonomo', 'Autônomo'), ('Empregado', 'Empregado'), ('Estudante', 'Estudante'), ('Auxilio', 'Auxílio'), ('INSS', 'INSS'), ('Aposentado', 'Aposentado'))
     situacao_profissional = models.CharField(max_length=20, choices=SITUACAO_PROFISSIONAL_CHOICES, blank=True, null=True, verbose_name="Situação Profissional")
     renda_individual = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True, verbose_name="Renda Individual")
 

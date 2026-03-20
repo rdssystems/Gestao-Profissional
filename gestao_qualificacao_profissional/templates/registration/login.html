@@ -125,6 +125,30 @@
             <form method="post" novalidate class="space-y-6">
                 {% csrf_token %}
 
+                {% if form.non_field_errors or messages %}
+                <div class="animate-fade-up">
+                    {% if form.non_field_errors %}
+                        {% for error in form.non_field_errors %}
+                        <div class="p-3 mb-4 text-sm text-red-700 bg-red-50 border border-red-200 rounded-xl flex items-center gap-2">
+                            <span class="material-symbols-rounded text-lg">error</span>
+                            {{ error }}
+                        </div>
+                        {% endfor %}
+                    {% endif %}
+
+                    {% if messages %}
+                        {% for message in messages %}
+                        <div class="p-3 mb-4 text-sm {% if message.tags == 'error' %}text-red-700 bg-red-50 border-red-200{% else %}text-blue-700 bg-blue-50 border-blue-200{% endif %} border rounded-xl flex items-center gap-2">
+                            <span class="material-symbols-rounded text-lg">
+                                {% if message.tags == 'error' %}error{% else %}info{% endif %}
+                            </span>
+                            {{ message }}
+                        </div>
+                        {% endfor %}
+                    {% endif %}
+                </div>
+                {% endif %}
+
                 <!-- Campo Usuário -->
                 <div class="group">
                     <label

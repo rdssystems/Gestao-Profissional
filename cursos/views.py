@@ -95,7 +95,7 @@ class CursoDetailView(LoginRequiredMixin, DetailView):
             
         return Curso.objects.none()
 
-class CursoCreateView(LoginRequiredMixin, CoordenadorRequiredMixin, AuditLogMixin, CreateView):
+class CursoCreateView(LoginRequiredMixin, StaffRequiredMixin, AuditLogMixin, CreateView):
     model = Curso
     form_class = CursoForm
     template_name = 'cursos/curso_form.html'
@@ -111,7 +111,7 @@ class CursoCreateView(LoginRequiredMixin, CoordenadorRequiredMixin, AuditLogMixi
             form.instance.escola = self.request.user.profile.escola
         return super().form_valid(form)
 
-class CursoUpdateView(LoginRequiredMixin, CoordenadorRequiredMixin, StaffRequiredMixin, AuditLogMixin, UpdateView):
+class CursoUpdateView(LoginRequiredMixin, StaffRequiredMixin, AuditLogMixin, UpdateView):
     model = Curso
     form_class = CursoForm
     template_name = 'cursos/curso_form.html'
@@ -122,7 +122,7 @@ class CursoUpdateView(LoginRequiredMixin, CoordenadorRequiredMixin, StaffRequire
         kwargs['user'] = self.request.user
         return kwargs
 
-class CursoDeleteView(LoginRequiredMixin, CoordenadorRequiredMixin, StaffRequiredMixin, AuditLogMixin, DeleteView):
+class CursoDeleteView(LoginRequiredMixin, StaffRequiredMixin, AuditLogMixin, DeleteView):
     model = Curso
     template_name = 'cursos/curso_confirm_delete.html'
     success_url = reverse_lazy('cursos:lista_cursos')
@@ -166,8 +166,25 @@ class CursoConcluintesView(LoginRequiredMixin, StaffRequiredMixin, DetailView):
         context['concluintes'] = self.object.inscricao_set.filter(status='concluido').select_related('aluno').order_by('aluno__nome_completo')
         return context
 
+class CursoImprimirListaView(LoginRequiredMixin, StaffRequiredMixin, DetailView):
+    model = Curso
+    template_name = 'cursos/curso_imprimir_lista.html'
+    context_object_name = 'curso'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        curso = self.get_object()
+        
+        # Verificar permissão de escola se não for superuser
+        user = self.request.user
+        if not user.is_superuser and hasattr(user, 'profile') and user.profile.escola != curso.escola:
+            raise PermissionDenied("Você não tem permissão para acessar esta funcionalidade.")
+
+        context['inscricoes'] = Inscricao.objects.filter(curso=curso, status='cursando').order_by('aluno__nome_completo').select_related('aluno')
+        return context
+
 # Views para TipoCurso
-class TipoCursoListView(LoginRequiredMixin, CoordenadorRequiredMixin, ListView):
+class TipoCursoListView(LoginRequiredMixin, StaffRequiredMixin, ListView):
     model = TipoCurso
     template_name = 'cursos/tipocurso_list.html'
     context_object_name = 'tipos_curso'
@@ -182,7 +199,7 @@ class TipoCursoListView(LoginRequiredMixin, CoordenadorRequiredMixin, ListView):
         
         return TipoCurso.objects.none()
 
-class TipoCursoCreateView(LoginRequiredMixin, CoordenadorRequiredMixin, AuditLogMixin, CreateView):
+class TipoCursoCreateView(LoginRequiredMixin, StaffRequiredMixin, AuditLogMixin, CreateView):
     model = TipoCurso
     form_class = TipoCursoForm
     template_name = 'cursos/tipocurso_form.html'
@@ -198,7 +215,7 @@ class TipoCursoCreateView(LoginRequiredMixin, CoordenadorRequiredMixin, AuditLog
             form.instance.escola = self.request.user.profile.escola
         return super().form_valid(form)
 
-class TipoCursoUpdateView(LoginRequiredMixin, CoordenadorRequiredMixin, StaffRequiredMixin, AuditLogMixin, UpdateView):
+class TipoCursoUpdateView(LoginRequiredMixin, StaffRequiredMixin, AuditLogMixin, UpdateView):
     model = TipoCurso
     form_class = TipoCursoForm
     template_name = 'cursos/tipocurso_form.html'
@@ -209,7 +226,7 @@ class TipoCursoUpdateView(LoginRequiredMixin, CoordenadorRequiredMixin, StaffReq
         kwargs['user'] = self.request.user
         return kwargs
 
-class TipoCursoDeleteView(LoginRequiredMixin, CoordenadorRequiredMixin, StaffRequiredMixin, AuditLogMixin, DeleteView):
+class TipoCursoDeleteView(LoginRequiredMixin, StaffRequiredMixin, AuditLogMixin, DeleteView):
     model = TipoCurso
     template_name = 'cursos/tipocurso_confirm_delete.html'
     success_url = reverse_lazy('cursos:lista_cursos')
@@ -474,15 +491,15 @@ class FazerChamadaView(LoginRequiredMixin, StaffRequiredMixin, View):
         registro_aula = None
         if registro_aula_pk:
             registro_aula = get_object_or_404(RegistroAula, pk=registro_aula_pk, curso=curso)
-            form = RegistroAulaForm(instance=registro_aula)
+            form = RegistroAulaForm(instance=registro_aula, curso=curso)
         else:
             # Tentar encontrar um registro de aula para hoje para este curso
             registro_aula = RegistroAula.objects.filter(curso=curso, data_aula=date.today()).first()
             if registro_aula:
-                form = RegistroAulaForm(instance=registro_aula)
+                form = RegistroAulaForm(instance=registro_aula, curso=curso)
                 messages.info(request, f"Já existe um registro de aula para {curso.nome} em {date.today().strftime('%d/%m/%Y')}. Editando o registro existente.")
             else:
-                form = RegistroAulaForm(initial={'curso': curso, 'data_aula': date.today()})
+                form = RegistroAulaForm(initial={'curso': curso, 'data_aula': date.today()}, curso=curso)
 
         # Filtrar inscrições ativas para o curso
         # Não precisamos mais do queryset de inscrições aqui diretamente, o formset já fará isso
@@ -497,7 +514,7 @@ class FazerChamadaView(LoginRequiredMixin, StaffRequiredMixin, View):
 
         # Se for um novo registro de aula e o formset estiver vazio, pré-popular com os alunos cursando
         if registro_aula is None and not formset.is_bound and not request.POST:
-            inscricoes_cursando = Inscricao.objects.filter(curso=curso, status='cursando')
+            inscricoes_cursando = Inscricao.objects.filter(curso=curso, status='cursando').order_by('aluno__nome_completo')
             initial_chamadas = []
             for inscricao in inscricoes_cursando:
                 initial_chamadas.append({'inscricao': inscricao, 'status_presenca': 'A'})
@@ -557,15 +574,22 @@ class FazerChamadaView(LoginRequiredMixin, StaffRequiredMixin, View):
             # Se a data no POST for diferente da data original do registro_aula_pk,
             # verifica se já existe outro registro para essa nova data
             if data_obj and registro_aula.data_aula != data_obj:
-                registro_aula = RegistroAula.objects.filter(curso=curso, data_aula=data_obj).first()
+                novo_registro = RegistroAula.objects.filter(curso=curso, data_aula=data_obj).first()
+                if novo_registro:
+                    messages.info(request, f"A data foi alterada para {data_obj.strftime('%d/%m/%Y')}, que já possui uma chamada registrada. Redirecionando para a edição desta data.")
+                    return redirect('cursos:fazer_chamada_editar', curso_pk=curso.pk, registro_aula_pk=novo_registro.pk)
         elif data_obj:
             registro_aula = RegistroAula.objects.filter(curso=curso, data_aula=data_obj).first()
+            if registro_aula:
+                messages.info(request, f"Já existe uma chamada registrada em {data_obj.strftime('%d/%m/%Y')}. Redirecionando para a edição.")
+                return redirect('cursos:fazer_chamada_editar', curso_pk=curso.pk, registro_aula_pk=registro_aula.pk)
 
         # 2. TRATAMENTO CRITICAL: Se o usuário mudou a data, os IDs e Vínculos no formset estão obsoletos
         # Precisamos limpá-los para evitar "Parent Mismatch" (O valor na linha não correspondeu com a instância pai).
         post_data = request.POST.copy()
         management_total = int(post_data.get('chamada-TOTAL_FORMS', 0))
         
+        mudou_para_novo = False
         for i in range(management_total):
             id_key = f'chamada-{i}-id'
             parent_key = f'chamada-{i}-registro_aula' # O campo que causa o erro do usuário
@@ -575,8 +599,13 @@ class FazerChamadaView(LoginRequiredMixin, StaffRequiredMixin, View):
             if not registro_aula or (form_cid and not Chamada.objects.filter(pk=form_cid, registro_aula=registro_aula).exists()):
                 if id_key in post_data: post_data[id_key] = ''
                 if parent_key in post_data: post_data[parent_key] = '' # Limpa o vínculo do aluno com o dia anterior
+                mudou_para_novo = True
+        
+        if mudou_para_novo and not registro_aula:
+            if 'chamada-INITIAL_FORMS' in post_data:
+                post_data['chamada-INITIAL_FORMS'] = 0
 
-        form = RegistroAulaForm(request.POST, instance=registro_aula)
+        form = RegistroAulaForm(request.POST, instance=registro_aula, curso=curso)
         formset = ChamadaFormSet(post_data, instance=registro_aula, prefix='chamada') 
 
         if form.is_valid() and formset.is_valid():

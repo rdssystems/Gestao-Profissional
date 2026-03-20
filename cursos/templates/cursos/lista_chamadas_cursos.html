@@ -152,7 +152,7 @@
                         <td>{{ curso.horario|date:"H:i"|default:"N/A" }}</td>
 
                         <td>
-                            {% if perms.cursos.change_curso or user|has_group:"Coordenador" %}
+                            {% if perms.cursos.change_curso or user.is_staff %}
                             <form method="post" action="{% url 'cursos:alterar_status_curso' pk=curso.pk %}">
                                 {% csrf_token %}
                                 <select name="status" class="form-select form-select-sm status-select"

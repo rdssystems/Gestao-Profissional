@@ -304,6 +304,13 @@
                         <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarUserDropdown">
 
                             <li><a class="dropdown-item" href="{% url 'core:sobre' %}">Sobre</a></li>
+                            {% if user.is_superuser or user|has_group:'Coordenador' %}
+                            <li>
+                                <a class="dropdown-item d-flex align-items-center gap-2" href="{% url 'whatsapp:config' %}">
+                                    <i class="bi bi-whatsapp" style="color:#25D366;"></i> WhatsApp
+                                </a>
+                            </li>
+                            {% endif %}
                             {% if user.is_superuser %}
                             <li><a class="dropdown-item" href="{% url 'score_config:configurar' %}">Configuração de
                                     Score</a></li>

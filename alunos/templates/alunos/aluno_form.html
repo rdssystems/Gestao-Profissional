@@ -186,6 +186,30 @@
                                 <div class="invalid-feedback d-block">{{ form.telefone_principal.errors }}</div>
                             {% endif %}
                         </div>
+
+                        <div class="col-md-4 mb-4">
+                            {{ form.tempo_moradia.label_tag }}
+                            <div class="custom-input">{{ form.tempo_moradia }}</div>
+                            {% if form.tempo_moradia.errors %}
+                                <div class="invalid-feedback d-block">{{ form.tempo_moradia.errors }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="col-md-4 mb-4">
+                            {{ form.tipo_moradia.label_tag }}
+                            <div class="custom-input">{{ form.tipo_moradia }}</div>
+                            {% if form.tipo_moradia.errors %}
+                                <div class="invalid-feedback d-block">{{ form.tipo_moradia.errors }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="col-md-4 mb-4">
+                            {{ form.valor_moradia.label_tag }}
+                            <div class="custom-input">{{ form.valor_moradia }}</div>
+                            {% if form.valor_moradia.errors %}
+                                <div class="invalid-feedback d-block">{{ form.valor_moradia.errors }}</div>
+                            {% endif %}
+                        </div>
                     </div>
 
                     <hr class="my-4 text-muted opacity-25">
@@ -236,30 +260,6 @@
                             <div class="custom-input">{{ form.endereco_estado }}</div>
                             {% if form.endereco_estado.errors %}
                                 <div class="invalid-feedback d-block">{{ form.endereco_estado.errors }}</div>
-                            {% endif %}
-                        </div>
-
-                        <div class="col-md-4 mb-4">
-                            {{ form.tempo_moradia.label_tag }}
-                            <div class="custom-input">{{ form.tempo_moradia }}</div>
-                            {% if form.tempo_moradia.errors %}
-                                <div class="invalid-feedback d-block">{{ form.tempo_moradia.errors }}</div>
-                            {% endif %}
-                        </div>
-
-                        <div class="col-md-4 mb-4">
-                            {{ form.tipo_moradia.label_tag }}
-                            <div class="custom-input">{{ form.tipo_moradia }}</div>
-                            {% if form.tipo_moradia.errors %}
-                                <div class="invalid-feedback d-block">{{ form.tipo_moradia.errors }}</div>
-                            {% endif %}
-                        </div>
-
-                        <div class="col-md-4 mb-4">
-                            {{ form.valor_moradia.label_tag }}
-                            <div class="custom-input">{{ form.valor_moradia }}</div>
-                            {% if form.valor_moradia.errors %}
-                                <div class="invalid-feedback d-block">{{ form.valor_moradia.errors }}</div>
                             {% endif %}
                         </div>
                     </div>

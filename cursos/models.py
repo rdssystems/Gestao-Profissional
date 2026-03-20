@@ -63,6 +63,7 @@ class Curso(models.Model):
 
     status = models.CharField(max_length=20, choices=STATUS_CHOICES)
     nome_professor = models.CharField(max_length=200, blank=True, null=True, verbose_name="Nome do Professor")
+    parceiro = models.CharField(max_length=200, blank=True, null=True, verbose_name="Parceiro")
 
     def __str__(self):
         return self.nome
