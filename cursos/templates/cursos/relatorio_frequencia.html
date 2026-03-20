@@ -228,8 +228,7 @@
             <strong>Período:</strong> {{ curso.data_inicio|date:"d/m/Y" }} a {{ curso.data_fim|date:"d/m/Y" }}
         </div>
         <div class="col-6 mt-1">
-            <strong>Turno/Horário:</strong> {{ curso.get_turno_display }} ({{ curso.horario|date:"H:i" }} - {{
-            curso.horario_fim|date:"H:i" }})
+            <strong>Turno/Horário:</strong> {{ curso.get_turno_display }} ({{ curso.horario|date:"H:i" }} - {{ curso.horario_fim|date:"H:i" }})
         </div>
         <div class="col-6 mt-1">
             <strong>Escola:</strong> {{ curso.escola.nome }}
