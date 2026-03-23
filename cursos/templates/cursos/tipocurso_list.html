@@ -14,7 +14,7 @@
             <p class="text-muted mb-0">Categorias utilizadas para organização dos cursos</p>
         </div>
 
-        {% if perms.cursos.add_tipocurso or user.is_staff %}
+        {% if perms.cursos.add_tipocurso or user.is_staff or user|has_group:"Coordenador" or user|has_group:"Auxiliar Administrativo" %}
         <a href="{% url 'cursos:criar_tipo_curso' %}" class="btn btn-premium fw-semibold">
             Novo Tipo
         </a>
@@ -39,14 +39,14 @@
                 </div>
 
                 <div class="action-buttons d-flex gap-2">
-                    {% if perms.cursos.change_tipocurso or user.is_staff %}
+                    {% if perms.cursos.change_tipocurso or user.is_staff or user|has_group:"Coordenador" or user|has_group:"Auxiliar Administrativo" %}
                     <a href="{% url 'cursos:editar_tipo_curso' pk=tipo_curso.pk %}"
                         class="btn btn-action-premium text-white" style="background-color: #f59e0b;">
                         <i class="bi bi-pencil"></i> Editar
                     </a>
                     {% endif %}
 
-                    {% if perms.cursos.delete_tipocurso or user.is_staff %}
+                    {% if perms.cursos.delete_tipocurso or user.is_staff or user|has_group:"Coordenador" or user|has_group:"Auxiliar Administrativo" %}
                     <a href="{% url 'cursos:excluir_tipo_curso' pk=tipo_curso.pk %}"
                         class="btn btn-action-premium text-white" style="background-color: #dc2626;">
                         <i class="bi bi-trash"></i> Excluir
