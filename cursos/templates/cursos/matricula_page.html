@@ -102,7 +102,7 @@
 
                         <td class="text-end">
                             <div class="d-flex gap-2 justify-content-end align-items-center">
-                                <button type="button" class="btn btn-outline-info btn-sm" title="Ver Histórico" onclick="openHistoryModal('{{ aluno.pk }}', '{{ aluno.nome_completo }}')">
+                                <button type="button" class="btn btn-outline-info btn-sm" title="Ver Histórico" onclick="openHistoryModal('{% url 'alunos:historico_aluno' aluno.pk %}', '{{ aluno.nome_completo|escapejs }}')">
                                     <i class="bi bi-clock-history"></i>
                                 </button>
                                 <form method="post" action="{% url 'cursos:matricular_aluno_direto' %}">
@@ -229,9 +229,9 @@
     const historyFrame = document.getElementById('historyFrame');
     const historyModalLabel = document.getElementById('historyModalLabel');
 
-    function openHistoryModal(alunoId, alunoNome) {
+    function openHistoryModal(historyUrl, alunoNome) {
         historyModalLabel.innerText = `Histórico: ${alunoNome}`;
-        historyFrame.src = `${window.location.origin}/alunos/${alunoId}/historico/?popup=1`;
+        historyFrame.src = `${historyUrl}?popup=1`;
         historyModal.show();
     }
 
