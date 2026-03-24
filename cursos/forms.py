@@ -7,7 +7,7 @@ from django.forms import inlineformset_factory # Adicionar import
 class CursoForm(forms.ModelForm):
     class Meta:
         model = Curso
-        fields = ['escola', 'tipo_curso', 'nome', 'nome_professor', 'parceiro', 'carga_horaria', 'data_inicio', 'data_fim', 'turno', 'horario', 'horario_fim', 'dia_inicio_semana', 'dia_fim_semana', 'status']
+        fields = ['escola', 'tipo_curso', 'nome', 'nome_professor', 'parceiro', 'carga_horaria', 'vagas', 'data_inicio', 'data_fim', 'turno', 'horario', 'horario_fim', 'dia_inicio_semana', 'dia_fim_semana', 'status']
         widgets = {
             'escola': forms.Select(attrs={'class': 'form-select form-select-premium'}),
             'tipo_curso': forms.Select(attrs={'class': 'form-select form-select-premium'}),
@@ -15,6 +15,7 @@ class CursoForm(forms.ModelForm):
             'nome_professor': forms.TextInput(attrs={'class': 'form-control form-control-premium', 'placeholder': 'Opcional'}),
             'parceiro': forms.TextInput(attrs={'class': 'form-control form-control-premium', 'placeholder': 'Opcional'}),
             'carga_horaria': forms.NumberInput(attrs={'class': 'form-control form-control-premium'}),
+            'vagas': forms.NumberInput(attrs={'class': 'form-control form-control-premium', 'placeholder': 'Ex: 30'}),
             'data_inicio': forms.DateInput(attrs={'class': 'form-control form-control-premium', 'type': 'date'}),
             'data_fim': forms.DateInput(attrs={'class': 'form-control form-control-premium', 'type': 'date'}),
             'turno': forms.Select(attrs={'class': 'form-select form-select-premium'}),

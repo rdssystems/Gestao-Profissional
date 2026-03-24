@@ -65,6 +65,21 @@
                                         <br><i class="bi bi-person-badge me-1"></i>Prof: {{ curso.nome_professor }}
                                         {% endif %}
                                     </div>
+                                    
+                                    <!-- Barra de Ocupação -->
+                                    <div class="mt-2" style="max-width: 180px;">
+                                        <div class="d-flex justify-content-between align-items-center mb-1">
+                                            <span style="font-size: 0.75rem;" class="fw-bold text-muted text-uppercase">Ocupação</span>
+                                            <span style="font-size: 0.75rem;" class="fw-bold {% if curso.taxa_ocupacao >= 100 %}text-danger{% else %}text-primary{% endif %}">{{ curso.total_inscritos }}/{{ curso.vagas }}</span>
+                                        </div>
+                                        <div class="progress" style="height: 6px; border-radius: 10px; background-color: #f1f5f9;">
+                                            <div class="progress-bar {% if curso.taxa_ocupacao >= 100 %}bg-danger{% elif curso.taxa_ocupacao >= 80 %}bg-warning{% else %}bg-primary{% endif %}" 
+                                                 role="progressbar" 
+                                                 style="width: {{ curso.taxa_ocupacao }}%; border-radius: 10px;" 
+                                                 aria-valuenow="{{ curso.taxa_ocupacao }}" aria-valuemin="0" aria-valuemax="100">
+                                            </div>
+                                        </div>
+                                    </div>
                                 </td>
                                 <td>{{ curso.escola.nome }}</td>
                                 <td>{{ curso.tipo_curso.nome }}</td>
@@ -139,6 +154,21 @@
                                     <strong>{{ curso.nome }}</strong>
                                     <div class="small text-muted">
                                         <i class="bi bi-calendar3 me-1"></i>Início: {{ curso.data_inicio|date:"d/m/Y" }}
+                                    </div>
+
+                                    <!-- Barra de Ocupação -->
+                                    <div class="mt-2" style="max-width: 150px;">
+                                        <div class="d-flex justify-content-between align-items-center mb-1">
+                                            <span style="font-size: 0.7rem;" class="fw-bold text-muted text-uppercase">Finalizado com</span>
+                                            <span style="font-size: 0.7rem;" class="fw-bold text-secondary">{{ curso.total_inscritos }}/{{ curso.vagas }}</span>
+                                        </div>
+                                        <div class="progress" style="height: 4px; border-radius: 10px; background-color: #f1f5f9;">
+                                            <div class="progress-bar bg-secondary" 
+                                                 role="progressbar" 
+                                                 style="width: {{ curso.taxa_ocupacao }}%; border-radius: 10px;" 
+                                                 aria-valuenow="{{ curso.taxa_ocupacao }}" aria-valuemin="0" aria-valuemax="100">
+                                            </div>
+                                        </div>
                                     </div>
                                 </td>
                                 <td>{{ curso.escola.nome }}</td>
