@@ -3,7 +3,7 @@
 {% block title %}Controle Diário - Visão Administrativa{% endblock %}
 
 {% block content %}
-<div class="container-fluid px-4 px-lg-5 mt-4 mb-5">
+<div class="container-fluid px-1 px-md-3 mt-4 mb-5">
 
     <!-- Cabeçalho e Alternância de Visualização -->
     <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
@@ -207,7 +207,10 @@
 
 {% block extra_js %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
 <script>
+    // Registrar o plugin globalmente
+    Chart.register(ChartDataLabels);
     function switchView(view) {
         const tableView = document.getElementById('table-view');
         const chartView = document.getElementById('chart-view');
@@ -239,6 +242,17 @@
         const dataLigRecebidas = [{% for c in controles_diarios %}{{ c.ligacoes_recebidas }},{% endfor %}];
         const dataLigRealizadas = [{% for c in controles_diarios %}{{ c.ligacoes_realizadas }},{% endfor %}];
 
+        // Opções Globais para Plugin Datalabels
+        const globalDatalabelOptions = {
+            color: '#1e293b',
+            display: true,
+            font: { weight: 'bold', size: 12 },
+            anchor: 'end',
+            align: 'top',
+            offset: 4,
+            formatter: (value) => value > 0 ? value : ''
+        };
+
         // 1. Gráfico Inscrições vs Atendimento (Barra)
         new Chart(document.getElementById('conversionChart'), {
             type: 'bar',
@@ -248,10 +262,11 @@
                     {
                         label: 'Atendimentos',
                         data: dataAtendimento,
-                        backgroundColor: 'rgba(37, 99, 235, 0.2)',
+                        backgroundColor: 'rgba(37, 99, 235, 0.1)',
                         borderColor: '#2563eb',
                         borderWidth: 2,
-                        borderRadius: 8
+                        borderRadius: 6,
+                        datalabels: globalDatalabelOptions
                     },
                     {
                         label: 'Inscrições',
@@ -259,14 +274,22 @@
                         backgroundColor: '#10b981',
                         borderColor: '#10b981',
                         borderWidth: 1,
-                        borderRadius: 8
+                        borderRadius: 6,
+                        datalabels: { ...globalDatalabelOptions, color: '#065f46' }
                     }
                 ]
             },
             options: {
                 responsive: true,
-                plugins: { legend: { position: 'top' } },
-                scales: { y: { beginAtZero: true } }
+                maintainAspectRatio: false,
+                plugins: { 
+                    legend: { position: 'top', labels: { usePointStyle: true, font: { weight: '600' } } },
+                    tooltip: { enabled: true }
+                },
+                scales: { 
+                    y: { beginAtZero: true, grid: { display: false }, ticks: { display: false } },
+                    x: { grid: { display: false } }
+                }
             }
         });
 
@@ -278,41 +301,59 @@
                 datasets: [{
                     data: dataInscricoes,
                     backgroundColor: ['#2563eb', '#10b981', '#f59e0b', '#ef4444', '#6366f1', '#a855f7'],
-                    hoverOffset: 15
+                    hoverOffset: 20
                 }]
             },
             options: {
                 responsive: true,
+                maintainAspectRatio: false,
                 plugins: {
-                    legend: { position: 'bottom' }
+                    legend: { position: 'bottom', labels: { boxWidth: 12, usePointStyle: true } },
+                    datalabels: {
+                        color: '#fff',
+                        font: { weight: 'bold', size: 14 },
+                        formatter: (value, ctx) => {
+                            let sum = ctx.chart.data.datasets[0].data.reduce((a, b) => a + b, 0);
+                            let percentage = (value * 100 / sum).toFixed(0) + "%";
+                            return value > 0 ? percentage : '';
+                        }
+                    }
                 },
-                cutout: '65%'
+                cutout: '70%'
             }
         });
 
-        // 3. Gráfico de Telecom (Linha/Área)
+        // 3. Gráfico de Telecom (Barras Agrupadas)
         new Chart(document.getElementById('telecomChart'), {
             type: 'bar',
             data: {
                 labels: labels,
                 datasets: [
                     {
-                        label: 'Recebidas',
+                        label: 'Ligações Recebidas',
                         data: dataLigRecebidas,
-                        backgroundColor: '#6366f1'
+                        backgroundColor: '#6366f1',
+                        borderRadius: 5,
+                        datalabels: { ...globalDatalabelOptions, color: '#4338ca' }
                     },
                     {
-                        label: 'Realizadas',
+                        label: 'Ligações Realizadas',
                         data: dataLigRealizadas,
-                        backgroundColor: '#8b5cf6'
+                        backgroundColor: '#8b5cf6',
+                        borderRadius: 5,
+                        datalabels: { ...globalDatalabelOptions, color: '#6d28d9' }
                     }
                 ]
             },
             options: {
                 responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'top', labels: { usePointStyle: true } }
+                },
                 scales: {
-                    x: { stacked: false },
-                    y: { stacked: false, beginAtZero: true }
+                    y: { beginAtZero: true, grid: { display: false }, ticks: { display: false } },
+                    x: { grid: { display: false } }
                 }
             }
         });
