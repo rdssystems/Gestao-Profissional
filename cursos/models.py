@@ -42,6 +42,7 @@ class Curso(models.Model):
     )
     nome = models.CharField(max_length=200)
     carga_horaria = models.IntegerField()
+    vagas = models.PositiveIntegerField(default=0, verbose_name="Número de Vagas")
     data_inicio = models.DateField()
     data_fim = models.DateField()
     
@@ -72,6 +73,17 @@ class Curso(models.Model):
 
     def __str__(self):
         return self.nome
+
+    @property
+    def total_inscritos(self):
+        # Considera apenas inscrições ativas (cursando) para a taxa de ocupação
+        return self.inscricao_set.filter(status='cursando').count()
+
+    @property
+    def taxa_ocupacao(self):
+        if self.vagas > 0:
+            return min(100, int((self.total_inscritos / self.vagas) * 100))
+        return 0
 
 class Inscricao(models.Model):
     aluno = models.ForeignKey('alunos.Aluno', on_delete=models.CASCADE)
