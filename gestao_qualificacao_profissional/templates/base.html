@@ -156,13 +156,19 @@
         .school-name-highlight {
             position: relative;
             display: inline-block;
-            font-size: 1.15rem;
-            /* Aumenta o tamanho da fonte */
-            padding: 8px 15px;
-            /* Aumenta o padding para mais destaque */
+            font-size: 1.1rem;
+            /* Ajuste leve no tamanho */
+            padding: 6px 12px;
+            /* Padding mais compacto */
             border-radius: 8px;
             animation: school-name-pulse 2s infinite;
-            margin-left: -10px;
+            margin-left: -5px;
+            /* Mantém em uma única linha com truncamento */
+            max-width: 200px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            vertical-align: middle;
         }
 
 
@@ -187,6 +193,8 @@
             color: #7a849a;
             padding: 1rem 0;
         }
+
+        {% block extra_css %}{% endblock %}
     </style>
 </head>
 
@@ -220,6 +228,7 @@
                     {% if user.profile.escola %}
                     <li class="nav-item">
                         <span class="nav-link disabled school-name-highlight"
+                            title="{{ user.profile.escola.nome }}"
                             style="font-weight: 600; color: #4C5B7A;">{{ user.profile.escola.nome }}</span>
                     </li>
                     {% endif %}
@@ -378,6 +387,20 @@
 
     <!-- Realtime Notifications -->
     <script src="{% static 'core/js/realtime.js' %}"></script>
+
+    <script>
+        // Inicialização Global de Popovers do Bootstrap 5
+        document.addEventListener('DOMContentLoaded', function () {
+            var popoverTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="popover"]'))
+            var popoverList = popoverTriggerList.map(function (popoverTriggerEl) {
+                return new bootstrap.Popover(popoverTriggerEl, {
+                    container: 'body',
+                    html: true,
+                    trigger: 'focus'
+                })
+            })
+        });
+    </script>
 
     {% block extra_js %}{% endblock %}
 </body>

@@ -226,6 +226,35 @@ main {
     color: var(--text-slate-soft);
 }
 
+/* Novas Cores para Tipos de Curso */
+.bg-primary   { background-color: var(--brand-primary) !important; color: white !important; }
+.bg-secondary { background-color: #64748b !important; color: white !important; }
+.bg-success   { background-color: #10b981 !important; color: white !important; }
+.bg-danger    { background-color: #ef4444 !important; color: white !important; }
+.bg-dark      { background-color: #1e293b !important; color: white !important; }
+.bg-indigo    { background-color: #6366f1 !important; color: white !important; }
+.bg-purple    { background-color: #a855f7 !important; color: white !important; }
+.bg-pink      { background-color: #ec4899 !important; color: white !important; }
+.bg-orange    { background-color: #f97316 !important; color: white !important; }
+.bg-teal      { background-color: #14b8a6 !important; color: white !important; }
+
+/* Correção para Cores Claras e Vibrantes (Melhor Contraste) */
+.bg-light { 
+    background-color: #f1f5f9 !important; 
+    color: #334155 !important; 
+    border: 1px solid #e2e8f0 !important;
+}
+
+.bg-warning {
+    background-color: #fbbf24 !important;
+    color: #1e293b !important;
+}
+
+.bg-info {
+    background-color: #06b6d4 !important;
+    color: white !important;
+}
+
 /* --------------------------------------------------------------------------
    FORMULÁRIOS
    -------------------------------------------------------------------------- */

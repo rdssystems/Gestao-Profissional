@@ -5,14 +5,20 @@
 {% block content %}
 <div class="container-fluid px-4 px-lg-5 mt-4 mb-5">
 
-    <!-- Cabeçalho -->
-    <div class="mb-4">
-        <h1 class="fw-bold display-6 text-primary mb-1">
-            Controle Diário
-        </h1>
-        <p class="text-muted fs-5 mb-0">
-            Visão Administrativa
-        </p>
+    <!-- Cabeçalho e Alternância de Visualização -->
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+        <div>
+            <h1 class="fw-bold display-6 text-primary mb-1">Controle Diário</h1>
+            <p class="text-muted fs-5 mb-0">Visão Administrativa</p>
+        </div>
+        <div class="nav-pills-premium p-1 bg-white border rounded-3 d-flex shadow-sm">
+            <button class="nav-link active px-4 py-2 border-0 fw-bold" id="view-table-btn" onclick="switchView('table')">
+                <i class="bi bi-table me-2"></i>Tabela
+            </button>
+            <button class="nav-link px-4 py-2 border-0 fw-bold" id="view-chart-btn" onclick="switchView('chart')">
+                <i class="bi bi-pie-chart-fill me-2"></i>Dashboard
+            </button>
+        </div>
     </div>
 
     <!-- Filtros -->
@@ -63,94 +69,255 @@
         </div>
     </div>
 
-    <!-- Totais do Dia -->
-    <div class="card border-0 shadow-sm rounded-4 mb-4">
-        <div class="card-header bg-primary bg-gradient text-white py-3 rounded-top-4">
-            <h5 class="mb-0 fw-bold">
-                Totais do Dia {{ data_selecionada|date:"d/m/Y" }}
-                {% if escola_id_selecionada %}
-                    <span class="fw-normal">(Escola Filtrada)</span>
-                {% endif %}
-            </h5>
+    <!-- Visualização em Tabela -->
+    <div id="table-view">
+        <!-- Totais do Dia -->
+        <div class="card border-0 shadow-sm rounded-4 mb-4">
+            <div class="card-header bg-primary bg-gradient text-white py-3 rounded-top-4">
+                <h5 class="mb-0 fw-bold">
+                    Totais do Dia {{ data_selecionada|date:"d/m/Y" }}
+                    {% if escola_id_selecionada %}
+                        <span class="fw-normal">(Escola Filtrada)</span>
+                    {% endif %}
+                </h5>
+            </div>
+
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table align-middle mb-0">
+                        <thead class="table-light">
+                            <tr class="text-secondary small text-uppercase">
+                                <th>Atendimento</th>
+                                <th>Inscrições</th>
+                                <th>Presentes</th>
+                                <th>Ligações Recebidas</th>
+                                <th>Ligações Realizadas</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr class="fw-semibold">
+                                <td>{{ totais.total_atendimento|default:0 }}</td>
+                                <td>{{ totais.total_inscricoes|default:0 }}</td>
+                                <td>{{ totais.total_pessoas_presentes|default:0 }}</td>
+                                <td>{{ totais.total_ligacoes_recebidas|default:0 }}</td>
+                                <td>{{ totais.total_ligacoes_realizadas|default:0 }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </div>
 
-        <div class="card-body p-0">
-            <div class="table-responsive">
-                <table class="table align-middle mb-0">
-                    <thead class="table-light">
-                        <tr class="text-secondary small text-uppercase">
-                            <th>Atendimento</th>
-                            <th>Inscrições</th>
-                            <th>Presentes</th>
-                            <th>Ligações Recebidas</th>
-                            <th>Ligações Realizadas</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr class="fw-semibold">
-                            <td>{{ totais.total_atendimento|default:0 }}</td>
-                            <td>{{ totais.total_inscricoes|default:0 }}</td>
-                            <td>{{ totais.total_pessoas_presentes|default:0 }}</td>
-                            <td>{{ totais.total_ligacoes_recebidas|default:0 }}</td>
-                            <td>{{ totais.total_ligacoes_realizadas|default:0 }}</td>
-                        </tr>
-                    </tbody>
-                </table>
+        <!-- Registros Detalhados -->
+        <div class="card border-0 shadow-sm rounded-4 mb-5">
+            <div class="card-header bg-white py-3 border-bottom">
+                <h5 class="mb-0 fw-bold text-primary">
+                    Registros Detalhados
+                </h5>
+            </div>
+
+            <div class="card-body p-0">
+                {% if controles_diarios %}
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light">
+                                <tr class="text-secondary small text-uppercase">
+                                    <th>Escola</th>
+                                    <th>Data</th>
+                                    <th>Atendimento</th>
+                                    <th>Inscrições</th>
+                                    <th>Presentes</th>
+                                    <th>Lig. Recebidas</th>
+                                    <th>Lig. Realizadas</th>
+                                    <th>Lançado por</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for controle in controles_diarios %}
+                                    <tr>
+                                        <td class="fw-semibold">
+                                            {{ controle.escola.nome }}
+                                        </td>
+                                        <td>{{ controle.data|date:"d/m/Y" }}</td>
+                                        <td>{{ controle.atendimento }}</td>
+                                        <td>{{ controle.inscricoes }}</td>
+                                        <td>{{ controle.pessoas_presentes }}</td>
+                                        <td>{{ controle.ligacoes_recebidas }}</td>
+                                        <td>{{ controle.ligacoes_realizadas }}</td>
+                                        <td>
+                                            {{ controle.usuario.get_full_name|default:controle.usuario.username }}
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="alert alert-info m-4">
+                        Nenhum registro encontrado para a data e filtros selecionados.
+                    </div>
+                {% endif %}
             </div>
         </div>
     </div>
 
-    <!-- Registros Detalhados -->
-    <div class="card border-0 shadow-sm rounded-4 mb-5">
-        <div class="card-header bg-white py-3 border-bottom">
-            <h5 class="mb-0 fw-bold text-primary">
-                Registros Detalhados
-            </h5>
-        </div>
+    <!-- Visualização em Dashboard (Escondida por padrão) -->
+    <div id="chart-view" style="display: none;">
+        <div class="row g-4 mb-5">
+            <!-- Gráfico Comparativo Principal -->
+            <div class="col-12 col-lg-8">
+                <div class="card border-0 shadow-sm rounded-4 h-100">
+                    <div class="card-header bg-white py-3">
+                        <h6 class="mb-0 fw-bold text-primary">Inscrições vs Atendimentos por Unidade</h6>
+                    </div>
+                    <div class="card-body p-4">
+                        <canvas id="conversionChart" height="250"></canvas>
+                    </div>
+                </div>
+            </div>
 
-        <div class="card-body p-0">
-            {% if controles_diarios %}
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle mb-0">
-                        <thead class="table-light">
-                            <tr class="text-secondary small text-uppercase">
-                                <th>Escola</th>
-                                <th>Data</th>
-                                <th>Atendimento</th>
-                                <th>Inscrições</th>
-                                <th>Presentes</th>
-                                <th>Lig. Recebidas</th>
-                                <th>Lig. Realizadas</th>
-                                <th>Lançado por</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for controle in controles_diarios %}
-                                <tr>
-                                    <td class="fw-semibold">
-                                        {{ controle.escola.nome }}
-                                    </td>
-                                    <td>{{ controle.data|date:"d/m/Y" }}</td>
-                                    <td>{{ controle.atendimento }}</td>
-                                    <td>{{ controle.inscricoes }}</td>
-                                    <td>{{ controle.pessoas_presentes }}</td>
-                                    <td>{{ controle.ligacoes_recebidas }}</td>
-                                    <td>{{ controle.ligacoes_realizadas }}</td>
-                                    <td>
-                                        {{ controle.usuario.username|default:"N/A" }}
-                                    </td>
-                                </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
+            <!-- Gráfico de Inscrições por Escola -->
+            <div class="col-12 col-lg-4">
+                <div class="card border-0 shadow-sm rounded-4 h-100">
+                    <div class="card-header bg-white py-3">
+                        <h6 class="mb-0 fw-bold text-primary">Inscrições (% Impacto)</h6>
+                    </div>
+                    <div class="card-body p-4 d-flex align-items-center">
+                        <canvas id="impactChart"></canvas>
+                    </div>
                 </div>
-            {% else %}
-                <div class="alert alert-info m-4">
-                    Nenhum registro encontrado para a data e filtros selecionados.
+            </div>
+
+            <!-- Gráfico de Volume de Contatos (Telecom) -->
+            <div class="col-12">
+                <div class="card border-0 shadow-sm rounded-4">
+                    <div class="card-header bg-white py-3">
+                        <h6 class="mb-0 fw-bold text-primary">Volume de Comunicação (Ligações)</h6>
+                    </div>
+                    <div class="card-body p-4">
+                        <canvas id="telecomChart" height="100"></canvas>
+                    </div>
                 </div>
-            {% endif %}
+            </div>
         </div>
     </div>
 
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    function switchView(view) {
+        const tableView = document.getElementById('table-view');
+        const chartView = document.getElementById('chart-view');
+        const tableBtn = document.getElementById('view-table-btn');
+        const chartBtn = document.getElementById('view-chart-btn');
+
+        if (view === 'table') {
+            tableView.style.display = 'block';
+            chartView.style.display = 'none';
+            tableBtn.classList.add('active');
+            chartBtn.classList.remove('active');
+        } else {
+            tableView.style.display = 'none';
+            chartView.style.display = 'block';
+            tableBtn.classList.remove('active');
+            chartBtn.classList.add('active');
+            renderCharts();
+        }
+    }
+
+    let chartsInitialized = false;
+
+    function renderCharts() {
+        if (chartsInitialized) return;
+        
+        const labels = [{% for c in controles_diarios %}'{{ c.escola.nome }}',{% endfor %}];
+        const dataAtendimento = [{% for c in controles_diarios %}{{ c.atendimento }},{% endfor %}];
+        const dataInscricoes = [{% for c in controles_diarios %}{{ c.inscricoes }},{% endfor %}];
+        const dataLigRecebidas = [{% for c in controles_diarios %}{{ c.ligacoes_recebidas }},{% endfor %}];
+        const dataLigRealizadas = [{% for c in controles_diarios %}{{ c.ligacoes_realizadas }},{% endfor %}];
+
+        // 1. Gráfico Inscrições vs Atendimento (Barra)
+        new Chart(document.getElementById('conversionChart'), {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [
+                    {
+                        label: 'Atendimentos',
+                        data: dataAtendimento,
+                        backgroundColor: 'rgba(37, 99, 235, 0.2)',
+                        borderColor: '#2563eb',
+                        borderWidth: 2,
+                        borderRadius: 8
+                    },
+                    {
+                        label: 'Inscrições',
+                        data: dataInscricoes,
+                        backgroundColor: '#10b981',
+                        borderColor: '#10b981',
+                        borderWidth: 1,
+                        borderRadius: 8
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                plugins: { legend: { position: 'top' } },
+                scales: { y: { beginAtZero: true } }
+            }
+        });
+
+        // 2. Gráfico de Impacto (Donut)
+        new Chart(document.getElementById('impactChart'), {
+            type: 'doughnut',
+            data: {
+                labels: labels,
+                datasets: [{
+                    data: dataInscricoes,
+                    backgroundColor: ['#2563eb', '#10b981', '#f59e0b', '#ef4444', '#6366f1', '#a855f7'],
+                    hoverOffset: 15
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { position: 'bottom' }
+                },
+                cutout: '65%'
+            }
+        });
+
+        // 3. Gráfico de Telecom (Linha/Área)
+        new Chart(document.getElementById('telecomChart'), {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [
+                    {
+                        label: 'Recebidas',
+                        data: dataLigRecebidas,
+                        backgroundColor: '#6366f1'
+                    },
+                    {
+                        label: 'Realizadas',
+                        data: dataLigRealizadas,
+                        backgroundColor: '#8b5cf6'
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    x: { stacked: false },
+                    y: { stacked: false, beginAtZero: true }
+                }
+            }
+        });
+
+        chartsInitialized = true;
+    }
+</script>
 {% endblock %}

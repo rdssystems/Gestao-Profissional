@@ -26,6 +26,6 @@ def get_schema(db_path):
     return schema
 
 if __name__ == "__main__":
-    db_path = r"c:\Users\Klisman rDs\Documents\Inscrição Django - 2026\banco_cadastro.db"
+    db_path = "banco_cadastro.db"
     info = get_schema(db_path)
     print(json.dumps(info, indent=2))
