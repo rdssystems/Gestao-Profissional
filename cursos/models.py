@@ -15,6 +15,11 @@ class TipoCurso(models.Model):
         ('info', 'Ciano Informação'),
         ('light', 'Cinza Claro'),
         ('dark', 'Preto Escuro'),
+        ('indigo', 'Anil (Indigo)'),
+        ('purple', 'Roxo'),
+        ('pink', 'Rosa'),
+        ('orange', 'Laranja'),
+        ('teal', 'Verde Água (Teal)'),
     )
     cor = models.CharField(max_length=20, choices=COR_CHOICES, default='primary', verbose_name="Cor")
 

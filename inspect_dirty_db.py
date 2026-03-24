@@ -31,5 +31,5 @@ def inspect_db(db_path):
     conn.close()
 
 if __name__ == "__main__":
-    db_path = r"c:\Users\Klisman rDs\Documents\Inscrição Django - 2026\banco_cadastro.db"
+    db_path = "banco_cadastro.db"
     inspect_db(db_path)
