@@ -101,14 +101,19 @@
                         <td>{{ aluno.score_total }}</td>
 
                         <td class="text-end">
-                            <form method="post" action="{% url 'cursos:matricular_aluno_direto' %}">
-                                {% csrf_token %}
-                                <input type="hidden" name="aluno_id" value="{{ aluno.pk }}">
-                                <input type="hidden" name="curso_id" value="{{ selected_curso.pk }}">
-                                <button type="submit" class="btn btn-success btn-sm fw-semibold">
-                                    Matricular
+                            <div class="d-flex gap-2 justify-content-end align-items-center">
+                                <button type="button" class="btn btn-outline-info btn-sm" title="Ver Histórico" onclick="openHistoryModal('{{ aluno.pk }}', '{{ aluno.nome_completo }}')">
+                                    <i class="bi bi-clock-history"></i>
                                 </button>
-                            </form>
+                                <form method="post" action="{% url 'cursos:matricular_aluno_direto' %}">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="aluno_id" value="{{ aluno.pk }}">
+                                    <input type="hidden" name="curso_id" value="{{ selected_curso.pk }}">
+                                    <button type="submit" class="btn btn-success btn-sm fw-semibold">
+                                        Matricular
+                                    </button>
+                                </form>
+                            </div>
                         </td>
                     </tr>
                     {% empty %}
@@ -191,6 +196,21 @@
     </div>
     {% endif %}
 
+    <!-- Modal de Histórico -->
+    <div class="modal fade" id="historyModal" tabindex="-1" aria-labelledby="historyModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content border-0 shadow-lg" style="border-radius: 20px; overflow: hidden;">
+                <div class="modal-header bg-primary text-white border-0 py-3">
+                    <h5 class="modal-title fw-bold" id="historyModalLabel">Histórico do Aluno</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-0" style="height: 80vh;">
+                    <iframe id="historyFrame" src="" frameborder="0" style="width: 100%; height: 100%;"></iframe>
+                </div>
+            </div>
+        </div>
+    </div>
+
 </div>
 
 {% endblock %}
@@ -202,6 +222,21 @@
         checkboxes.forEach((cb, index) => {
             cb.checked = index < count;
         });
+    }
+
+    // Modal de Histórico
+    const historyModal = new bootstrap.Modal(document.getElementById('historyModal'));
+    const historyFrame = document.getElementById('historyFrame');
+    const historyModalLabel = document.getElementById('historyModalLabel');
+
+    function openHistoryModal(alunoId, alunoNome) {
+        historyModalLabel.innerText = `Histórico: ${alunoNome}`;
+        historyFrame.src = `${window.location.origin}/alunos/${alunoId}/historico/?popup=1`;
+        historyModal.show();
+    }
+
+    function closeModal() {
+        historyModal.hide();
     }
 
     function toggleAll(source) {

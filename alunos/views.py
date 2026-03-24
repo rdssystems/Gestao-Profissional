@@ -205,9 +205,15 @@ class AlunoListView(LoginRequiredMixin, ListView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        if self.request.user.is_superuser:
+        user = self.request.user
+        
+        if user.is_superuser:
             context['todas_escolas'] = Escola.objects.all().order_by('nome')
             context['escola_selecionada'] = self.request.GET.get('escola', '')
+            context['todos_cursos_interesse'] = TipoCurso.objects.all().order_by('nome')
+        elif hasattr(user, 'profile') and user.profile.escola:
+            context['todos_cursos_interesse'] = TipoCurso.objects.filter(escola=user.profile.escola).order_by('nome')
+        
         return context
 
 class AlunoDetailView(StaffRequiredMixin, DetailView):
@@ -305,6 +311,11 @@ class AlunoHistoricoView(StaffRequiredMixin, DetailView):
     template_name = 'alunos/aluno_historico.html'
     context_object_name = 'aluno'
 
+    def get_template_names(self):
+        if self.request.GET.get('popup'):
+            return ['alunos/aluno_historico_popup.html']
+        return [self.template_name]
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         aluno = self.object
@@ -363,6 +374,30 @@ class AlunoUpdateObservacoesView(AuditLogMixin, StaffRequiredMixin, View):
         
         messages.success(request, "Observações do histórico atualizadas com sucesso.")
         return redirect('alunos:historico_aluno', pk=aluno.pk)
+
+class AlunoUpdateCursosInteresseView(AuditLogMixin, StaffRequiredMixin, View):
+    def post(self, request, pk):
+        aluno = get_object_or_404(Aluno, pk=pk)
+        cursos_ids = request.POST.getlist('cursos_interesse')
+        
+        # Validar se os cursos pertencem à mesma escola ou se é superuser
+        user = request.user
+        if not user.is_superuser:
+            if hasattr(user, 'profile') and user.profile.escola:
+                # Filtrar cursos_ids para garantir que só salve os da escola dele
+                valid_ids = list(TipoCurso.objects.filter(
+                    id__in=cursos_ids, 
+                    escola=user.profile.escola
+                ).values_list('id', flat=True))
+                cursos_ids = valid_ids
+        
+        aluno.cursos_interesse.set(cursos_ids)
+        
+        # Log manual
+        self.save_log(aluno, 'UPDATE', {'campo': 'cursos_interesse', 'total': len(cursos_ids)})
+        
+        messages.success(request, f"Cursos de interesse de {aluno.nome_completo} atualizados.")
+        return redirect('alunos:lista_alunos')
 
 
 from core.models import AuditLog # Import AuditLog

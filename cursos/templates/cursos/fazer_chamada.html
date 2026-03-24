@@ -196,18 +196,18 @@
 
                 <tbody>
                     {% for form_chamada in formset %}
-                    <tr>
+                    {% with inscricao=form_chamada.instance.inscricao|default:form_chamada.initial.inscricao %}
+                    <tr {% if inscricao.status == 'desistente' %}style="background-color: #fff5f5; opacity: 0.85;"{% endif %}>
                         <td class="py-2">
                             {{ form_chamada.id }}
                             <div class="fw-bold text-dark h6 mb-1">
-                                {% if form_chamada.instance.pk %}
-                                    {{ form_chamada.instance.inscricao.aluno.nome_completo|upper }}
-                                {% else %}
-                                    {{ form_chamada.fields.aluno_nome.initial|upper|default:"Aluno" }}
+                                {{ inscricao.aluno.nome_completo|upper }}
+                                {% if inscricao.status == 'desistente' %}
+                                    <span class="badge bg-danger ms-2" style="font-size: 0.65rem;">INATIVO (DESISTENTE)</span>
                                 {% endif %}
                             </div>
-                            {% if form_chamada.instance.pk and form_chamada.instance.inscricao.aluno.whatsapp_link %}
-                            <a href="https://wa.me/{{ form_chamada.instance.inscricao.aluno.whatsapp_link }}" target="_blank" class="text-success small text-decoration-none" title="WhatsApp">
+                            {% if inscricao.aluno.whatsapp_link %}
+                            <a href="https://wa.me/{{ inscricao.aluno.whatsapp_link }}" target="_blank" class="text-success small text-decoration-none" title="WhatsApp">
                                 <i class="bi bi-whatsapp"></i> Contato
                             </a>
                             {% endif %}
@@ -215,6 +215,7 @@
                                 {{ hidden }}
                             {% endfor %}
                         </td>
+                    {% endwith %}
 
                         <td class="text-center py-2">
                             <div class="d-flex justify-content-center radio-attendance-group">

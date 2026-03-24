@@ -275,9 +275,14 @@
             <tbody>
                 {% load my_filters %}
                 {% for linha in matriz %}
-                <tr>
+                <tr {% if linha.status == 'desistente' %}style="background-color: #fff5f5; opacity: 0.85;"{% endif %}>
                     <td class="sticky-col">
-                        <span class="aluno-nome" title="{{ linha.aluno }}">{{ linha.aluno|nome_curto }}</span>
+                        <span class="aluno-nome" title="{{ linha.aluno }}">
+                            {{ linha.aluno|nome_curto }}
+                            {% if linha.status == 'desistente' %}
+                                <div class="text-danger fw-bold" style="font-size: 0.6rem; margin-top: -3px;">(DESISTENTE)</div>
+                            {% endif %}
+                        </span>
                     </td>
                     {% for presenca in linha.presencas %}
                     <td>

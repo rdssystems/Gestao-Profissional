@@ -121,14 +121,24 @@
                 {% endif %}
 
                 <td>
-                    <button type="button" 
-                            class="btn btn-sm btn-outline-primary" 
-                            data-bs-toggle="popover" 
-                            data-bs-placement="left"
-                            data-bs-title="Cursos de Interesse"
-                            data-bs-content="{% for curso in aluno.cursos_interesse.all %}<span class='badge-sm-premium bg-{{ curso.cor }} mb-1 d-block'>{{ curso.nome }}</span>{% empty %}<span class='text-muted small'>Nenhum</span>{% endfor %}">
-                        Ver
-                    </button>
+                    <div class="d-flex gap-1 align-items-center">
+                        <button type="button" 
+                                class="btn btn-sm btn-outline-primary" 
+                                data-bs-toggle="popover" 
+                                data-bs-placement="left"
+                                data-bs-title="Cursos de Interesse"
+                                data-bs-content="{% for curso in aluno.cursos_interesse.all %}<span class='badge-sm-premium bg-{{ curso.cor }} mb-1 d-block'>{{ curso.nome }}</span>{% empty %}<span class='text-muted small'>Nenhum</span>{% endfor %}">
+                            Ver
+                        </button>
+                        <button type="button" 
+                                class="btn btn-sm btn-light border shadow-sm btn-edit-interesses" 
+                                title="Editar Interesses"
+                                data-aluno-id="{{ aluno.id }}"
+                                data-aluno-nome="{{ aluno.nome_completo }}"
+                                data-selected-ids="[{% for c in aluno.cursos_interesse.all %}{{ c.id }}{% if not forloop.last %},{% endif %}{% endfor %}]">
+                            <i class="bi bi-pencil-square"></i>
+                        </button>
+                    </div>
                 </td>
 
                 <td class="text-end">
@@ -214,4 +224,106 @@
 </div>
 {% endif %}
 
+{# Modal para Editar Cursos de Interesse #}
+<div class="modal fade" id="modalCursosInteresse" tabindex="-1" aria-labelledby="modalCursosInteresseLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 20px;">
+            <div class="modal-header bg-primary text-white border-0 py-3" style="border-top-left-radius: 20px; border-top-right-radius: 20px;">
+                <h5 class="modal-title fw-bold" id="modalCursosInteresseLabel">Cursos de Interesse</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="formCursosInteresse" method="post" action="">
+                {% csrf_token %}
+                <div class="modal-body p-4">
+                    <p class="text-muted small mb-3">Selecione os cursos que <strong id="modalAlunoNome"></strong> tem interesse em realizar:</p>
+                    
+                    <div class="row g-2">
+                        {% for curso in todos_cursos_interesse %}
+                        <div class="col-12">
+                            <div class="form-check p-3 border rounded-3 hover-shadow-sm transition-all" style="cursor: pointer;">
+                                <input class="form-check-input ms-0 me-2" type="checkbox" name="cursos_interesse" value="{{ curso.id }}" id="curso_{{ curso.id }}">
+                                <label class="form-check-label d-block cursor-pointer w-100" for="curso_{{ curso.id }}">
+                                    <span class="fw-bold text-dark">{{ curso.nome }}</span>
+                                    <span class="badge bg-{{ curso.cor }} ms-2" style="font-size: 0.75rem;">{{ curso.escola.nome }}</span>
+                                </label>
+                            </div>
+                        </div>
+                        {% empty %}
+                        <div class="col-12 text-center py-3 text-muted">
+                            Nenhum tipo de curso cadastrado.
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                <div class="modal-footer border-0 p-4">
+                    <button type="button" class="btn btn-light rounded-pill px-4" data-bs-modal="modal" onclick="modalCursosInteresse.hide()">Cancelar</button>
+                    <button type="submit" class="btn btn-primary rounded-pill px-5 fw-bold shadow-sm">Salvar Interesses</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const modalCursosInteresseElement = document.getElementById('modalCursosInteresse');
+    const modalCursosInteresse = new bootstrap.Modal(modalCursosInteresseElement);
+    const formCursosInteresse = document.getElementById('formCursosInteresse');
+    const modalAlunoNome = document.getElementById('modalAlunoNome');
+    const checkboxes = document.querySelectorAll('#modalCursosInteresse .form-check-input');
+
+    // Event delegation for Edit buttons
+    document.addEventListener('click', function(e) {
+        const btn = e.target.closest('.btn-edit-interesses');
+        if (btn) {
+            const alunoId = btn.getAttribute('data-aluno-id');
+            const alunoNome = btn.getAttribute('data-aluno-nome');
+            const selectedIds = JSON.parse(btn.getAttribute('data-selected-ids') || '[]');
+            
+            modalAlunoNome.innerText = alunoNome;
+            formCursosInteresse.action = `/alunos/${alunoId}/cursos-interesse/`;
+            
+            checkboxes.forEach(cb => {
+                cb.checked = selectedIds.includes(parseInt(cb.value));
+                updateCheckboxStyle(cb);
+            });
+
+            modalCursosInteresse.show();
+        }
+    });
+
+    function updateCheckboxStyle(cb) {
+        if (cb.checked) {
+            cb.parentElement.classList.add('bg-primary-subtle', 'border-primary');
+        } else {
+            cb.parentElement.classList.remove('bg-primary-subtle', 'border-primary');
+        }
+    }
+
+    // Add visual feedback to checkboxes
+    checkboxes.forEach(cb => {
+        cb.addEventListener('change', function() {
+            updateCheckboxStyle(this);
+        });
+    });
+
+    // Initialize Popovers
+    document.addEventListener('DOMContentLoaded', function() {
+        var popoverTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="popover"]'))
+        var popoverList = popoverTriggerList.map(function (popoverTriggerEl) {
+            return new bootstrap.Popover(popoverTriggerEl, {
+                html: true,
+                trigger: 'hover focus'
+            })
+        })
+    });
+</script>
+
+<style>
+    .cursor-pointer { cursor: pointer; }
+    .transition-all { transition: all 0.2s ease; }
+    .hover-shadow-sm:hover { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); transform: translateY(-1px); }
+</style>
 {% endblock %}

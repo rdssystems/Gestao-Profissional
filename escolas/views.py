@@ -92,6 +92,7 @@ class DashboardView(LoginRequiredMixin, TemplateView):
             context['alunos_desistentes'] = inscricao_scope.filter(status='desistente').count()
             context['cursos_ativos'] = curso_scope.filter(status__in=['Aberta', 'Em Andamento']).count()
             context['cursos_concluidos'] = curso_scope.filter(status='Concluído').count()
+            context['inscricoes_hoje'] = inscricao_scope.filter(data_inscricao__date=today).count()
         except:
             context['total_alunos'] = 0
             context['alunos_cursando'] = 0
@@ -99,6 +100,7 @@ class DashboardView(LoginRequiredMixin, TemplateView):
             context['alunos_desistentes'] = 0
             context['cursos_ativos'] = 0
             context['cursos_concluidos'] = 0
+            context['inscricoes_hoje'] = 0
 
         # Histórico Recente
         audit_scope = AuditLog.objects.select_related('usuario', 'usuario__profile', 'content_type').order_by('-data_hora')

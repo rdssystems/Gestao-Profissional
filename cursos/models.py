@@ -80,6 +80,11 @@ class Curso(models.Model):
         return self.inscricao_set.filter(status='cursando').count()
 
     @property
+    def total_concluidos(self):
+        # Considera apenas inscrições concluídas
+        return self.inscricao_set.filter(status='concluido').count()
+
+    @property
     def taxa_ocupacao(self):
         if self.vagas > 0:
             return min(100, int((self.total_inscritos / self.vagas) * 100))

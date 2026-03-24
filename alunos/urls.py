@@ -14,6 +14,7 @@ urlpatterns = [
     path('<int:pk>/excluir/', views.AlunoDeleteView.as_view(), name='excluir_aluno'),
     path('<int:pk>/historico/', views.AlunoHistoricoView.as_view(), name='historico_aluno'),
     path('<int:pk>/observacoes/', views.AlunoUpdateObservacoesView.as_view(), name='aluno_update_observacoes'),
+    path('<int:pk>/cursos-interesse/', views.AlunoUpdateCursosInteresseView.as_view(), name='aluno_update_cursos_interesse'),
     path('upload-csv/', views.AlunoCSVUploadView.as_view(), name='upload_alunos_csv'),
     path('download-modelo-xlsx/', views.download_model_xlsx, name='download_modelo_aluno_xlsx'),
 ]
