@@ -61,6 +61,7 @@
     {% endif %}
 
     {% if perms.cursos.change_curso or user.is_staff or user|has_group:"Coordenador" or user|has_group:"Auxiliar Administrativo" %}
+    {% if curso.status != 'Concluído' and curso.status != 'Arquivado' or user.is_superuser %}
     <div class="btn-group">
         <button type="button" class="btn btn-premium dropdown-toggle" data-bs-toggle="dropdown">
             Alterar Status
@@ -90,8 +91,17 @@
                     <button class="dropdown-item" type="submit">Concluído</button>
                 </form>
             </li>
+            
+            <li>
+                <form method="post" action="{% url 'cursos:alterar_status_curso' pk=curso.pk %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="status" value="Arquivado">
+                    <button class="dropdown-item" type="submit">Arquivado</button>
+                </form>
+            </li>
         </ul>
     </div>
+    {% endif %}
     {% endif %}
 
 

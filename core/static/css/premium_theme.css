@@ -26,6 +26,9 @@
     --bg-slate-soft: #f8fafc;
     --text-slate-soft: #334155;
 
+    --bg-purple-soft: #f5f3ff;
+    --text-purple-soft: #6d28d9;
+
     /* Específicos da Navbar */
     --nav-bg: #ffffff;
     --nav-border: #e2e8f0;
@@ -224,6 +227,11 @@ main {
 .bg-slate-soft {
     background: var(--bg-slate-soft);
     color: var(--text-slate-soft);
+}
+
+.bg-purple-soft {
+    background: var(--bg-purple-soft);
+    color: var(--text-purple-soft);
 }
 
 /* Novas Cores para Tipos de Curso */

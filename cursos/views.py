@@ -135,6 +135,12 @@ class CursoStatusUpdateView(LoginRequiredMixin, StaffRequiredMixin, View):
     def post(self, request, pk):
         curso = get_object_or_404(Curso, pk=pk)
         novo_status = request.POST.get('status')
+        
+        # Bloqueia alteração se o curso estiver Concluído/Arquivado e o usuário não for superusuário
+        if curso.status in ['Concluído', 'Arquivado'] and not request.user.is_superuser:
+            messages.error(request, "Apenas administradores podem alterar o status de um curso concluído ou arquivado.")
+            return redirect('cursos:lista_cursos')
+
         if novo_status in [choice[0] for choice in Curso.STATUS_CHOICES]:
             old_status = curso.status
             curso.status = novo_status
@@ -514,9 +520,10 @@ class FazerChamadaView(LoginRequiredMixin, StaffRequiredMixin, View):
 
         # Se for um novo registro de aula e o formset estiver vazio, pré-popular com os alunos cursando
         if registro_aula is None and not formset.is_bound and not request.POST:
-            inscricoes_cursando = Inscricao.objects.filter(curso=curso, status='cursando').order_by('aluno__nome_completo')
+            # Incluir também desistentes na chamada para manter o registro histórico
+            inscricoes_pode_chamada = Inscricao.objects.filter(curso=curso, status__in=['cursando', 'desistente']).order_by('aluno__nome_completo')
             initial_chamadas = []
-            for inscricao in inscricoes_cursando:
+            for inscricao in inscricoes_pode_chamada:
                 initial_chamadas.append({'inscricao': inscricao, 'status_presenca': 'A'})
             
             # Dinamicamente criar o formset com o número correto de extras para exibir os alunos
@@ -723,8 +730,8 @@ class RelatorioFrequenciaView(LoginRequiredMixin, StaffRequiredMixin, DetailView
         # Buscar todos os registros de aula do curso ordendos por data (antigas para novas)
         registros = RegistroAula.objects.filter(curso=curso).order_by('data_aula')
         
-        # Buscar alunos (foco nos ativos)
-        inscricoes = Inscricao.objects.filter(curso=curso).exclude(status='desistente').order_by('aluno__nome_completo').select_related('aluno')
+        # Buscar alunos (cursando e desistentes) para manter histórico completo
+        inscricoes = Inscricao.objects.filter(curso=curso).order_by('aluno__nome_completo').select_related('aluno')
         
         # Criar matriz de frequência
         # Precisamos de uma lista de registros para o cabeçalho e para iterar na matriz

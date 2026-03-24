@@ -1,0 +1,165 @@
+{% extends "simple_base.html" %}
+
+{% block title %}Histórico de {{ aluno.nome_completo }}{% endblock %}
+
+{% block content %}
+
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
+
+    body {
+        background-color: #f8fafc;
+        font-family: 'Plus Jakarta Sans', sans-serif;
+        color: #1e293b;
+    }
+
+    .info-card {
+        border-radius: 16px;
+        background: white;
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.025);
+        border: 1px solid #e2e8f0;
+        overflow: hidden;
+    }
+
+    .info-card .card-header {
+        background: linear-gradient(135deg, #2563eb, #3b82f6);
+        color: white;
+        padding: 1rem 1.5rem;
+        font-weight: 600;
+        font-size: 1.1rem;
+    }
+
+    .table-card {
+        border-radius: 16px;
+        background: white;
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.025);
+        border: 1px solid #e2e8f0;
+        overflow: hidden;
+    }
+
+    .table-card .card-header {
+        background: #f1f5f9;
+        border-bottom: 1px solid #e2e8f0;
+        padding: 1rem 1.5rem;
+        font-weight: 600;
+        color: #475569;
+    }
+
+    .status-badge {
+        border-radius: 8px;
+        padding: 0.35rem 0.75rem;
+        font-weight: 600;
+        font-size: 0.8rem;
+    }
+</style>
+
+<div class="py-3">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2 class="mb-0 fw-bold">Histórico do Aluno</h2>
+        <button type="button" class="btn btn-secondary btn-sm" onclick="window.parent.closeModal()">Fechar</button>
+    </div>
+
+    <!-- Informações Básicas -->
+    <div class="card info-card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <span><i class="bi bi-person-badge me-2"></i> {{ aluno.nome_completo }}</span>
+            <span class="badge bg-white text-primary rounded-pill px-3">{{ aluno.cpf }}</span>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <p class="mb-1 text-muted small text-uppercase">Escola de Origem</p>
+                    <p class="fw-bold mb-0 text-dark">{{ aluno.escola.nome }}</p>
+                </div>
+                <div class="col-md-6 text-md-end">
+                    <p class="mb-1 text-muted small text-uppercase">Data de Cadastro</p>
+                    <p class="fw-bold mb-0 text-dark">{{ aluno.data_criacao|date:"d/m/Y" }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Observações -->
+    <div class="card table-card mb-4">
+        <div class="card-header">
+            <h6 class="mb-0"><i class="bi bi-journal-text me-2"></i>Observações</h6>
+        </div>
+        <div class="card-body">
+            {% if aluno.observacoes %}
+                <div class="bg-light p-3 rounded-3 border-start border-4 border-primary">
+                    <p class="mb-0 small" style="white-space: pre-wrap;">{{ aluno.observacoes }}</p>
+                </div>
+            {% else %}
+                <p class="text-muted small mb-0">Nenhuma observação registrada.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Cursos Matriculados -->
+    <div class="card table-card shadow-sm border-0 mb-4">
+        <div class="card-header bg-white border-bottom py-3">
+            <h6 class="mb-0 text-primary fw-bold"><i class="bi bi-mortarboard-fill me-2"></i>Cursos Matriculados</h6>
+        </div>
+        <div class="table-responsive">
+            <table class="table align-middle mb-0 small">
+                <thead class="bg-light">
+                    <tr>
+                        <th class="px-3">Curso</th>
+                        <th>Período</th>
+                        <th class="text-center">Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for inscricao in inscricoes %}
+                    <tr>
+                        <td class="px-3">
+                            <div class="fw-bold">{{ inscricao.curso.nome }}</div>
+                            <small class="text-muted">{{ inscricao.curso.escola.nome }}</small>
+                        </td>
+                        <td>
+                            <div>{{ inscricao.curso.data_inicio|date:"d/m/Y" }}</div>
+                            <div class="text-muted">{{ inscricao.curso.data_fim|date:"d/m/Y" }}</div>
+                        </td>
+                        <td class="text-center">
+                            <span class="badge status-badge 
+                                {% if inscricao.status == 'concluido' %}bg-success
+                                {% elif inscricao.status == 'desistente' %}bg-danger
+                                {% else %}bg-info{% endif %}
+                            ">
+                                {{ inscricao.get_status_display }}
+                            </span>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="3" class="text-center py-4 text-muted">Nenhuma inscrição encontrada.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Timeline (Mini) -->
+    <div class="card table-card shadow-sm border-0">
+        <div class="card-header bg-white border-bottom py-3">
+            <h6 class="mb-0 text-primary fw-bold"><i class="bi bi-activity me-2"></i>Timeline de Eventos</h6>
+        </div>
+        <div class="card-body p-3">
+            <ul class="list-unstyled mb-0" style="font-size: 0.85rem;">
+                {% for event in timeline|slice:":5" %}
+                <li class="mb-3 ps-3 border-start border-2 border-primary position-relative">
+                    <div class="small text-muted mb-1">{{ event.data_hora|date:"d/m/Y H:i" }}</div>
+                    <div class="fw-bold">{{ event.status }}</div>
+                    <div class="small text-secondary">Por: {{ event.usuario.username }}</div>
+                </li>
+                {% endfor %}
+                {% if timeline|length > 5 %}
+                <li class="text-center small text-muted">Exibindo os últimos 5 eventos</li>
+                {% endif %}
+            </ul>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

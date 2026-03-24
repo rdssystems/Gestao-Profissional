@@ -156,20 +156,20 @@
                                         <i class="bi bi-calendar3 me-1"></i>Início: {{ curso.data_inicio|date:"d/m/Y" }}
                                     </div>
 
-                                    <!-- Barra de Ocupação -->
-                                    <div class="mt-2" style="max-width: 150px;">
-                                        <div class="d-flex justify-content-between align-items-center mb-1">
-                                            <span style="font-size: 0.7rem;" class="fw-bold text-muted text-uppercase">Finalizado com</span>
-                                            <span style="font-size: 0.7rem;" class="fw-bold text-secondary">{{ curso.total_inscritos }}/{{ curso.vagas }}</span>
-                                        </div>
-                                        <div class="progress" style="height: 4px; border-radius: 10px; background-color: #f1f5f9;">
-                                            <div class="progress-bar bg-secondary" 
-                                                 role="progressbar" 
-                                                 style="width: {{ curso.taxa_ocupacao }}%; border-radius: 10px;" 
-                                                 aria-valuenow="{{ curso.taxa_ocupacao }}" aria-valuemin="0" aria-valuemax="100">
-                                            </div>
-                                        </div>
-                                    </div>
+                                     <!-- Barra de Ocupação -->
+                                     <div class="mt-2" style="max-width: 150px;">
+                                         <div class="d-flex justify-content-between align-items-center mb-1">
+                                             <span style="font-size: 0.7rem;" class="fw-bold text-muted text-uppercase">Concluído por</span>
+                                             <span style="font-size: 0.7rem;" class="fw-bold text-secondary">{{ curso.total_concluidos }}/{{ curso.vagas }}</span>
+                                         </div>
+                                         <div class="progress" style="height: 4px; border-radius: 10px; background-color: #f1f5f9;">
+                                             <div class="progress-bar bg-success" 
+                                                  role="progressbar" 
+                                                  style="width: {% if curso.vagas > 0 %}{% widthratio curso.total_concluidos curso.vagas 100 %}{% else %}0{% endif %}%; border-radius: 10px;" 
+                                                  aria-valuenow="{% if curso.vagas > 0 %}{% widthratio curso.total_concluidos curso.vagas 100 %}{% else %}0{% endif %}" aria-valuemin="0" aria-valuemax="100">
+                                             </div>
+                                         </div>
+                                     </div>
                                 </td>
                                 <td>{{ curso.escola.nome }}</td>
                                 <td>{{ curso.tipo_curso.nome }}</td>
