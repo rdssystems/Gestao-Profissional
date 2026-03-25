@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Lista de Concluintes - {{ curso.nome }}</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #333; margin: 0; padding: 20px; }
+        .header { text-align: center; border-bottom: 2px solid #4C7DF0; padding-bottom: 15px; margin-bottom: 30px; }
+        .header h1 { margin: 5px 0; color: #1a1a1a; font-size: 24px; }
+        .header p { margin: 2px 0; color: #666; font-size: 14px; }
+        
+        .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 30px; background: #f9f9f9; padding: 15px; border-radius: 8px; }
+        .info-item { font-size: 13px; }
+        .info-item strong { color: #555; }
+
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th { background-color: #f2f4f8; text-align: left; padding: 10px; border-bottom: 2px solid #dee2e6; font-size: 12px; text-transform: uppercase; }
+        td { padding: 8px 10px; border-bottom: 1px solid #eee; font-size: 13px; }
+        tr:nth-child(even) { background-color: #fafafa; }
+
+        .footer { margin-top: 50px; text-align: center; font-size: 11px; color: #888; border-top: 1px solid #eee; padding-top: 20px; }
+        
+        @media print {
+            .no-print { display: none; }
+            body { padding: 0; }
+            @page { margin: 1.5cm; }
+        }
+
+        .btn-print {
+            position: fixed; top: 20px; right: 20px;
+            background: #4C7DF0; color: white; border: none; padding: 10px 20px;
+            border-radius: 5px; cursor: pointer; font-weight: bold;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body>
+
+    <button class="btn-print no-print" onclick="window.print()">
+        Imprimir / Salvar PDF
+    </button>
+
+    <div class="header">
+        <h1>LISTA OFICIAL DE CONCLUINTES</h1>
+        <p>Diretoria de Qualificação Profissional</p>
+    </div>
+
+    <div class="info-grid">
+        <div class="info-item"><strong>Curso:</strong> {{ curso.nome }}</div>
+        <div class="info-item"><strong>Unidade:</strong> {{ curso.escola.nome }}</div>
+        <div class="info-item"><strong>Período:</strong> {{ curso.data_inicio|date:"d/m/Y" }} a {{ curso.data_fim|date:"d/m/Y" }}</div>
+        <div class="info-item"><strong>Professor:</strong> {{ curso.nome_professor|default:"Não informado" }}</div>
+        <div class="info-item"><strong>Total de Concluintes:</strong> {{ concluintes.count }}</div>
+        <div class="info-item"><strong>Carga Horária:</strong> {{ curso.carga_horaria }} horas</div>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th style="width: 40px;">#</th>
+                <th>Candidato / Identificação</th>
+                <th style="width: 250px;">Assinatura do Aluno</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for inscricao in concluintes %}
+            <tr>
+                <td style="height: 35px;">{{ forloop.counter }}</td>
+                <td>
+                    <div style="font-weight: bold;">{{ inscricao.aluno.nome_completo }}</div>
+                    <div style="font-size: 11px; color: #666;">CPF: {{ inscricao.aluno.cpf_formatado|default:inscricao.aluno.cpf }}</div>
+                </td>
+                <td style="border-bottom: 1px solid #999;"></td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="3" style="text-align: center; padding: 30px;">Nenhum aluno concluinte registrado.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="footer">
+        Documento gerado eletronicamente em {% now "d/m/Y H:i" %}
+    </div>
+
+    <script>
+        // Auto trigger print in some contexts if desired, but button is safer
+        // window.onload = () => { if(window.location.search.includes('auto=1')) window.print(); }
+    </script>
+</body>
+</html>

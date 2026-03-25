@@ -288,9 +288,11 @@
                     {% endif %}
 
                     {% if user.is_superuser %}
-
-
-
+                    <li class="nav-item">
+                        {% url 'escolas:concluintes_global' as concluintes_url %}
+                        <a class="nav-link {% if request.path == concluintes_url %}active-nav-link{% endif %}"
+                            href="{{ concluintes_url }}">Concluintes</a>
+                    </li>
                     {% endif %}
                 </ul>
 

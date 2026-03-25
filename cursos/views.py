@@ -172,6 +172,41 @@ class CursoConcluintesView(LoginRequiredMixin, StaffRequiredMixin, DetailView):
         context['concluintes'] = self.object.inscricao_set.filter(status='concluido').select_related('aluno').order_by('aluno__nome_completo')
         return context
 
+    def get_template_names(self):
+        if self.request.GET.get('print') == '1':
+            return ['cursos/curso_concluintes_print.html']
+        if self.request.GET.get('popup') == '1':
+            return ['cursos/curso_concluintes_modal.html']
+        return [self.template_name]
+
+class CursoConcluintesXLSXView(LoginRequiredMixin, StaffRequiredMixin, View):
+    def get(self, request, pk):
+        curso = get_object_or_404(Curso, pk=pk)
+        concluintes = curso.inscricao_set.filter(status='concluido').select_related('aluno').order_by('aluno__nome_completo')
+        
+        # Preparar dados para o DataFrame
+        data = []
+        for i, insc in enumerate(concluintes, 1):
+            data.append({
+                '#': i,
+                'Nome do Aluno': insc.aluno.nome_completo,
+                'CPF': insc.aluno.cpf,
+                'Escola': curso.escola.nome,
+                'Curso': curso.nome,
+                'Data Fim': curso.data_fim.strftime('%d/%m/%Y')
+            })
+            
+        df = pd.DataFrame(data)
+        
+        # Gerar resposta Excel
+        response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        response['Content-Disposition'] = f'attachment; filename="concluintes_{curso.nome}_{curso.data_fim}.xlsx"'
+        
+        with pd.ExcelWriter(response, engine='openpyxl') as writer:
+            df.to_excel(writer, index=False, sheet_name='Concluintes')
+            
+        return response
+
 class CursoImprimirListaView(LoginRequiredMixin, StaffRequiredMixin, DetailView):
     model = Curso
     template_name = 'cursos/curso_imprimir_lista.html'
@@ -209,7 +244,7 @@ class TipoCursoCreateView(LoginRequiredMixin, StaffRequiredMixin, AuditLogMixin,
     model = TipoCurso
     form_class = TipoCursoForm
     template_name = 'cursos/tipocurso_form.html'
-    success_url = reverse_lazy('cursos:lista_cursos')
+    success_url = reverse_lazy('cursos:lista_tipos_curso')
 
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
@@ -225,7 +260,7 @@ class TipoCursoUpdateView(LoginRequiredMixin, StaffRequiredMixin, AuditLogMixin,
     model = TipoCurso
     form_class = TipoCursoForm
     template_name = 'cursos/tipocurso_form.html'
-    success_url = reverse_lazy('cursos:lista_cursos')
+    success_url = reverse_lazy('cursos:lista_tipos_curso')
 
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
@@ -235,7 +270,7 @@ class TipoCursoUpdateView(LoginRequiredMixin, StaffRequiredMixin, AuditLogMixin,
 class TipoCursoDeleteView(LoginRequiredMixin, StaffRequiredMixin, AuditLogMixin, DeleteView):
     model = TipoCurso
     template_name = 'cursos/tipocurso_confirm_delete.html'
-    success_url = reverse_lazy('cursos:lista_cursos')
+    success_url = reverse_lazy('cursos:lista_tipos_curso')
 
 # Views para Inscrição
 class InscricaoCreateView(AuditLogMixin, LoginRequiredMixin, StaffRequiredMixin, CreateView):
@@ -507,47 +542,51 @@ class FazerChamadaView(LoginRequiredMixin, StaffRequiredMixin, View):
             else:
                 form = RegistroAulaForm(initial={'curso': curso, 'data_aula': date.today()}, curso=curso)
 
-        # Filtrar inscrições ativas para o curso
-        # Não precisamos mais do queryset de inscrições aqui diretamente, o formset já fará isso
-        # ou se formarmos o formset com base em inscricoes, ele as usará.
+        # Definir as inscrições que PODEM estar na chamada (ativos e desistentes)
+        inscricoes_elegiveis = Inscricao.objects.filter(curso=curso, status__in=['cursando', 'desistente']).order_by('aluno__nome_completo')
         
-        # Definir formset inicial (para registros existentes ou vazio)
-        # IMPORTANTE: Usar sempre prefix='chamada' para consistência com o POST e o formulário dinâmico
+        # 1. Obter inscrições que JÁ têm registro nesta aula
+        inscricoes_com_registro = []
         if registro_aula:
-             formset = ChamadaFormSet(instance=registro_aula, prefix='chamada')
+            inscricoes_com_registro = Chamada.objects.filter(registro_aula=registro_aula).values_list('inscricao_id', flat=True)
+        
+        # 2. Identificar inscrições faltantes (estão no curso mas não no registro desta aula)
+        inscricoes_faltantes = inscricoes_elegiveis.exclude(id__in=inscricoes_com_registro)
+        
+        initial_faltantes = []
+        for insc in inscricoes_faltantes:
+            initial_faltantes.append({'inscricao': insc, 'status_presenca': 'A'})
+            
+        # 3. Criar FormSet dinâmico
+        # Se existem faltantes, precisamos de 'extra' forms para eles
+        num_faltantes = len(initial_faltantes)
+        
+        ChamadaDynamicFormSet = inlineformset_factory(
+            RegistroAula, 
+            Chamada, 
+            form=ChamadaForm, 
+            extra=num_faltantes, 
+            can_delete=False, 
+            fields=['inscricao', 'status_presenca']
+        )
+        
+        if registro_aula:
+            formset = ChamadaDynamicFormSet(instance=registro_aula, initial=initial_faltantes, prefix='chamada')
         else:
-             formset = ChamadaFormSet(instance=None, prefix='chamada') # Inicializa vazio se não houver registro, será substituído abaixo se for criação
+            formset = ChamadaDynamicFormSet(instance=None, initial=initial_faltantes, prefix='chamada')
 
-        # Se for um novo registro de aula e o formset estiver vazio, pré-popular com os alunos cursando
-        if registro_aula is None and not formset.is_bound and not request.POST:
-            # Incluir também desistentes na chamada para manter o registro histórico
-            inscricoes_pode_chamada = Inscricao.objects.filter(curso=curso, status__in=['cursando', 'desistente']).order_by('aluno__nome_completo')
-            initial_chamadas = []
-            for inscricao in inscricoes_pode_chamada:
-                initial_chamadas.append({'inscricao': inscricao, 'status_presenca': 'A'})
+        # 4. Garantir que aluno_nome é exibido para todos os forms (existentes e extras)
+        for f in formset:
+            insc_obj = None
+            if f.instance and f.instance.pk and hasattr(f.instance, 'inscricao'):
+                insc_obj = f.instance.inscricao
+            elif f.initial and f.initial.get('inscricao'):
+                insc_obj = f.initial.get('inscricao')
             
-            # Dinamicamente criar o formset com o número correto de extras para exibir os alunos
-            ChamadaFormSetDynamic = inlineformset_factory(
-                RegistroAula, 
-                Chamada, 
-                form=ChamadaForm, 
-                extra=len(initial_chamadas), 
-                can_delete=False, 
-                fields=['inscricao', 'status_presenca']
-            )
-            formset = ChamadaFormSetDynamic(initial=initial_chamadas, prefix='chamada')
-            
-            # Para o ChamadaForm, precisamos garantir que o aluno_nome é exibido mesmo no initial
-            for f in formset:
-                if f.initial and f.initial.get('inscricao'):
-                    f.fields['aluno_nome'].initial = f.initial['inscricao'].aluno.nome_completo
-        else:
-             # Para chamadas existentes ou formset após POST, garantir que aluno_nome é exibido
-            for f in formset:
-                if f.instance.pk: # Se é uma instância existente de Chamada
-                    f.fields['aluno_nome'].initial = f.instance.inscricao.aluno.nome_completo
-                elif f.initial and f.initial.get('inscricao'): # Para forms com initial data após POST inválido
-                    f.fields['aluno_nome'].initial = f.initial['inscricao'].aluno.nome_completo
+            if insc_obj:
+                # Verificamos se f.fields['aluno_nome'] existe (pode ser None no management form do inline?)
+                if 'aluno_nome' in f.fields:
+                    f.fields['aluno_nome'].initial = insc_obj.aluno.nome_completo
 
 
         context = {
@@ -670,15 +709,24 @@ class FazerChamadaView(LoginRequiredMixin, StaffRequiredMixin, View):
 
             messages.error(request, "Erro na submissão: " + " | ".join(error_list))
             
-            # Repopular nomes para evitar 'None' no template
+            # Repopular nomes e inscrições para evitar VariableDoesNotExist no template
             for i, f in enumerate(formset):
                 try:
-                    insc_id = request.POST.get(f'chamada-{i}-inscricao') or (f.initial.get('inscricao').pk if f.initial and f.initial.get('inscricao') else None)
+                    # Tenta obter o ID da inscrição do POST ou do initial
+                    insc_id = request.POST.get(f'chamada-{i}-inscricao')
+                    if not insc_id and f.initial:
+                        insc_id = f.initial.get('inscricao')
+                    
                     if insc_id:
                         insc_obj = Inscricao.objects.select_related('aluno').filter(pk=insc_id).first()
                         if insc_obj:
+                            # Adiciona ao initial para que o template {% with inscricao=... %} funcione
+                            if f.initial is None: f.initial = {}
+                            f.initial['inscricao'] = insc_obj
+                            # Garante que o campo de nome também esteja preenchido
                             f.fields['aluno_nome'].initial = insc_obj.aluno.nome_completo
-                except: pass
+                except Exception as e:
+                    print(f"Erro ao repopular form #{i}: {e}")
 
             context = {
                 'curso': curso,

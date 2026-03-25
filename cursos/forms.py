@@ -91,13 +91,6 @@ class RegistroAulaForm(forms.ModelForm):
             from datetime import date
             self.initial['data_aula'] = date.today()
 
-    def clean_data_aula(self):
-        data_aula = self.cleaned_data.get('data_aula')
-        if self.curso and data_aula:
-            if data_aula < self.curso.data_inicio or data_aula > self.curso.data_fim:
-                raise forms.ValidationError(f"A data da aula deve estar entre o início ({self.curso.data_inicio.strftime('%d/%m/%Y')}) e fim ({self.curso.data_fim.strftime('%d/%m/%Y')}) do curso.")
-        return data_aula
-
 class ChamadaForm(forms.ModelForm):
     class Meta:
         model = Chamada

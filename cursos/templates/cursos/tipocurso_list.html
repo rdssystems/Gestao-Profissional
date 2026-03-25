@@ -14,11 +14,16 @@
             <p class="text-muted mb-0">Categorias utilizadas para organização dos cursos</p>
         </div>
 
-        {% if perms.cursos.add_tipocurso or user.is_staff or user|has_group:"Coordenador" or user|has_group:"Auxiliar Administrativo" %}
-        <a href="{% url 'cursos:criar_tipo_curso' %}" class="btn btn-premium fw-semibold">
-            Novo Tipo
-        </a>
-        {% endif %}
+        <div class="d-flex gap-2 flex-wrap">
+            <a href="{% url 'cursos:lista_cursos' %}" class="btn btn-premium-outline fw-semibold">
+                <i class="bi bi-arrow-left me-1"></i> Voltar para Cursos
+            </a>
+            {% if perms.cursos.add_tipocurso or user.is_staff or user|has_group:"Coordenador" or user|has_group:"Auxiliar Administrativo" %}
+            <a href="{% url 'cursos:criar_tipo_curso' %}" class="btn btn-premium fw-semibold">
+                <i class="bi bi-plus-lg me-1"></i> Novo Tipo
+            </a>
+            {% endif %}
+        </div>
     </div>
 
     <!-- Lista -->

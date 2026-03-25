@@ -118,6 +118,11 @@
                                             title="Histórico de Observações">
                                             <i class="bi bi-journal-text"></i>
                                         </a>
+                                        <a href="{% url 'cursos:relatorio_frequencia' curso_pk=curso.pk %}"
+                                            class="btn btn-action-premium text-white" style="background-color: #f59e0b;"
+                                            title="Lista de Presença Completa">
+                                            <i class="bi bi-table"></i>
+                                        </a>
                                     </div>
                                 </td>
                             </tr>
@@ -203,6 +208,11 @@
                                         class="btn btn-action-premium text-white"
                                         style="background-color: #334155;" title="Lista de Concluintes">
                                         <i class="bi bi-person-check"></i>
+                                    </a>
+                                    <a href="{% url 'cursos:relatorio_frequencia' curso_pk=curso.pk %}"
+                                        class="btn btn-action-premium text-white" style="background-color: #f59e0b;"
+                                        title="Lista de Presença Completa">
+                                        <i class="bi bi-table"></i>
                                     </a>
                                 </td>
                             </tr>
