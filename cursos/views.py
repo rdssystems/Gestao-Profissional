@@ -1,6 +1,7 @@
 import csv
 import io
 import pandas as pd
+from django.db.models import Count, Prefetch, Exists, OuterRef # Import Count
 from datetime import date, time, datetime # Import datetime and time
 from django.http import HttpResponse
 
@@ -232,13 +233,15 @@ class TipoCursoListView(LoginRequiredMixin, StaffRequiredMixin, ListView):
 
     def get_queryset(self):
         user = self.request.user
+        qs = TipoCurso.objects.all().annotate(num_interessados=Count('aluno'))
+        
         if user.is_superuser:
-            return TipoCurso.objects.all()
+            return qs
         
         if hasattr(user, 'profile') and user.profile.escola:
-            return TipoCurso.objects.filter(escola=user.profile.escola)
+            return qs.filter(escola=user.profile.escola)
         
-        return TipoCurso.objects.none()
+        return qs.none()
 
 class TipoCursoCreateView(LoginRequiredMixin, StaffRequiredMixin, AuditLogMixin, CreateView):
     model = TipoCurso
@@ -369,6 +372,11 @@ class MatriculaView(LoginRequiredMixin, StaffRequiredMixin, ListView):
         
         qs = alunos_interessados.exclude(id__in=ids_alunos_ja_inscritos).order_by('-score_total')
         
+        # Filtra por escola, se o usuário não for superuser
+        user = self.request.user
+        if not user.is_superuser and hasattr(user, 'profile') and user.profile.escola:
+            return qs.filter(escola=user.profile.escola)
+            
         return qs
 
     def get_context_data(self, **kwargs):
