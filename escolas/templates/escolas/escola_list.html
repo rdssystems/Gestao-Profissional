@@ -18,9 +18,6 @@
         </div>
 
         <div class="d-flex gap-2 align-items-center">
-            <button type="button" class="btn btn-success btn-app shadow-sm d-flex align-items-center" onclick="copySchoolsToWhatsapp()">
-                <i class="bi bi-whatsapp me-2 fs-5"></i> Copiar para WhatsApp
-            </button>
             {% if user.is_superuser %}
                 <a href="{% url 'escolas:criar_escola' %}"
                 class="btn btn-primary btn-app fw-semibold shadow-sm px-4 d-flex align-items-center">
@@ -58,11 +55,9 @@
                 <table class="table table-hover align-middle mb-0">
                     <thead class="table-light">
                         <tr class="text-secondary small text-uppercase">
-                            <th>Nome</th>
+                            <th>Escola</th>
                             <th>Endereço</th>
-                            <th>Email</th>
                             <th>Telefone</th>
-                            <th>Coordenador</th>
                             <th class="text-center">Ações</th>
                         </tr>
                     </thead>
@@ -70,48 +65,42 @@
 
                         {% for escola in escolas %}
                             <tr>
-                                <td class="fw-semibold">
+                                <td class="fw-bold text-primary">
                                     {{ escola.nome }}
                                 </td>
-                                <td>{{ escola.endereco }}</td>
-                                <td>{{ escola.email }}</td>
+                                <td class="small">{{ escola.endereco }}</td>
                                 <td>{{ escola.get_telefone_formatado }}</td>
-                                <td>
-                                    {% if escola.coordenador_user %}
-                                        {{ escola.coordenador_user.get_full_name|default:escola.coordenador_user.username }}
-                                    {% else %}
-                                        <span class="text-muted">
-                                            Nenhum Coordenador
-                                        </span>
-                                    {% endif %}
-                                </td>
 
-                                <!-- AÇÕES COM TEXTO -->
                                 <td class="text-center">
-                                    {% if user.is_superuser %}
-                                        <a href="{% url 'escolas:detalhe_escola' pk=escola.pk %}"
-                                           class="btn btn-info btn-sm text-white me-1">
-                                            <i class="fa fa-eye me-1"></i>
-                                            Ver
-                                        </a>
+                                    <div class="d-flex justify-content-center gap-1">
+                                        {% if user.is_superuser %}
+                                            <a href="{% url 'escolas:detalhe_escola' pk=escola.pk %}"
+                                               class="btn btn-sm btn-outline-info" title="Ver Detalhes">
+                                                <i class="bi bi-eye"></i>
+                                            </a>
 
-                                        <a href="{% url 'escolas:editar_escola' pk=escola.pk %}"
-                                           class="btn btn-warning btn-sm text-white me-1">
-                                            <i class="fa fa-pencil-alt me-1"></i>
-                                            Editar
-                                        </a>
+                                            <a href="{% url 'escolas:editar_escola' pk=escola.pk %}"
+                                               class="btn btn-sm btn-outline-warning" title="Editar">
+                                                <i class="bi bi-pencil"></i>
+                                            </a>
 
-                                        <a href="{% url 'escolas:excluir_escola' pk=escola.pk %}"
-                                           class="btn btn-danger btn-sm text-white">
-                                            <i class="fa fa-trash me-1"></i>
-                                            Excluir
-                                        </a>
-                                    {% endif %}
+                                            <a href="{% url 'escolas:excluir_escola' pk=escola.pk %}"
+                                               class="btn btn-sm btn-outline-danger" title="Excluir">
+                                                <i class="bi bi-trash"></i>
+                                            </a>
+                                        {% else %}
+                                            <button type="button" 
+                                                    class="btn btn-sm btn-outline-success d-flex align-items-center px-3"
+                                                    onclick="copySingleSchool('{{ escola.nome|escapejs }}', '{{ escola.endereco|escapejs }}', '{{ escola.get_telefone_formatado|escapejs }}', this)">
+                                                <i class="bi bi-clipboard me-1"></i> Copiar
+                                            </button>
+                                        {% endif %}
+                                    </div>
                                 </td>
                             </tr>
                         {% empty %}
                             <tr>
-                                <td colspan="6" class="text-center text-muted py-4">
+                                <td colspan="4" class="text-center text-muted py-4">
                                     Nenhuma escola cadastrada.
                                 </td>
                             </tr>
@@ -125,82 +114,50 @@
 
 </div>
 
-<!-- Área oculta com o texto formatado para WhatsApp -->
-<div id="whatsapp-text-content" style="display: none;">
-*🏫 LISTA DE ESCOLAS CADASTRADAS 🏫*
-
-{% for escola in escolas %}
-📍 *{{ escola.nome|upper }}*
-🏠 *Endereço:* {{ escola.endereco }}
-📞 *Telefone:* {{ escola.get_telefone_formatado }}
-🟢 *WhatsApp:* {{ escola.get_whatsapp_formatado|default:"Não informado" }}
-👤 *Coord:* {% if escola.coordenador_user %}{{ escola.coordenador_user.get_full_name|default:escola.coordenador_user.username }}{% else %}Nenhum{% endif %}
-
----
-{% endfor %}
-_Mensagem gerada pelo sistema de Gestão_
-</div>
-
 <script>
-function copySchoolsToWhatsapp() {
-    const textElement = document.getElementById('whatsapp-text-content');
-    // Prepara o texto removendo espaços extras de identação do Django
-    let text = textElement.innerText.trim().replace(/\n\s+\n/g, '\n\n');
+function copySingleSchool(nome, endereco, telefone, btn) {
+    // Formato solicitado: *NOME* \n _Endereço:_ endereco \n _Telefone:_ telefone
+    const text = `*${nome.toUpperCase()}*\n_Endereço:_ ${endereco}\n_Telefone:_ ${telefone}`;
     
-    // Tenta primeiro o método moderno
     if (navigator.clipboard && window.isSecureContext) {
         navigator.clipboard.writeText(text).then(() => {
-            showSuccessFeedback();
+            showCopyFeedback(btn);
         }).catch(err => {
-            console.error('Erro Navigator:', err);
-            fallbackCopyTextToClipboard(text);
+            console.error('Erro Clipboard:', err);
+            fallbackCopy(text, btn);
         });
     } else {
-        // Fallback para navegadores antigos ou conexões não seguras (HTTP)
-        fallbackCopyTextToClipboard(text);
+        fallbackCopy(text, btn);
     }
 }
 
-function fallbackCopyTextToClipboard(text) {
+function fallbackCopy(text, btn) {
     const textArea = document.createElement("textarea");
     textArea.value = text;
-    
-    // Garante que não apareça na tela
-    textArea.style.top = "0";
-    textArea.style.left = "0";
     textArea.style.position = "fixed";
     textArea.style.opacity = "0";
-    
     document.body.appendChild(textArea);
     textArea.focus();
     textArea.select();
-
     try {
-        const successful = document.execCommand('copy');
-        if (successful) {
-            showSuccessFeedback();
-        } else {
-            alert('Não foi possível copiar automaticamente. Por favor, selecione o texto manualmente.');
-        }
+        if (document.execCommand('copy')) showCopyFeedback(btn);
     } catch (err) {
-        alert('Erro ao copiar texto. Por favor, tente selecionar manualmente.');
         console.error('Fallback Error:', err);
     }
-
     document.body.removeChild(textArea);
 }
 
-function showSuccessFeedback() {
-    const btn = document.querySelector('button[onclick="copySchoolsToWhatsapp()"]');
+function showCopyFeedback(btn) {
     const originalHtml = btn.innerHTML;
-    
-    btn.innerHTML = '<i class="bi bi-check2-all me-2"></i> Copiado!';
-    btn.classList.replace('btn-success', 'btn-outline-success');
+    btn.innerHTML = '<i class="bi bi-check2"></i> Copiado!';
+    btn.classList.replace('btn-outline-success', 'btn-success');
+    btn.classList.add('text-white');
     
     setTimeout(() => {
         btn.innerHTML = originalHtml;
-        btn.classList.replace('btn-outline-success', 'btn-success');
-    }, 3000);
+        btn.classList.replace('btn-success', 'btn-outline-success');
+        btn.classList.remove('text-white');
+    }, 2000);
 }
 </script>
 {% endblock %}

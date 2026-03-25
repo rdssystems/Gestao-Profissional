@@ -1,3 +1,4 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
@@ -41,7 +42,10 @@
     </button>
 
     <div class="header">
-        <h1>LISTA OFICIAL DE CONCLUINTES</h1>
+        <div style="margin-bottom: 10px;">
+            <img src="{% static 'core/logopmu.png' %}" alt="Logo PMU" style="height: 65px; width: auto;">
+        </div>
+        <h1>LISTA DE CONCLUINTES - {{ curso.escola.nome|upper }}</h1>
         <p>Diretoria de Qualificação Profissional</p>
     </div>
 
@@ -57,18 +61,23 @@
     <table>
         <thead>
             <tr>
-                <th style="width: 40px;">#</th>
-                <th>Candidato / Identificação</th>
-                <th style="width: 250px;">Assinatura do Aluno</th>
+                <th style="width: 25px;">#</th>
+                <th>ALUNO</th>
+                <th style="width: 250px;">ASSINATURA DO ALUNO</th>
             </tr>
         </thead>
         <tbody>
             {% for inscricao in concluintes %}
             <tr>
-                <td style="height: 35px;">{{ forloop.counter }}</td>
+                <td style="height: 35px; width: 25px;">{{ forloop.counter }}</td>
                 <td>
                     <div style="font-weight: bold;">{{ inscricao.aluno.nome_completo }}</div>
-                    <div style="font-size: 11px; color: #666;">CPF: {{ inscricao.aluno.cpf_formatado|default:inscricao.aluno.cpf }}</div>
+                    <div style="font-size: 11px; color: #666;">
+                        CPF: {{ inscricao.aluno.cpf_formatado|default:inscricao.aluno.cpf }} 
+                        {% with tel=inscricao.aluno.telefone_principal|default:inscricao.aluno.whatsapp %}
+                            {% if tel %} | Tel: {{ tel }}{% endif %}
+                        {% endwith %}
+                    </div>
                 </td>
                 <td style="border-bottom: 1px solid #999;"></td>
             </tr>
@@ -81,7 +90,7 @@
     </table>
 
     <div class="footer">
-        Documento gerado eletronicamente em {% now "d/m/Y H:i" %}
+        Documento gerado pelo sistema de Gestão Qualificação Profissional em {% now "d/m/Y H:i" %}
     </div>
 
     <script>
