@@ -19,8 +19,8 @@ def calendar_view(request):
     curso_nome_filter = request.GET.get('curso_nome', '')
     escola_nome_filter = request.GET.get('escola_nome', '')
 
-    # Base query for courses
-    cursos_qs = Curso.objects.all().exclude(status='Arquivado').order_by('data_inicio', 'horario')
+    # Base query for courses (Apenas 'Aberta' e 'Em Andamento' - exclui 'Concluído' e 'Arquivado')
+    cursos_qs = Curso.objects.filter(status__in=['Aberta', 'Em Andamento']).order_by('data_inicio', 'horario')
     
     if curso_nome_filter:
         cursos_qs = cursos_qs.filter(nome__icontains=curso_nome_filter)
@@ -50,7 +50,7 @@ def calendar_view(request):
 @login_required
 def get_course_events(request):
     events = []
-    for curso in Curso.objects.all():
+    for curso in Curso.objects.filter(status__in=['Aberta', 'Em Andamento']):
         # Convertendo data_inicio e data_fim para string no formato ISO 8601
         # e adicionando o horário se disponível
         start_datetime = f"{curso.data_inicio.isoformat()}"

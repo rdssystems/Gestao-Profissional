@@ -49,24 +49,27 @@
     <!-- Sugestões -->
     {% if selected_curso %}
     <div class="card border-0 shadow-sm rounded-4 mb-4">
-        <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
-            <div>
-                <h5 class="fw-bold mb-0 text-primary">
-                    Sugestões de Matrícula
-                </h5>
-                <small class="text-muted">
-                    Interessados em {{ selected_curso.tipo_curso.nome }}
-                </small>
-             <div class="d-flex gap-2 flex-wrap">
-                <button type="button" class="btn btn-outline-primary btn-sm fw-semibold" onclick="selectTop(20)">
-                    Selecionar Top 20
-                </button>
+        <div class="card-header bg-white border-bottom py-3">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <div>
+                    <h5 class="fw-bold mb-0 text-primary">
+                        Sugestões de Matrícula
+                    </h5>
+                    <small class="text-muted">
+                        Interessados em {{ selected_curso.tipo_curso.nome }}
+                    </small>
+                </div>
+                <div class="d-flex gap-2 flex-wrap">
+                    <button type="button" class="btn btn-outline-primary btn-sm fw-semibold" onclick="selectTop(20)">
+                        Selecionar Top 20
+                    </button>
 
-                <button type="button" class="btn btn-info btn-sm fw-semibold text-white"
-                    onclick="printSelectedStudents()">
-                    <i class="bi bi-printer me-1"></i>
-                    Imprimir Lista
-                </button>
+                    <button type="button" class="btn btn-info btn-sm fw-semibold text-white"
+                        onclick="printSelectedStudents()">
+                        <i class="bi bi-printer me-1"></i>
+                        Imprimir Lista
+                    </button>
+                </div>
             </div>
         </div>
 
