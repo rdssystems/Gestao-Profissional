@@ -9,7 +9,7 @@ from django.views.generic import ListView, DetailView, View
 from django.views.generic.edit import CreateView, UpdateView, DeleteView
 from django.views.generic.detail import SingleObjectMixin
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin, PermissionRequiredMixin # Import UserPassesTestMixin
-from django.urls import reverse_lazy
+from django.urls import reverse, reverse_lazy
 from django.shortcuts import get_object_or_404, redirect, render # Adicionar render aqui
 from django.contrib import messages
 from django.core.exceptions import PermissionDenied, ValidationError 
@@ -406,7 +406,7 @@ class MatricularAlunoDiretoView(LoginRequiredMixin, StaffRequiredMixin, View):
         curso = get_object_or_404(Curso, pk=curso_id)
 
         # URL de redirecionamento em caso de sucesso ou erro
-        redirect_url = reverse_lazy('cursos:matricula') + f'?curso_id={curso_id}'
+        redirect_url = reverse('cursos:matricula') + f'?curso_id={curso_id}'
 
         
 
@@ -468,7 +468,7 @@ class CancelarMatriculaDiretoView(LoginRequiredMixin, StaffRequiredMixin, View):
         if not request.user.is_superuser:
             if hasattr(request.user, 'profile') and request.user.profile.escola != inscricao.curso.escola:
                 messages.error(request, "Você não tem permissão para cancelar matrículas desta escola.")
-                return redirect(reverse_lazy('cursos:matricula') + f'?curso_id={curso_id}')
+                return redirect(reverse('cursos:matricula') + f'?curso_id={curso_id}')
 
         aluno_nome = inscricao.aluno.nome_completo
         curso_nome = inscricao.curso.nome
@@ -492,7 +492,7 @@ class CancelarMatriculaDiretoView(LoginRequiredMixin, StaffRequiredMixin, View):
             print(f"Erro log cancelamento: {e}")
         
         messages.success(request, f"Matrícula de {aluno_nome} cancelada com sucesso.")
-        return redirect(reverse_lazy('cursos:matricula') + f'?curso_id={curso_id}')
+        return redirect(reverse('cursos:matricula') + f'?curso_id={curso_id}')
 
 class InscricaoDeleteView(AuditLogMixin, LoginRequiredMixin, StaffRequiredMixin, DeleteView):
     model = Inscricao

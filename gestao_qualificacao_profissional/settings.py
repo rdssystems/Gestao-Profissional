@@ -225,4 +225,12 @@ DBBACKUP_CLEANUP_KEEP_MEDIA = 10
 # EMAIL_HOST_USER = 'seu_email@outlook.com'
 # EMAIL_HOST_PASSWORD = 'sua_senha'
 
-AUTHENTICATION_FORM = 'usuarios.forms.CustomAuthenticationForm'
+from django.contrib.messages import constants as messages_constants
+
+MESSAGE_TAGS = {
+    messages_constants.DEBUG: 'secondary',
+    messages_constants.INFO: 'info',
+    messages_constants.SUCCESS: 'success',
+    messages_constants.WARNING: 'warning',
+    messages_constants.ERROR: 'danger',
+}
