@@ -1,4 +1,4 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required, user_passes_test
 from cursos.models import Curso, TipoCurso, Inscricao
 from alunos.models import Aluno
@@ -9,9 +9,54 @@ from datetime import timedelta, date, time
 from django.db.models import Prefetch, Exists, OuterRef # Import Exists and OuterRef
 from django.views.generic import ListView
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
-from core.models import AuditLog
+from core.models import AuditLog, Aviso, Profile
 from django.contrib.auth.models import User
 from django.contrib import messages # Adicionado o import para messages
+
+# ... (omitted calendar_view, get_course_events, sobre_view, limpar_agenda_cursos_view, AuditLogListView)
+
+@login_required
+def marcar_aviso_lido(request, aviso_pk):
+    aviso = get_object_or_404(Aviso, pk=aviso_pk)
+    aviso.visualizado_por.add(request.user)
+    return JsonResponse({'status': 'ok'})
+
+@login_required
+@user_passes_test(lambda u: u.is_superuser) # Superuser can manage, but link only shows for 'developer'
+def gerenciar_avisos(request):
+    # Verificar se é o desenvolvedor (pode ser pelo flag Profile.is_developer)
+    if not hasattr(request.user, 'profile') or not request.user.profile.is_developer:
+        messages.error(request, "Acesso restrito ao desenvolvedor.")
+        return redirect('escolas:dashboard')
+
+    if request.method == 'POST':
+        titulo = request.POST.get('titulo')
+        conteudo = request.POST.get('conteudo')
+        if titulo and conteudo:
+            Aviso.objects.create(titulo=titulo, conteudo=conteudo)
+            messages.success(request, "Atualização postada com sucesso!")
+            return redirect('core:gerenciar_avisos')
+    
+    avisos = Aviso.objects.all()
+    return render(request, 'core/gerenciar_avisos.html', {'avisos': avisos})
+
+@login_required
+def ativar_dev_view(request):
+    """View secreta para o desenvolvedor ativar seu status em qualquer uma de suas contas admin"""
+    if request.method == 'POST':
+        senha_dev = request.POST.get('senha_dev')
+        # Senha que sugeri ou você pode mudar
+        if senha_dev == 'Klisman@Dev2026':
+            profile, created = Profile.objects.get_or_create(user=request.user)
+            profile.is_developer = True
+            profile.save()
+            messages.success(request, "Modo Desenvolvedor Ativado com sucesso!")
+            return redirect('escolas:dashboard')
+        else:
+            messages.error(request, "Senha incorreta.")
+    
+    return render(request, 'core/ativar_dev.html')
+
 
 @login_required
 def calendar_view(request):
