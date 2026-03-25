@@ -324,7 +324,8 @@
                             <li><hr class="dropdown-divider mb-1"></li>
                             {% for aviso in todos_avisos %}
                                 <li>
-                                    <div class="dropdown-item py-2 px-3 bg-transparent text-wrap">
+                                    <button type="button" class="dropdown-item py-2 px-3 bg-transparent text-wrap border-0 w-100 text-start" 
+                                            onclick="abrirModalAviso('{{ aviso.titulo|escapejs }}', '{{ aviso.conteudo|escapejs }}', '{{ aviso.data_postagem|date:'d/m/Y' }}')">
                                         <div class="d-flex justify-content-between align-items-start mb-1">
                                             <span class="fw-bold text-dark small">{{ aviso.titulo }}</span>
                                             <span class="text-muted smaller" style="font-size: 0.7rem;">{{ aviso.data_postagem|date:"d/m" }}</span>
@@ -332,7 +333,7 @@
                                         <p class="text-muted smaller mb-0" style="font-size: 0.8rem; line-height: 1.2;">
                                             {{ aviso.conteudo|truncatechars:100 }}
                                         </p>
-                                    </div>
+                                    </button>
                                 </li>
                                 {% if not forloop.last %}<li><hr class="dropdown-divider opacity-50"></li>{% endif %}
                             {% empty %}
@@ -502,6 +503,41 @@
         }
     </script>
     {% endif %}
+
+    <!-- Modal de Visualização de Aviso (Genérico) -->
+    <div class="modal fade" id="modalVerAviso" tabindex="-1" aria-labelledby="modalVerAvisoLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg rounded-4">
+                <div class="modal-header bg-light py-3 rounded-top-4 border-bottom">
+                    <h5 class="modal-title fw-bold text-dark" id="modalVerAvisoLabel"></h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <p class="text-dark" id="modalVerAvisoConteudo" style="white-space: pre-line;"></p>
+                    <div class="text-end text-muted small mt-3 border-top pt-2" id="modalVerAvisoData"></div>
+                </div>
+                <div class="modal-footer border-top-0 pt-0 pb-4 pe-4">
+                    <button type="button" class="btn btn-secondary px-4 rounded-pill shadow-sm" data-bs-dismiss="modal">Fechar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function abrirModalAviso(titulo, conteudo, data) {
+            document.getElementById('modalVerAvisoLabel').innerText = titulo;
+            document.getElementById('modalVerAvisoConteudo').innerText = conteudo;
+            document.getElementById('modalVerAvisoData').innerText = 'Postado em ' + data;
+            
+            var myModal = new bootstrap.Modal(document.getElementById('modalVerAviso'));
+            myModal.show();
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            // ... (rest of DOMContentLoaded script)
+        });
+        // ... (rest of scripts)
+    </script>
 
     {% block extra_js %}{% endblock %}
 </body>

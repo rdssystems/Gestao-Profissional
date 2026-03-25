@@ -369,11 +369,6 @@ class MatriculaView(LoginRequiredMixin, StaffRequiredMixin, ListView):
         
         qs = alunos_interessados.exclude(id__in=ids_alunos_ja_inscritos).order_by('-score_total')
         
-        # Filtra por escola, se o usuário não for superuser
-        user = self.request.user
-        if not user.is_superuser and hasattr(user, 'profile') and user.profile.escola:
-            return qs.filter(escola=user.profile.escola)
-            
         return qs
 
     def get_context_data(self, **kwargs):
