@@ -143,6 +143,17 @@ class CursoStatusUpdateView(LoginRequiredMixin, StaffRequiredMixin, View):
             return redirect('cursos:lista_cursos')
 
         if novo_status in [choice[0] for choice in Curso.STATUS_CHOICES]:
+            # Validação: Não permitir concluir curso se houver alunos "Cursando"
+            if novo_status == 'Concluído':
+                cursando_count = curso.inscricao_set.filter(status='cursando').count()
+                if cursando_count > 0:
+                    messages.error(
+                        request, 
+                        f"Não é possível concluir o curso '{curso.nome}' porque ainda existem {cursando_count} alunos com status 'Cursando'. "
+                        "Por favor, lance os concluintes e desistentes na lista de alunos antes de concluir o curso."
+                    )
+                    return redirect('cursos:detalhe_curso', pk=pk)
+
             old_status = curso.status
             curso.status = novo_status
             curso.save()
