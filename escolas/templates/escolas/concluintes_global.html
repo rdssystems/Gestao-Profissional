@@ -1,0 +1,181 @@
+{% extends "base.html" %}
+
+{% block title %}Controle Global de Concluintes{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4 px-lg-4">
+
+    <!-- Cabeçalho -->
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3 animate-up">
+        <div>
+            <h1 class="page-header-premium mb-1">Listas de Concluintes</h1>
+            <p class="text-muted mb-0">Visão administrativa de todos os cursos com alunos finalizados</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{% url 'escolas:dashboard' %}" class="btn btn-premium-outline">
+                <i class="bi bi-speedometer2 me-1"></i> Dashboard
+            </a>
+        </div>
+    </div>
+
+    <!-- Filtros -->
+    <div class="premium-card mb-4 animate-up" style="animation-delay: 0.1s;">
+        <form method="GET" class="row g-3 align-items-end">
+            <div class="col-md-6 col-lg-5">
+                <label class="form-label small fw-bold text-muted mb-1 text-uppercase">Filtrar por Unidade</label>
+                <select name="escola_id" class="form-select form-select-premium shadow-sm" onchange="this.form.submit()">
+                    <option value="all">Todas as Unidades</option>
+                    {% for escola in todas_escolas %}
+                    <option value="{{ escola.pk }}" {% if selected_escola_id == escola.pk|stringformat:"s" %}selected{% endif %}>
+                        {{ escola.nome }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-auto">
+                <button type="submit" class="btn btn-premium shadow-sm">
+                    <i class="bi bi-funnel"></i> Filtrar
+                </button>
+            </div>
+            {% if selected_escola_id != 'all' %}
+            <div class="col-auto">
+                <a href="{% url 'escolas:concluintes_global' %}" class="btn btn-light border shadow-sm">
+                    Limpar Filtro
+                </a>
+            </div>
+            {% endif %}
+        </form>
+    </div>
+
+    <!-- Grade de Cards -->
+    <div class="row g-4 animate-up" style="animation-delay: 0.2s;">
+        {% for curso in cursos_concluintes %}
+        <div class="col-md-6 col-xl-4">
+            <div class="premium-card h-100 d-flex flex-column border-0 shadow-sm" style="border-left: 4px solid var(--premium-blue) !important;">
+                <div class="p-4 flex-grow-1">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <span class="badge bg-light text-primary border border-primary-subtle px-2 py-1 small">
+                            {{ curso.escola.nome }}
+                        </span>
+                        <span class="badge bg-success-soft text-success px-2 py-1 small fw-bold">
+                            <i class="bi bi-people-fill me-1"></i> {{ curso.num_concluintes }} Concluintes
+                        </span>
+                    </div>
+                    
+                    <h5 class="fw-bold text-dark mb-3 line-clamp-2" title="{{ curso.nome }}">{{ curso.nome }}</h5>
+                    
+                    <div class="text-muted small mb-1">
+                        <i class="bi bi-calendar3 me-2"></i> 
+                        <strong>Início:</strong> {{ curso.data_inicio|date:"d/m/Y" }}
+                    </div>
+                    <div class="text-muted small">
+                        <i class="bi bi-calendar-check me-2"></i> 
+                        <strong>Fim:</strong> {{ curso.data_fim|date:"d/m/Y" }}
+                    </div>
+                </div>
+                
+                <div class="p-3 bg-light border-top d-flex gap-2">
+                    <button type="button" class="btn btn-sm btn-premium flex-grow-1" 
+                            onclick="abrirModalConcluintes('{{ curso.pk }}')">
+                        <i class="bi bi-eye me-1"></i> Visualizar Lista
+                    </button>
+                    <div class="dropdown">
+                        <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-download"></i>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end shadow">
+                            <li><h6 class="dropdown-header">Opções de Exportação</h6></li>
+                            <li>
+                                <a class="dropdown-item d-flex align-items-center" href="{% url 'cursos:curso_concluintes' pk=curso.pk %}?print=1" target="_blank">
+                                    <i class="bi bi-file-earmark-pdf text-danger me-2 fs-5"></i> Exportar PDF (Formatado)
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item d-flex align-items-center" href="{% url 'cursos:curso_concluintes_xlsx' pk=curso.pk %}">
+                                    <i class="bi bi-file-earmark-excel text-success me-2 fs-5"></i> Exportar XLSX (Dados)
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12 mt-5 text-center py-5">
+            <div class="mb-3">
+                <i class="bi bi-search text-muted" style="font-size: 4rem; opacity: 0.3;"></i>
+            </div>
+            <h4 class="text-muted">Nenhuma lista de concluintes encontrada.</h4>
+            <p class="text-muted">Pode ser que ainda não existam cursos com alunos finalizados no critério selecionado.</p>
+        </div>
+        {% endfor %}
+    </div>
+
+</div>
+
+<!-- Modal para Visualização Rápida -->
+<div class="modal fade" id="concluintesModal" tabindex="-1" aria-labelledby="concluintesModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content border-0 shadow-lg" id="modalContent">
+            <!-- Conteúdo carregado via AJAX -->
+            <div class="modal-body text-center py-5">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Carregando...</span>
+                </div>
+                <p class="mt-2 text-muted">Carregando lista...</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function abrirModalConcluintes(cursoId) {
+        const modal = new bootstrap.Modal(document.getElementById('concluintesModal'));
+        const modalContent = document.getElementById('modalContent');
+        
+        // Reset loader
+        modalContent.innerHTML = `
+            <div class="modal-body text-center py-5">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Carregando...</span>
+                </div>
+                <p class="mt-2 text-muted">Carregando lista...</p>
+            </div>
+        `;
+        
+        modal.show();
+        
+        // Fetch content
+        fetch(`/cursos/${cursoId}/concluintes/?popup=1`)
+            .then(response => response.text())
+            .then(html => {
+                modalContent.innerHTML = html;
+            })
+            .catch(error => {
+                modalContent.innerHTML = `
+                    <div class="modal-header">
+                        <h5 class="modal-title">Erro</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body text-center py-4">
+                        <i class="bi bi-exclamation-triangle-fill text-danger fs-1"></i>
+                        <p class="mt-2">Não foi possível carregar a lista. Tente novamente.</p>
+                    </div>
+                `;
+            });
+    }
+</script>
+
+<style>
+    .bg-success-soft { background-color: rgba(21, 128, 61, 0.1); }
+    .bg-purple-soft { background-color: rgba(147, 51, 234, 0.1); }
+    .line-clamp-2 {
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;  
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .text-green { color: #15803d; }
+</style>
+{% endblock %}

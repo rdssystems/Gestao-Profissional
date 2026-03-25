@@ -5,6 +5,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.urls import reverse_lazy
 from datetime import date, timedelta
 from django.db import models
+from django.db.models import Count, Q # Adicionados Count e Q
 from core.mixins import AuditLogMixin
 
 from escolas.models import Escola
@@ -92,7 +93,8 @@ class DashboardView(LoginRequiredMixin, TemplateView):
             context['alunos_desistentes'] = inscricao_scope.filter(status='desistente').count()
             context['cursos_ativos'] = curso_scope.filter(status__in=['Aberta', 'Em Andamento']).count()
             context['cursos_concluidos'] = curso_scope.filter(status='Concluído').count()
-            context['inscricoes_hoje'] = inscricao_scope.filter(data_inscricao__date=today).count()
+            # Hoje (Inscrições do dia = Alunos novos cadastrados hoje)
+            context['inscricoes_hoje'] = aluno_scope.filter(data_criacao__date=today).count()
         except:
             context['total_alunos'] = 0
             context['alunos_cursando'] = 0
@@ -188,3 +190,26 @@ class EscolaListView(LoginRequiredMixin, ListView):
     context_object_name = 'escolas'
     def get_queryset(self):
         return Escola.objects.all().order_by('nome')
+
+class ConcluintesGlobalView(LoginRequiredMixin, SuperuserRequiredMixin, ListView):
+    model = Curso
+    template_name = 'escolas/concluintes_global.html'
+    context_object_name = 'cursos_concluintes'
+
+    def get_queryset(self):
+        escola_id = self.request.GET.get('escola_id')
+        # Filtra cursos que possuem pelo menos 1 aluno com status 'concluido'
+        queryset = Curso.objects.annotate(
+            num_concluintes=Count('inscricao', filter=Q(inscricao__status='concluido'))
+        ).filter(num_concluintes__gt=0).order_by('-data_fim', 'nome')
+        
+        if escola_id and escola_id != 'all':
+            queryset = queryset.filter(escola_id=escola_id)
+        
+        return queryset
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['todas_escolas'] = Escola.objects.all().order_by('nome')
+        context['selected_escola_id'] = self.request.GET.get('escola_id', 'all')
+        return context

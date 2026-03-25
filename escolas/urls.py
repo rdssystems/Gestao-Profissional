@@ -12,4 +12,5 @@ urlpatterns = [
     path('<int:pk>/excluir/', views.EscolaDeleteView.as_view(), name='excluir_escola'),
     path('<int:escola_id>/cursos/', views.CursosPorEscolaListView.as_view(), name='cursos_da_escola'),
     path('<int:escola_id>/alunos/', views.AlunosPorEscolaListView.as_view(), name='alunos_da_escola'),
+    path('concluintes-global/', views.ConcluintesGlobalView.as_view(), name='concluintes_global'),
 ]
