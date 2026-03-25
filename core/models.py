@@ -7,9 +7,25 @@ from escolas.models import Escola
 class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
     escola = models.ForeignKey(Escola, on_delete=models.SET_NULL, null=True, blank=True, related_name='user_profiles')
+    is_developer = models.BooleanField(default=False, verbose_name="Desenvolvedor (Acesso a Updates)")
 
     def __str__(self):
         return f'Perfil de {self.user.username}'
+
+class Aviso(models.Model):
+    titulo = models.CharField(max_length=200, verbose_name="Título")
+    conteudo = models.TextField(verbose_name="Conteúdo da Atualização")
+    data_postagem = models.DateTimeField(auto_now_add=True)
+    ativo = models.BooleanField(default=True, verbose_name="Ativo")
+    visualizado_por = models.ManyToManyField(User, blank=True, related_name='avisos_lidos')
+
+    class Meta:
+        ordering = ['-data_postagem']
+        verbose_name = 'Aviso / Atualização'
+        verbose_name_plural = 'Avisos / Atualizações'
+
+    def __str__(self):
+        return self.titulo
 
 class AuditLog(models.Model):
     ACTION_CHOICES = (

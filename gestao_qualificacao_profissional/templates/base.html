@@ -305,6 +305,44 @@
                     </li>
 
                     {% if user.is_authenticated %}
+                    
+                    <!-- Siningo de Notificações / Updates -->
+                    <li class="nav-item dropdown px-2">
+                        <a class="nav-link position-relative py-1" href="#" id="navbarAvisosDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-bell-fill fs-5"></i>
+                            {% if unread_count > 0 %}
+                                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size: 0.6rem; transform: translate(-30%, 10%) !important;">
+                                    {{ unread_count }}
+                                </span>
+                            {% endif %}
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end shadow border-0 rounded-4 py-3 mt-2" style="width: 320px; max-height: 450px; overflow-y: auto;" aria-labelledby="navbarAvisosDropdown">
+                            <li class="px-3 pb-2 d-flex justify-content-between align-items-center">
+                                <h6 class="dropdown-header px-0 fw-bold text-dark mb-0">Novidades do Sistema</h6>
+                                <span class="badge bg-light text-primary border rounded-pill">{{ todos_avisos.count }}</span>
+                            </li>
+                            <li><hr class="dropdown-divider mb-1"></li>
+                            {% for aviso in todos_avisos %}
+                                <li>
+                                    <div class="dropdown-item py-2 px-3 bg-transparent text-wrap">
+                                        <div class="d-flex justify-content-between align-items-start mb-1">
+                                            <span class="fw-bold text-dark small">{{ aviso.titulo }}</span>
+                                            <span class="text-muted smaller" style="font-size: 0.7rem;">{{ aviso.data_postagem|date:"d/m" }}</span>
+                                        </div>
+                                        <p class="text-muted smaller mb-0" style="font-size: 0.8rem; line-height: 1.2;">
+                                            {{ aviso.conteudo|truncatechars:100 }}
+                                        </p>
+                                    </div>
+                                </li>
+                                {% if not forloop.last %}<li><hr class="dropdown-divider opacity-50"></li>{% endif %}
+                            {% empty %}
+                                <li class="text-center py-4 px-3">
+                                    <i class="bi bi-bell-slash text-muted d-block mb-2" style="font-size: 1.2rem;"></i>
+                                    <p class="text-muted small mb-0">Nenhuma novidade no momento.</p>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    </li>
 
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" id="navbarUserDropdown" role="button"
@@ -328,6 +366,11 @@
                             <li><a class="dropdown-item" href="{% url 'usuarios:lista_usuarios' %}">Usuários</a></li>
                             <li><a class="dropdown-item" href="{% url 'core:lista_auditoria' %}">Auditoria</a></li>
                             <li><a class="dropdown-item" href="{% url 'admin:index' %}">Admin Django</a></li>
+                            
+                            {% if user.profile.is_developer %}
+                            <li><a class="dropdown-item text-primary" href="{% url 'core:gerenciar_avisos' %}"><i class="bi bi-plus-circle-fill me-1"></i> Postar Atualização</a></li>
+                            {% endif %}
+
                             <li>
                                 <hr class="dropdown-divider">
                             </li>
@@ -416,6 +459,49 @@
             });
         });
     </script>
+
+    <!-- Modal de Avisos / Atualizações -->
+    {% if proximo_aviso %}
+    <div class="modal fade" id="modalAviso" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="modalAvisoLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg rounded-4">
+                <div class="modal-header bg-primary text-white py-3 rounded-top-4 border-bottom-0">
+                    <h5 class="modal-title fw-bold" id="modalAvisoLabel"><i class="bi bi-rocket-takeoff me-2"></i> {{ proximo_aviso.titulo }}</h5>
+                </div>
+                <div class="modal-body p-4">
+                    <p class="text-dark" style="white-space: pre-line;">{{ proximo_aviso.conteudo }}</p>
+                    <div class="text-end text-muted small mt-3 border-top pt-2">
+                        Postado em {{ proximo_aviso.data_postagem|date:"d/m/Y" }}
+                    </div>
+                </div>
+                <div class="modal-footer border-top-0 pt-0 pb-4 pe-4 justify-content-center">
+                    <button type="button" class="btn btn-primary px-5 rounded-pill shadow-sm fw-bold" onclick="marcarAvisoLido({{ proximo_aviso.pk }})">
+                        Entendi, fechar aviso
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            var myModal = new bootstrap.Modal(document.getElementById('modalAviso'));
+            myModal.show();
+        });
+
+        function marcarAvisoLido(avisoPk) {
+            fetch(`/core/avisos/lido/${avisoPk}/`, {
+                method: 'GET',
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            }).then(response => {
+                if (response.ok) {
+                    var myModalEl = document.getElementById('modalAviso');
+                    var modal = bootstrap.Modal.getInstance(myModalEl);
+                    modal.hide();
+                }
+            });
+        }
+    </script>
+    {% endif %}
 
     {% block extra_js %}{% endblock %}
 </body>
