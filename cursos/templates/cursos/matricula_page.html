@@ -204,8 +204,14 @@
                     <h5 class="modal-title fw-bold" id="historyModalLabel">Histórico do Aluno</h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <div class="modal-body p-0" style="height: 80vh;">
-                    <iframe id="historyFrame" src="" frameborder="0" style="width: 100%; height: 100%;"></iframe>
+                <div class="modal-body p-4" style="min-height: 400px; max-height: 80vh; overflow-y: auto;">
+                    <div id="historyPlaceholder" class="text-center py-5 d-none">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Carregando...</span>
+                        </div>
+                        <p class="text-muted mt-2">Carregando histórico...</p>
+                    </div>
+                    <div id="historyContent"></div>
                 </div>
             </div>
         </div>
@@ -226,13 +232,25 @@
 
     // Modal de Histórico
     const historyModal = new bootstrap.Modal(document.getElementById('historyModal'));
-    const historyFrame = document.getElementById('historyFrame');
-    const historyModalLabel = document.getElementById('historyModalLabel');
+    const historyPlaceholder = document.getElementById('historyPlaceholder');
+    const historyContent = document.getElementById('historyContent');
 
     function openHistoryModal(historyUrl, alunoNome) {
         historyModalLabel.innerText = `Histórico: ${alunoNome}`;
-        historyFrame.src = `${historyUrl}?popup=1`;
+        historyContent.innerHTML = '';
+        historyPlaceholder.classList.remove('d-none');
         historyModal.show();
+
+        fetch(historyUrl + "?popup=1")
+            .then(response => response.text())
+            .then(html => {
+                historyPlaceholder.classList.add('d-none');
+                historyContent.innerHTML = html;
+            })
+            .catch(err => {
+                historyPlaceholder.classList.add('d-none');
+                historyContent.innerHTML = `<div class="alert alert-danger">Erro ao carregar histórico: ${err}</div>`;
+            });
     }
 
     function closeModal() {
