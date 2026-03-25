@@ -399,6 +399,19 @@
                     trigger: 'focus'
                 })
             })
+
+            // --- MANTER POSIÇÃO DO SCROLL (MELHORIA DE UX) ---
+            // Restaurar a posição do scroll se houver uma salva para esta URL
+            const scrollPos = localStorage.getItem('scrollPosition_' + window.location.pathname);
+            if (scrollPos) {
+                window.scrollTo(0, parseInt(scrollPos));
+                localStorage.removeItem('scrollPosition_' + window.location.pathname);
+            }
+
+            // Salvar a posição do scroll antes de qualquer envio de formulário
+            document.addEventListener('submit', function(event) {
+                localStorage.setItem('scrollPosition_' + window.location.pathname, window.scrollY);
+            });
         });
     </script>
 
