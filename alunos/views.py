@@ -392,6 +392,7 @@ class AlunoUpdateCursosInteresseView(AuditLogMixin, StaffRequiredMixin, View):
                 cursos_ids = valid_ids
         
         aluno.cursos_interesse.set(cursos_ids)
+        aluno.save() # Força atualização do timestamp 'data_atualizacao'
         
         # Log manual
         self.save_log(aluno, 'UPDATE', {'campo': 'cursos_interesse', 'total': len(cursos_ids)})
