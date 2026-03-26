@@ -53,7 +53,11 @@ def generate_declaration_text(status, inscricao):
         return None
 
     # Texto do período (Sempre incluído agora)
-    periodo_texto = f"no período de {curso.data_inicio.strftime('%d/%m/%Y')} à {curso.data_fim.strftime('%d/%m/%Y')}, "
+    periodo_texto = f"no período de {curso.data_inicio.strftime('%d/%m/%Y')} à {curso.data_fim.strftime('%d/%m/%Y')}"
+    if curso.turno:
+        periodo_texto += f", no turno {curso.turno}, "
+    else:
+        periodo_texto += ", "
 
     text = (f"Declaramos para os devidos fins que, {aluno.nome_completo.upper()}, portador(a) do CPF nº {aluno.cpf}, "
             f"{verbo} o curso de {curso.nome}, com carga horária de {curso.carga_horaria} horas, "
