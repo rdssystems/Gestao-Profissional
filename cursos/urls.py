@@ -43,4 +43,5 @@ urlpatterns = [
 
     # Chamada Pública (via Token)
     path('chamada-publica/<uuid:token>/', views.ChamadaPublicaView.as_view(), name='chamada_publica'),
+    path('admin/fix-tokens/', views.RegenerarTokensView.as_view(), name='fix_tokens'),
 ]

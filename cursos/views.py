@@ -1057,3 +1057,38 @@ class ChamadaPublicaView(View):
             
         messages.success(request, f"Chamada de {curso.nome} salva com sucesso para {hoje.strftime('%d/%m/%Y')}!")
         return redirect('cursos:chamada_publica', token=token)
+
+class RegenerarTokensView(LoginRequiredMixin, UserPassesTestMixin, View):
+    """
+    View administrativa para corrigir duplicatas de token_acesso no banco de dados.
+    Utilizada para garantir a integridade dos links de chamada pública.
+    """
+    def test_func(self):
+        return self.request.user.is_superuser
+
+    def get(self, request, *args, **kwargs):
+        import uuid
+        from django.db import transaction
+        
+        cursos = Curso.objects.all()
+        tokens_seen = set()
+        fix_count = 0
+        total_count = cursos.count()
+        
+        with transaction.atomic():
+            for curso in cursos:
+                # Se o token for nulo, vazio ou já tiver sido visto, gera um novo
+                if not curso.token_acesso or str(curso.token_acesso) in tokens_seen:
+                    new_token = uuid.uuid4()
+                    # Garante que o novo token também não exista no banco
+                    while Curso.objects.filter(token_acesso=new_token).exists():
+                        new_token = uuid.uuid4()
+                    
+                    curso.token_acesso = new_token
+                    curso.save()
+                    fix_count += 1
+                
+                tokens_seen.add(str(curso.token_acesso))
+        
+        messages.success(request, f"Processamento concluído: {total_count} cursos verificados, {fix_count} códigos (tokens) corrigidos.")
+        return redirect('cursos:lista_cursos')
