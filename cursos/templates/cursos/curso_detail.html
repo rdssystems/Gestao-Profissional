@@ -123,8 +123,12 @@
 {% block extra_js %}
 <script>
 function copiarLinkChamada(url) {
+    // Abre o link em uma nova aba
+    window.open(url, '_blank');
+    
+    // Copia o link para a área de transferência
     navigator.clipboard.writeText(url).then(function() {
-        alert('Link da chamada copiado para a área de transferência!');
+        console.log('Link da chamada copiado para a área de transferência!');
     }, function(err) {
         console.error('Erro ao copiar link: ', err);
         // Fallback para navegadores muito antigos se necessário
@@ -134,7 +138,6 @@ function copiarLinkChamada(url) {
         el.select();
         document.execCommand('copy');
         document.body.removeChild(el);
-        alert('Link da chamada copiado!');
     });
 }
 </script>
