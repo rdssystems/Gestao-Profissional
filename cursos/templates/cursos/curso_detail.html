@@ -112,7 +112,33 @@
 
     <a href="{% url 'cursos:curso_imprimir_lista' pk=curso.pk %}" target="_blank" class="btn btn-action-premium text-dark border"
         style="background-color: #f8fafc;"><i class="bi bi-printer"></i> Imprimir Lista</a>
+
+    <button onclick="copiarLinkChamada('{{ request.scheme }}://{{ request.get_host }}{% url 'cursos:chamada_publica' token=curso.token_acesso %}')" 
+            class="btn btn-action-premium text-white"
+            style="background-color: #6366f1;">
+        <i class="bi bi-clipboard-check"></i> Copiar Link Chamada
+    </button>
 </div>
+
+{% block extra_js %}
+<script>
+function copiarLinkChamada(url) {
+    navigator.clipboard.writeText(url).then(function() {
+        alert('Link da chamada copiado para a área de transferência!');
+    }, function(err) {
+        console.error('Erro ao copiar link: ', err);
+        // Fallback para navegadores muito antigos se necessário
+        const el = document.createElement('textarea');
+        el.value = url;
+        document.body.appendChild(el);
+        el.select();
+        document.execCommand('copy');
+        document.body.removeChild(el);
+        alert('Link da chamada copiado!');
+    });
+}
+</script>
+{% endblock %}
 
 
 <!-- Alunos Inscritos -->

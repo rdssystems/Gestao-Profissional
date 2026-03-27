@@ -40,4 +40,7 @@ urlpatterns = [
     # URL para upload de CSV de cursos
     path('upload-csv/', views.CursoCSVUploadView.as_view(), name='upload_cursos_csv'),
     path('download-template/', views.DownloadCursoTemplateView.as_view(), name='download_template_cursos'),
+
+    # Chamada Pública (via Token)
+    path('chamada-publica/<uuid:token>/', views.ChamadaPublicaView.as_view(), name='chamada_publica'),
 ]
