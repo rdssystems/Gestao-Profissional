@@ -89,11 +89,11 @@
                                     Detalhes
                                 </a>
 
-                                <form method="post" action="{% url 'cursos:cancelar_matricula_direto' %}"
-                                    onsubmit="return confirm('Tem certeza que deseja cancelar a matrícula de {{ inscricao.aluno.nome_completo }}?');">
+                                <form method="post" action="{% url 'cursos:cancelar_matricula_direto' %}" style="display: inline;">
                                     {% csrf_token %}
                                     <input type="hidden" name="inscricao_id" value="{{ inscricao.pk }}">
-                                    <button type="submit" class="btn btn-danger btn-sm">
+                                    <button type="button" class="btn btn-danger btn-sm"
+                                        onclick="if(confirm('Tem certeza que deseja cancelar a matrícula de {{ inscricao.aluno.nome_completo|escapejs }}?')) this.form.submit();">
                                         Cancelar
                                     </button>
                                 </form>

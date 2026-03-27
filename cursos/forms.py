@@ -73,6 +73,21 @@ class InscricaoForm(forms.ModelForm):
             self.fields['curso'].initial = curso_id
             self.fields['curso'].disabled = True
 
+    def clean(self):
+        cleaned_data = super().clean()
+        aluno = cleaned_data.get('aluno')
+        curso = cleaned_data.get('curso')
+
+        if aluno and curso:
+            from .validators import validar_conflito_matricula
+            from django.core.exceptions import ValidationError
+            try:
+                validar_conflito_matricula(aluno, curso)
+            except ValidationError as e:
+                raise forms.ValidationError(e.message)
+
+        return cleaned_data
+
 # --- Novos Formulários para Chamada ---
 
 class RegistroAulaForm(forms.ModelForm):

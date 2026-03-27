@@ -196,8 +196,8 @@ class AlunoForm(forms.ModelForm):
         if data_nascimento:
             hoje = date.today()
             idade = hoje.year - data_nascimento.year - ((hoje.month, hoje.day) < (data_nascimento.month, data_nascimento.day))
-            if idade < 16:
-                raise forms.ValidationError('O aluno deve ter pelo menos 16 anos para realizar a inscrição.')
+            if idade < 15:
+                raise forms.ValidationError('O aluno deve ter pelo menos 15 anos para realizar o cadastro básico.')
         return data_nascimento
 
 # Existing AuxiliarAlunoForm
