@@ -38,6 +38,8 @@ CSRF_TRUSTED_ORIGINS = [
     'https://servidor-qualificacao.tailbeb7d5.ts.net',
 ]
 
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
 
 # Application definition
 
