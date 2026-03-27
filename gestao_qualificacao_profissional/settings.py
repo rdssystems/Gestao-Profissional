@@ -35,6 +35,7 @@ CSRF_TRUSTED_ORIGINS = [
     'http://100.93.40.101',
     'http://100.93.40.101:8000',
     'http://100.93.40.101:7681',
+    'https://servidor-qualificacao.tailbeb7d5.ts.net',
 ]
 
 
