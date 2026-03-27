@@ -1,0 +1,147 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chamada: {{ curso.nome }}</title>
+    <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <!-- Google Font - Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        body {
+            font-family: "Inter", sans-serif;
+            background: linear-gradient(135deg, #F5F8FF 0%, #EAF1FF 100%);
+            min-height: 100vh;
+        }
+        .premium-card {
+            background: white;
+            border-radius: 16px;
+            padding: 1.5rem;
+            border: 1px solid rgba(0,0,0,0.05);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        .custom-checkbox {
+            width: 2.2rem;
+            height: 2.2rem;
+            cursor: pointer;
+            border: 2px solid #cbd5e1;
+            transition: all 0.2s ease;
+        }
+        .custom-checkbox:checked {
+            background-color: #10b981 !important;
+            border-color: #10b981 !important;
+        }
+        .btn-save {
+            background-color: #4C7DF0;
+            color: white;
+            padding: 1rem;
+            font-weight: 600;
+            border-radius: 12px;
+            border: none;
+            transition: 0.2s;
+        }
+        .btn-save:hover {
+            background-color: #3b6bd8;
+            transform: translateY(-1px);
+        }
+        .header-logo {
+            height: 50px;
+        }
+    </style>
+</head>
+<body class="py-4">
+
+<div class="container">
+    <div class="text-center mb-4">
+        <img src="{% static 'core/logopmu.png' %}" alt="Prefeitura de Uberlândia" class="header-logo mb-3">
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+            
+            {% if messages %}
+            {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+            {% endfor %}
+            {% endif %}
+
+            {% if erro_status %}
+            <div class="premium-card text-center mb-4 border-warning">
+                <i class="bi bi-exclamation-triangle text-warning fs-1 mb-3 d-block"></i>
+                <h2 class="fw-bold mb-3">{{ curso.nome }}</h2>
+                <div class="alert alert-warning py-3">
+                    {{ erro_status }}
+                </div>
+                <p class="text-muted mt-3">Links de chamada ficam desativados para cursos finalizados ou arquivados.</p>
+            </div>
+            {% else %}
+
+            <div class="premium-card text-center mb-4">
+                <h1 class="fw-bold mb-1 text-primary">{{ curso.nome }}</h1>
+                <p class="text-muted mb-0 fs-5">
+                    <i class="bi bi-calendar3 me-1"></i> {{ hoje|date:"d/m/Y" }}
+                </p>
+                <div class="mt-2 text-secondary small">
+                    <strong>Escola:</strong> {{ curso.escola.nome }} | <strong>Turno:</strong> {{ curso.turno }}
+                </div>
+            </div>
+
+            <form method="post">
+                {% csrf_token %}
+                <div class="premium-card p-0 overflow-hidden mb-4">
+                    <div class="card-header bg-white py-3 border-bottom d-flex align-items-center">
+                        <i class="bi bi-people-fill text-primary me-2 fs-4"></i>
+                        <h5 class="mb-0 fw-bold">Lista de Presença</h5>
+                    </div>
+                    <ul class="list-group list-group-flush">
+                        {% for aluno in alunos_lista %}
+                        <li class="list-group-item py-3">
+                            <div class="form-check d-flex align-items-center justify-content-between">
+                                <label class="form-check-label flex-grow-1 fw-medium" for="presenca_{{ aluno.id }}" style="cursor: pointer; font-size: 1.1rem;">
+                                    {{ aluno.nome|upper }}
+                                </label>
+                                <input class="form-check-input ms-3 custom-checkbox" type="checkbox" name="presencas" value="{{ aluno.id }}" id="presenca_{{ aluno.id }}"
+                                    {% if aluno.presente %}checked{% endif %}>
+                            </div>
+                        </li>
+                        {% empty %}
+                        <li class="list-group-item text-center py-5 text-muted">
+                            <i class="bi bi-info-circle mb-2 d-block fs-1"></i>
+                            Nenhum aluno matriculado neste curso.
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+
+                {% if alunos_lista %}
+                <div class="d-grid gap-2 mb-5">
+                    <button type="submit" class="btn btn-save shadow-sm fs-5">
+                        <i class="bi bi-check2-circle me-2"></i>Salvar Chamada de Hoje
+                    </button>
+                    <p class="text-center text-muted small mt-2">
+                        Somente alunos marcados receberão presença.
+                    </p>
+                </div>
+                {% endif %}
+            </form>
+            {% endif %}
+
+            <footer class="text-center mt-5 py-4 border-top text-muted small">
+                <p class="mb-0">Desenvolvido pela Diretoria de Qualificação Profissional</p>
+                <p>Geração de Trabalho, Renda e Sine — Uberlândia</p>
+            </footer>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

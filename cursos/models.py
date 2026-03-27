@@ -1,3 +1,4 @@
+import uuid
 from django.db import models
 from escolas.models import Escola # Importar o modelo Escola
 from datetime import date, time
@@ -70,6 +71,7 @@ class Curso(models.Model):
     status = models.CharField(max_length=20, choices=STATUS_CHOICES)
     nome_professor = models.CharField(max_length=200, blank=True, null=True, verbose_name="Nome do Professor")
     parceiro = models.CharField(max_length=200, blank=True, null=True, verbose_name="Parceiro")
+    token_acesso = models.UUIDField(default=uuid.uuid4, editable=False, unique=True, verbose_name="Token de Acesso")
 
     def __str__(self):
         return self.nome

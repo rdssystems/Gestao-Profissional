@@ -1,9 +1,12 @@
 import csv
 import io
+import json
+from asgiref.sync import async_to_sync
+from channels.layers import get_channel_layer
 import pandas as pd
 from django.db.models import Count, Prefetch, Exists, OuterRef # Import Count
 from datetime import date, time, datetime # Import datetime and time
-from django.http import HttpResponse
+from django.http import HttpResponse, Http404
 
 from django.views.generic import ListView, DetailView, View
 from django.views.generic.edit import CreateView, UpdateView, DeleteView
@@ -967,3 +970,90 @@ class DownloadCursoTemplateView(LoginRequiredMixin, UserPassesTestMixin, View):
         with pd.ExcelWriter(response, engine='openpyxl') as writer:
             df.to_excel(writer, index=False, sheet_name='Template')
         return response
+
+class ChamadaPublicaView(View):
+    template_name = 'cursos/chamada_publica.html'
+
+    def get(self, request, token):
+        # Usamos filter().first() para evitar MultipleObjectsReturned caso a migração tenha gerado tokens duplicados
+        curso = Curso.objects.filter(token_acesso=token).first()
+        if not curso:
+            raise Http404("Curso não encontrado.")
+            
+        if curso.status in ['Concluído', 'Arquivado']:
+            return render(request, self.template_name, {
+                'curso': curso,
+                'erro_status': f"Este curso já está {curso.status.lower()} e não aceita mais chamadas."
+            })
+            
+        hoje = date.today()
+        
+        # Tentar encontrar ou criar o registro de aula para hoje
+        registro, created = RegistroAula.objects.get_or_create(
+            curso=curso, 
+            data_aula=hoje,
+            defaults={'observacoes': 'Chamada realizada via link público.'}
+        )
+            
+        # Identificar se o aluno já tem presença hoje
+        presencas_hoje = Chamada.objects.filter(registro_aula=registro, status_presenca='P').values_list('inscricao__aluno_id', flat=True)
+            
+        # Alunos inscritos nesse curso (usando o status correto 'cursando')
+        inscricoes = Inscricao.objects.filter(curso=curso, status='cursando').select_related('aluno')
+        
+        alunos_lista = []
+        for insc in inscricoes:
+            alunos_lista.append({
+                'id': insc.id,
+                'nome': insc.aluno.nome_completo,
+                'presente': insc.aluno.id in presencas_hoje
+            })
+            
+        # Ordenar por nome
+        alunos_lista = sorted(alunos_lista, key=lambda x: x['nome'])
+        
+        context = {
+            'curso': curso,
+            'hoje': hoje,
+            'alunos_lista': alunos_lista,
+        }
+        return render(request, self.template_name, context)
+
+    def post(self, request, token):
+        curso = Curso.objects.filter(token_acesso=token).first()
+        if not curso:
+            raise Http404("Curso não encontrado.")
+            
+        hoje = date.today()
+        ids_presentes = request.POST.getlist('presencas') # IDs de Inscrição
+        
+        registro, _ = RegistroAula.objects.get_or_create(curso=curso, data_aula=hoje)
+        
+        # Alunos inscritos (cursando)
+        inscricoes = Inscricao.objects.filter(curso=curso, status='cursando')
+        
+        for insc in inscricoes:
+            # Se o ID da inscrição está na lista, presente. Se não, ausente.
+            status = 'P' if str(insc.id) in ids_presentes else 'A'
+            Chamada.objects.update_or_create(
+                registro_aula=registro,
+                inscricao=insc,
+                defaults={'status_presenca': status}
+            )
+            
+        # Notificação em Tempo Real (WebSocket)
+        try:
+            channel_layer = get_channel_layer()
+            async_to_sync(channel_layer.group_send)(
+                f"school_notifications_{curso.escola.id}",
+                {
+                    "type": "send_notification",
+                    "message": f"Chamada realizada: {curso.nome} ({curso.turno})",
+                    "notification_type": "success",
+                }
+            )
+        except Exception as e:
+            print(f"Erro ao enviar notificação WebSocket: {e}")
+            
+        messages.success(request, f"Chamada de {curso.nome} salva com sucesso para {hoje.strftime('%d/%m/%Y')}!")
+        return redirect('cursos:chamada_publica', token=token)
