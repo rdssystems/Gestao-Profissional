@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chamada: {{ curso.nome }}</title>
+    <title>Chamada Digital: {{ curso.nome }}</title>
     <!-- Bootstrap -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Bootstrap Icons -->
@@ -13,56 +13,130 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     
     <style>
+        :root {
+            --primary-color: #4361ee;
+            --secondary-color: #3f37c9;
+            --accent-color: #4cc9f0;
+            --success-color: #10b981;
+            --bg-gradient: linear-gradient(135deg, #f8faff 0%, #eef2ff 100%);
+        }
+
         body {
             font-family: "Inter", sans-serif;
-            background: linear-gradient(135deg, #F5F8FF 0%, #EAF1FF 100%);
+            background: var(--bg-gradient);
             min-height: 100vh;
+            color: #1e293b;
         }
+
         .premium-card {
-            background: white;
-            border-radius: 16px;
-            padding: 1.5rem;
-            border: 1px solid rgba(0,0,0,0.05);
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 2rem;
+            border: 1px solid rgba(67, 97, 238, 0.1);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
+            margin-bottom: 2rem;
         }
+
+        .auth-card {
+            max-width: 450px;
+            margin: 4rem auto;
+            text-align: center;
+        }
+
+        .btn-premium {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            padding: 0.8rem 1.5rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .btn-premium:hover {
+            background: var(--secondary-color);
+            transform: translateY(-2px);
+            color: white;
+            box-shadow: 0 4px 12px rgba(67, 97, 238, 0.3);
+        }
+
+        /* Tabs Styling */
+        .nav-pills .nav-link {
+            border-radius: 12px;
+            color: #64748b;
+            font-weight: 600;
+            padding: 0.75rem 1.25rem;
+            transition: 0.3s;
+            border: 1px solid transparent;
+        }
+        .nav-pills .nav-link.active {
+            background-color: white !important;
+            color: var(--primary-color) !important;
+            border-color: rgba(67, 97, 238, 0.2);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        }
+
+        /* Checkbox Customization */
         .custom-checkbox {
-            width: 2.2rem;
-            height: 2.2rem;
+            width: 1.8rem;
+            height: 1.8rem;
             cursor: pointer;
             border: 2px solid #cbd5e1;
-            transition: all 0.2s ease;
-        }
-        .custom-checkbox:checked {
-            background-color: #10b981 !important;
-            border-color: #10b981 !important;
-        }
-        .btn-save {
-            background-color: #4C7DF0;
-            color: white;
-            padding: 1rem;
-            font-weight: 600;
-            border-radius: 12px;
-            border: none;
+            border-radius: 6px;
             transition: 0.2s;
         }
-        .btn-save:hover {
-            background-color: #3b6bd8;
-            transform: translateY(-1px);
+        .custom-checkbox:checked {
+            background-color: var(--success-color) !important;
+            border-color: var(--success-color) !important;
         }
-        .header-logo {
-            height: 50px;
+
+        .list-group-item {
+            border-left: none;
+            border-right: none;
+            padding: 1rem 1.25rem;
+            transition: 0.2s;
+        }
+        .list-group-item:hover {
+            background-color: #f8fafc;
+        }
+
+        /* History Items */
+        .history-card {
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            margin-bottom: 0.75rem;
+            overflow: hidden;
+        }
+        .history-header {
+            background: white;
+            padding: 1rem;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .history-header:hover { background: #fcfcfc; }
+        .badge-presente { background-color: #dcfce7; color: #166534; }
+        .badge-ausente { background-color: #fee2e2; color: #991b1b; }
+
+        .header-logo { height: 45px; }
+        
+        @media (max-width: 576px) {
+            .premium-card { padding: 1.5rem; }
+            .nav-pills .nav-link { padding: 0.6rem 0.8rem; font-size: 0.9rem; }
         }
     </style>
 </head>
-<body class="py-4">
+<body class="py-3">
 
 <div class="container">
     <div class="text-center mb-4">
-        <img src="{% static 'core/logopmu.png' %}" alt="Prefeitura de Uberlândia" class="header-logo mb-3">
+        <img src="{% static 'core/logopmu.png' %}" alt="Prefeitura de Uberlândia" class="header-logo">
     </div>
 
     <div class="row justify-content-center">
-        <div class="col-md-8 col-lg-6">
+        <div class="col-md-8 col-lg-7">
             
             {% if messages %}
             {% for message in messages %}
@@ -73,70 +147,166 @@
             {% endfor %}
             {% endif %}
 
-            {% if erro_status %}
-            <div class="premium-card text-center mb-4 border-warning">
-                <i class="bi bi-exclamation-triangle text-warning fs-1 mb-3 d-block"></i>
-                <h2 class="fw-bold mb-3">{{ curso.nome }}</h2>
-                <div class="alert alert-warning py-3">
-                    {{ erro_status }}
-                </div>
-                <p class="text-muted mt-3">Links de chamada ficam desativados para cursos finalizados ou arquivados.</p>
-            </div>
-            {% else %}
-
-            <div class="premium-card text-center mb-4">
-                <h1 class="fw-bold mb-1 text-primary">{{ curso.nome }}</h1>
-                <p class="text-muted mb-0 fs-5">
-                    <i class="bi bi-calendar3 me-1"></i> {{ hoje|date:"d/m/Y" }}
-                </p>
-                <div class="mt-2 text-secondary small">
-                    <strong>Escola:</strong> {{ curso.escola.nome }} | <strong>Turno:</strong> {{ curso.turno }}
-                </div>
-            </div>
-
-            <form method="post">
-                {% csrf_token %}
-                <div class="premium-card p-0 overflow-hidden mb-4">
-                    <div class="card-header bg-white py-3 border-bottom d-flex align-items-center">
-                        <i class="bi bi-people-fill text-primary me-2 fs-4"></i>
-                        <h5 class="mb-0 fw-bold">Lista de Presença</h5>
+            <!-- TELA DE LOGIN -->
+            {% if precisa_auth %}
+            <div class="premium-card auth-card animate__animated animate__fadeIn">
+                <div class="mb-4">
+                    <div class="bg-primary bg-opacity-10 d-inline-block p-3 rounded-circle mb-3">
+                        <i class="bi bi-person-badge text-primary fs-1"></i>
                     </div>
-                    <ul class="list-group list-group-flush">
-                        {% for aluno in alunos_lista %}
-                        <li class="list-group-item py-3">
-                            <div class="form-check d-flex align-items-center justify-content-between">
-                                <label class="form-check-label flex-grow-1 fw-medium" for="presenca_{{ aluno.id }}" style="cursor: pointer; font-size: 1.1rem;">
-                                    {{ aluno.nome|upper }}
-                                </label>
-                                <input class="form-check-input ms-3 custom-checkbox" type="checkbox" name="presencas" value="{{ aluno.id }}" id="presenca_{{ aluno.id }}"
-                                    {% if aluno.presente %}checked{% endif %}>
-                            </div>
+                    <h2 class="fw-bold">Acesso do Instrutor</h2>
+                    <p class="text-muted">Informe seu nome conforme cadastrado no curso para acessar a lista de presença.</p>
+                </div>
+                
+                <form method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="login">
+                    <div class="form-floating mb-3">
+                        <input type="text" class="form-control" id="nome_professor" name="nome_professor" placeholder="Seu Nome Completo" required autofocus>
+                        <label for="nome_professor">Nome do Instrutor</label>
+                    </div>
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-premium">
+                            <i class="bi bi-unlock-fill me-2"></i>Acessar Lista
+                        </button>
+                    </div>
+                </form>
+                
+                <div class="mt-4 pt-3 border-top">
+                    <p class="small text-muted mb-0">Curso: <strong>{{ curso.nome }}</strong></p>
+                </div>
+            </div>
+
+            <!-- TELA PRINCIPAL (AUTENTICADO) -->
+            {% elif is_authenticated %}
+            <div class="premium-card mb-4">
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                    <div>
+                        <h1 class="fw-bold mb-0 text-primary fs-3">{{ curso.nome }}</h1>
+                        <p class="text-muted mb-0 small">Instrutor(a): <strong>{{ curso.nome_professor }}</strong></p>
+                    </div>
+                    <form method="post" class="ms-2">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="logout">
+                        <button type="submit" class="btn btn-sm btn-outline-danger border-0" title="Sair">
+                            <i class="bi bi-box-arrow-right fs-4"></i>
+                        </button>
+                    </form>
+                </div>
+
+                <div class="nav-pills-container bg-light p-1 rounded-3 mb-4">
+                    <ul class="nav nav-pills nav-fill" id="pills-tab" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="pills-chamada-tab" data-bs-toggle="pill" data-bs-target="#pills-chamada" type="button" role="tab">
+                                <i class="bi bi-calendar2-check me-2"></i>Chamada Hoje
+                            </button>
                         </li>
-                        {% empty %}
-                        <li class="list-group-item text-center py-5 text-muted">
-                            <i class="bi bi-info-circle mb-2 d-block fs-1"></i>
-                            Nenhum aluno matriculado neste curso.
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="pills-historico-tab" data-bs-toggle="pill" data-bs-target="#pills-historico" type="button" role="tab">
+                                <i class="bi bi-clock-history me-2"></i>Histórico
+                            </button>
                         </li>
-                        {% endfor %}
                     </ul>
                 </div>
 
-                {% if alunos_lista %}
-                <div class="d-grid gap-2 mb-5">
-                    <button type="submit" class="btn btn-save shadow-sm fs-5">
-                        <i class="bi bi-check2-circle me-2"></i>Salvar Chamada de Hoje
-                    </button>
-                    <p class="text-center text-muted small mt-2">
-                        Somente alunos marcados receberão presença.
-                    </p>
+                <div class="tab-content" id="pills-tabContent">
+                    <!-- ABA 1: LANÇAR CHAMADA -->
+                    <div class="tab-pane fade show active" id="pills-chamada" role="tabpanel">
+                        {% if erro_status %}
+                        <div class="alert alert-warning py-3 text-center">
+                            <i class="bi bi-info-circle me-2"></i> {{ erro_status }}
+                        </div>
+                        {% else %}
+                        <div class="text-center mb-4">
+                            <div class="display-6 fw-bold text-dark">{{ hoje|date:"d" }}</div>
+                            <div class="text-uppercase text-secondary fw-semibold">{{ hoje|date:"F Y" }}</div>
+                        </div>
+
+                        <form method="post">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="salvar_chamada">
+                            
+                            <div class="border rounded-3 overflow-hidden mb-4 bg-white">
+                                <div class="bg-light py-2 px-3 border-bottom d-flex justify-content-between align-items-center">
+                                    <span class="small fw-bold text-muted">LISTA DE ALUNOS</span>
+                                    <span class="badge bg-primary rounded-pill">{{ alunos_lista|length }}</span>
+                                </div>
+                                <ul class="list-group list-group-flush">
+                                    {% for aluno in alunos_lista %}
+                                    <li class="list-group-item d-flex align-items-center justify-content-between py-3">
+                                        <label class="form-check-label flex-grow-1 fw-medium" for="presenca_{{ aluno.id }}" style="cursor: pointer;">
+                                            {{ aluno.nome|upper }}
+                                        </label>
+                                        <input class="form-check-input ms-3 custom-checkbox" type="checkbox" name="presencas" value="{{ aluno.id|stringformat:'s' }}" id="presenca_{{ aluno.id }}"
+                                            {% if aluno.presente %}checked{% endif %}>
+                                    </li>
+                                    {% empty %}
+                                    <li class="list-group-item text-center py-5 text-muted">Nenhum aluno matriculado.</li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+
+                            <div class="d-grid mb-3">
+                                <button type="submit" class="btn btn-premium shadow-sm py-3 fs-5">
+                                    <i class="bi bi-cloud-arrow-up me-2"></i>Salvar Chamada
+                                </button>
+                            </div>
+                        </form>
+                        {% endif %}
+                    </div>
+
+                    <!-- ABA 2: HISTÓRICO -->
+                    <div class="tab-pane fade" id="pills-historico" role="tabpanel">
+                        <div class="mb-3 d-flex justify-content-between align-items-center">
+                            <h5 class="fw-bold mb-0">Aulas Registradas</h5>
+                            <span class="text-muted small">{{ historico_lista|length }} registros</span>
+                        </div>
+
+                        {% for reg in historico_lista %}
+                        <div class="history-card">
+                            <div class="history-header" data-bs-toggle="collapse" data-bs-target="#collapse_{{ forloop.counter }}">
+                                <div>
+                                    <span class="fw-bold d-block">{{ reg.data|date:"d/m/Y" }}</span>
+                                    <span class="text-muted small">{{ reg.data|date:"l" }}</span>
+                                </div>
+                                <div class="text-end">
+                                    <span class="badge badge-presente rounded-pill me-1">{{ reg.presentes }} P</span>
+                                    <span class="badge badge-ausente rounded-pill">{{ reg.ausentes }} F</span>
+                                    <i class="bi bi-chevron-down ms-2 text-muted"></i>
+                                </div>
+                            </div>
+                            <div id="collapse_{{ forloop.counter }}" class="collapse bg-light">
+                                <div class="p-3 border-top">
+                                    <ul class="list-unstyled mb-0 small">
+                                        {% for det in reg.detalhes %}
+                                        <li class="d-flex justify-content-between mb-1">
+                                            <span>{{ det.nome }}</span>
+                                            <span class="{% if det.status == 'Presente' %}text-success fw-bold{% else %}text-danger{% endif %}">
+                                                {{ det.status }}
+                                            </span>
+                                        </li>
+                                        {% endfor %}
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                        {% empty %}
+                        <div class="text-center py-5 text-muted border rounded-3 bg-white">
+                            <i class="bi bi-search fs-1 mb-2 d-block"></i>
+                            Nenhuma aula registrada ainda.
+                        </div>
+                        {% endfor %}
+                    </div>
                 </div>
-                {% endif %}
-            </form>
+            </div>
             {% endif %}
 
-            <footer class="text-center mt-5 py-4 border-top text-muted small">
-                <p class="mb-0">Desenvolvido pela Diretoria de Qualificação Profissional</p>
-                <p>Geração de Trabalho, Renda e Sine — Uberlândia</p>
+            <footer class="text-center mt-5 py-4 text-muted small border-top bg-white bg-opacity-50 rounded-4">
+                <p class="mb-0 fw-semibold">Desenvolvido pela Diretoria de Qualificação Profissional</p>
+                <p class="mb-0">SEDET — Uberlândia</p>
+                <div class="mt-2 text-secondary">
+                    <i class="bi bi-shield-lock me-1"></i> Ambiente Seguro
+                </div>
             </footer>
         </div>
     </div>
