@@ -32,6 +32,18 @@ class TipoCurso(models.Model):
     def __str__(self):
         return f"{self.nome} ({self.escola.nome})"
 
+class Parceiro(models.Model):
+    escola = models.ForeignKey(Escola, on_delete=models.CASCADE, related_name='parceiros')
+    nome = models.CharField(max_length=200, verbose_name="Nome do Parceiro")
+
+    class Meta:
+        verbose_name = "Parceiro"
+        verbose_name_plural = "Parceiros"
+        unique_together = ('escola', 'nome')
+
+    def __str__(self):
+        return f"{self.nome} ({self.escola.nome})"
+
 class Curso(models.Model):
     escola = models.ForeignKey(Escola, on_delete=models.CASCADE, related_name='cursos')
     tipo_curso = models.ForeignKey(TipoCurso, on_delete=models.SET_NULL, null=True, blank=True, related_name='cursos')
@@ -68,9 +80,9 @@ class Curso(models.Model):
     dia_inicio_semana = models.CharField(max_length=20, choices=DIAS_SEMANA_CHOICES, blank=True, null=True)
     dia_fim_semana = models.CharField(max_length=20, choices=DIAS_SEMANA_CHOICES, blank=True, null=True)
 
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='Aberta')
     nome_professor = models.CharField(max_length=200, blank=True, null=True, verbose_name="Nome do Professor")
-    parceiro = models.CharField(max_length=200, blank=True, null=True, verbose_name="Parceiro")
+    parceiro = models.ForeignKey(Parceiro, on_delete=models.SET_NULL, null=True, blank=True, related_name='cursos', verbose_name="Parceiro")
     token_acesso = models.UUIDField(default=uuid.uuid4, editable=False, unique=True, verbose_name="Token de Acesso")
 
     def __str__(self):

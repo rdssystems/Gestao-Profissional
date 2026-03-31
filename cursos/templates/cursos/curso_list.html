@@ -4,38 +4,74 @@
 
 {% block title %}Cursos{% endblock %}
 
+{% block main_class %}container-fluid px-4 animate-up{% endblock %}
+
 {% block content %}
 
-<div class="container-fluid px-4 mt-4">
+<div class="mt-4">
     <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
         <h1 class="page-header-premium mb-0">Gestão de Cursos</h1>
         <div class="d-flex gap-2">
             {% if user.is_superuser or user.is_staff or user|has_group:"Coordenador" or user|has_group:"Auxiliar Administrativo" %}
             <a href="{% url 'cursos:criar_curso' %}" class="btn btn-premium">Novo Curso</a>
-            <a href="{% url 'cursos:lista_tipos_curso' %}" class="btn btn-premium-outline">Tipos de Curso</a>
-            {% endif %}
-
-            {% if user.is_superuser %}
-            <a href="{% url 'cursos:upload_cursos_csv' %}" class="btn btn-premium-outline">Upload CSV</a>
+            <a href="{% url 'cursos:lista_tipos_curso' %}" class="btn btn-premium-outline btn-sm fw-semibold">
+                <i class="bi bi-tag me-1"></i> Tipos de Curso
+            </a>
+            <a href="{% url 'cursos:lista_parceiros' %}" class="btn btn-premium-outline btn-sm fw-semibold">
+                <i class="bi bi-building me-1"></i> Parceiros
+            </a>
             {% endif %}
         </div>
     </div>
 
-    <!-- Navegação por Abas -->
-    <ul class="nav nav-pills nav-pills-premium mb-4" id="pills-tab" role="tablist">
-        <li class="nav-item" role="presentation">
-            <button class="nav-link active" id="pills-ativos-tab" data-bs-toggle="pill" data-bs-target="#pills-ativos"
-                type="button" role="tab" aria-controls="pills-ativos" aria-selected="true">
-                <i class="bi bi-play-circle me-1"></i> Cursos Ativos
-            </button>
-        </li>
-        <li class="nav-item" role="presentation">
-            <button class="nav-link" id="pills-concluidos-tab" data-bs-toggle="pill" data-bs-target="#pills-concluidos"
-                type="button" role="tab" aria-controls="pills-concluidos" aria-selected="false">
-                <i class="bi bi-check-circle me-1"></i> Concluídos/Arquivados
-            </button>
-        </li>
-    </ul>
+    <!-- Filtros e Navegação Consolidada (Economia de Espaço) -->
+    <div class="premium-card mb-4 p-2 shadow-sm">
+        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+            
+            <!-- Navegação por Abas (Esquerda) -->
+            <div class="d-flex align-items-center">
+                <ul class="nav nav-pills nav-pills-premium mb-0" id="pills-tab" role="tablist" style="border: none !important; background: transparent !important; padding: 0 !important;">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active py-2 px-3" id="pills-ativos-tab" data-bs-toggle="pill" data-bs-target="#pills-ativos"
+                            type="button" role="tab" aria-controls="pills-ativos" aria-selected="true" style="font-size: 0.9rem;">
+                            <i class="bi bi-play-circle me-1"></i> Cursos Ativos
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link py-2 px-3" id="pills-concluidos-tab" data-bs-toggle="pill" data-bs-target="#pills-concluidos"
+                            type="button" role="tab" aria-controls="pills-concluidos" aria-selected="false" style="font-size: 0.9rem;">
+                            <i class="bi bi-check-circle me-1"></i> Concluídos/Arquivados
+                        </button>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- Formulário de Filtros (Direita) -->
+            <div class="flex-grow-1">
+                <form method="get" class="row g-2 align-items-center justify-content-end">
+                    <div class="col-12 col-md-6 col-lg-5">
+                        <div class="input-group input-group-sm input-group-premium">
+                            <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
+                            <input type="text" name="q" class="form-control border-start-0 ps-0" placeholder="Pesquisar curso, professor..." value="{{ request.GET.q|default:'' }}">
+                        </div>
+                    </div>
+                    {% if user.is_superuser %}
+                    <div class="col-12 col-md-4 col-lg-3">
+                        <select name="escola" class="form-select form-select-sm form-select-premium" onchange="this.form.submit()">
+                            <option value="">Todas as Unidades</option>
+                            {% for escola in escolas %}
+                            <option value="{{ escola.id }}" {% if request.GET.escola == escola.id|stringformat:"s" %}selected{% endif %}>{{ escola.nome }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    {% endif %}
+                    <div class="col-auto">
+                        <button type="submit" class="btn btn-premium btn-sm px-3 py-2">Filtrar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
 
     <div class="tab-content" id="pills-tabContent">
         <!-- Aba de Cursos Ativos -->
@@ -88,21 +124,29 @@
                                     {% if perms.cursos.change_curso or user.is_staff or user|has_group:"Coordenador" or user|has_group:"Auxiliar Administrativo" %}
                                     <form method="post" action="{% url 'cursos:alterar_status_curso' pk=curso.pk %}">
                                         {% csrf_token %}
-                                        <select name="status" class="form-select form-select-sm-premium status-select"
+                                        <select name="status" class="form-select form-select-sm-premium status-select fw-bold
+                                            {% if curso.status == 'Aberta' %}text-success border-success bg-success-subtle
+                                            {% elif curso.status == 'Em Andamento' %}text-warning-emphasis border-warning bg-warning-subtle
+                                            {% elif curso.status == 'Concluído' %}text-secondary-emphasis border-secondary bg-secondary-subtle
+                                            {% else %}text-muted bg-light{% endif %}"
                                             onchange="this.form.submit()" data-current="{{ curso.status }}">
-                                            <option value="Aberta" {% if curso.status == 'Aberta' %}selected{% endif %}>
-                                                Aberta</option>
+                                            <option value="Aberta" {% if curso.status == 'Aberta' %}selected{% endif %}>Aberta</option>
                                             <option value="Em Andamento" {% if curso.status == 'Em Andamento' %}selected{% endif %}>Em Andamento</option>
                                             <option value="Concluído" {% if curso.status == 'Concluído' %}selected{% endif %}>Concluído</option>
                                             <option value="Arquivado" {% if curso.status == 'Arquivado' %}selected{% endif %}>Arquivado</option>
                                         </select>
                                     </form>
                                     {% else %}
-                                    {{ curso.status }}
+                                    <span class="badge 
+                                        {% if curso.status == 'Aberta' %}bg-success
+                                        {% elif curso.status == 'Em Andamento' %}bg-warning text-dark
+                                        {% else %}bg-secondary{% endif %}">
+                                        {{ curso.status }}
+                                    </span>
                                     {% endif %}
                                 </td>
                                 <td>
-                                    <div class="d-flex gap-1">
+                                    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 4px; width: fit-content;">
                                         <a href="{% url 'cursos:detalhe_curso' pk=curso.pk %}"
                                             class="btn btn-action-premium text-white"
                                             style="background-color: var(--brand-primary);" title="Ver Detalhes">
@@ -199,21 +243,23 @@
                                     {% endif %}
                                 </td>
                                 <td>
-                                    <a href="{% url 'cursos:detalhe_curso' pk=curso.pk %}"
-                                        class="btn btn-action-premium text-white"
-                                        style="background-color: var(--brand-primary);" title="Ver Detalhes">
-                                        <i class="bi bi-eye"></i> Detalhes
-                                    </a>
-                                    <a href="{% url 'cursos:curso_concluintes' pk=curso.pk %}"
-                                        class="btn btn-action-premium text-white"
-                                        style="background-color: #334155;" title="Lista de Concluintes">
-                                        <i class="bi bi-person-check"></i>
-                                    </a>
-                                    <a href="{% url 'cursos:relatorio_frequencia' curso_pk=curso.pk %}"
-                                        class="btn btn-action-premium text-white" style="background-color: #f59e0b;"
-                                        title="Lista de Presença Completa">
-                                        <i class="bi bi-table"></i>
-                                    </a>
+                                    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 4px; width: fit-content;">
+                                        <a href="{% url 'cursos:detalhe_curso' pk=curso.pk %}"
+                                            class="btn btn-action-premium text-white"
+                                            style="background-color: var(--brand-primary);" title="Ver Detalhes">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+                                        <a href="{% url 'cursos:curso_concluintes' pk=curso.pk %}"
+                                            class="btn btn-action-premium text-white"
+                                            style="background-color: #334155;" title="Lista de Concluintes">
+                                            <i class="bi bi-person-check"></i>
+                                        </a>
+                                        <a href="{% url 'cursos:relatorio_frequencia' curso_pk=curso.pk %}"
+                                            class="btn btn-action-premium text-white" style="background-color: #f59e0b;"
+                                            title="Lista de Presença Completa">
+                                            <i class="bi bi-table"></i>
+                                        </a>
+                                    </div>
                                 </td>
                             </tr>
                             {% empty %}

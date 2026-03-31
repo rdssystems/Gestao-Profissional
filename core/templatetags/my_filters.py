@@ -20,5 +20,17 @@ def nome_curto(nome_completo):
     partes = nome_completo.split()
     if len(partes) <= 1:
         return nome_completo
-    # Retorna primeiro e último nome
-    return f"{partes[0]} {partes[-1]}"
+    
+    # Preposições comuns para nomes em português
+    preps = ['de', 'da', 'do', 'das', 'dos', 'e']
+    
+    # Pegamos o primeiro nome
+    primeiro = partes[0]
+    
+    # Verificamos se o segundo elemento é uma preposição
+    if len(partes) > 2 and partes[1].lower() in preps:
+        # Se for, combinamos Primeiro + Preposição + Próximo Nome
+        return f"{primeiro} {partes[1]} {partes[2]}"
+    
+    # Caso contrário, apenas Primeiro + Segundo
+    return f"{primeiro} {partes[1]}"

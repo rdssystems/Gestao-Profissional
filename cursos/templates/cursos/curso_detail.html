@@ -55,7 +55,7 @@
         style="background-color: #f59e0b;"><i class="bi bi-pencil"></i> Editar</a>
     {% endif %}
 
-    {% if perms.cursos.delete_curso or user.is_staff or user|has_group:"Coordenador" or user|has_group:"Auxiliar Administrativo" %}
+    {% if perms.cursos.delete_curso or user.is_staff or user|has_group:"Coordenador" %}
     <a href="{% url 'cursos:excluir_curso' pk=curso.pk %}" class="btn btn-action-premium text-white"
         style="background-color: #dc2626;"><i class="bi bi-trash"></i> Excluir</a>
     {% endif %}
