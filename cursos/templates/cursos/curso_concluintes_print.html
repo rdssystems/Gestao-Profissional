@@ -56,6 +56,9 @@
         <div class="info-item"><strong>Professor:</strong> {{ curso.nome_professor|default:"Não informado" }}</div>
         <div class="info-item"><strong>Total de Concluintes:</strong> {{ concluintes.count }}</div>
         <div class="info-item"><strong>Carga Horária:</strong> {{ curso.carga_horaria }} horas</div>
+        {% if curso.parceiro %}
+        <div class="info-item"><strong>Parceiro:</strong> {{ curso.parceiro.nome }}</div>
+        {% endif %}
     </div>
 
     <table>

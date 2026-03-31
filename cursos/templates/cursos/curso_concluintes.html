@@ -41,7 +41,10 @@
         </div>
         <div class="col-md-4 text-md-end">
             <p class="text-muted mb-1"><strong>Período:</strong> {{ curso.data_inicio|date:"d/m/Y" }} - {{ curso.data_fim|date:"d/m/Y" }}</p>
-            <p class="text-muted mb-0"><strong>Carga Horária:</strong> {{ curso.carga_horaria }}h</p>
+            <p class="text-muted mb-1"><strong>Carga Horária:</strong> {{ curso.carga_horaria }}h</p>
+            {% if curso.parceiro %}
+            <p class="text-muted mb-0"><strong>Parceiro:</strong> {{ curso.parceiro.nome }}</p>
+            {% endif %}
         </div>
     </div>
 </div>
@@ -68,7 +71,7 @@
                 <td>{{ curso.carga_horaria }}h</td>
                 <td>{{ curso.data_inicio|date:"d/m/Y" }}</td>
                 <td>{{ curso.data_fim|date:"d/m/Y" }}</td>
-                <td>{{ curso.parceiro|default:"-" }}</td>
+                <td>{{ curso.parceiro.nome|default:"-" }}</td>
             </tr>
             {% empty %}
             <tr>

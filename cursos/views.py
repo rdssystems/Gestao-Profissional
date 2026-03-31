@@ -4,7 +4,7 @@ import json
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
 import pandas as pd
-from django.db.models import Count, Prefetch, Exists, OuterRef # Import Count
+from django.db.models import Count, Prefetch, Exists, OuterRef, Q, Case, When, Value, IntegerField, Sum # Import Count
 from datetime import date, time, datetime # Import datetime and time
 from django.http import HttpResponse, Http404
 
@@ -20,8 +20,8 @@ from django import forms
 from django.forms import inlineformset_factory # Adicionar import
 
 # Importar modelos e formulários
-from .models import Curso, TipoCurso, Inscricao, RegistroAula, Chamada # Adicionar RegistroAula, Chamada
-from .forms import CursoForm, InscricaoForm, RegistroAulaForm, ChamadaFormSet, CursoCSVUploadForm, ChamadaForm # Adicionar RegistroAulaForm, ChamadaFormSet, CursoCSVUploadForm
+from .models import Curso, TipoCurso, Inscricao, RegistroAula, Chamada, Parceiro # Adicionar RegistroAula, Chamada, Parceiro
+from .forms import CursoForm, InscricaoForm, RegistroAulaForm, ChamadaFormSet, CursoCSVUploadForm, ChamadaForm, ParceiroForm # Adicionar ParceiroForm
 from core.mixins import StaffRequiredMixin, AuditLogMixin, CoordenadorRequiredMixin
 from alunos.models import Aluno
 from .validators import validar_conflito_matricula 
@@ -55,13 +55,28 @@ class CursoListView(LoginRequiredMixin, ListView):
     def get_queryset(self):
         user = self.request.user
         base_queryset = super().get_queryset()
+        
         if user.is_superuser:
-            return base_queryset.order_by('-data_inicio')
-        
-        if hasattr(user, 'profile') and user.profile.escola:
-            return base_queryset.filter(escola=user.profile.escola).order_by('-data_inicio')
-        
-        return base_queryset.none().order_by('-data_inicio')
+            qs = base_queryset
+            # Filtro por Escola (Unidade) para Admin
+            escola_id = self.request.GET.get('escola')
+            if escola_id:
+                qs = qs.filter(escola_id=escola_id)
+        elif hasattr(user, 'profile') and user.profile.escola:
+            qs = base_queryset.filter(escola=user.profile.escola)
+        else:
+            qs = base_queryset.none()
+
+        # Filtro de Busca (Search) para todos
+        search_query = self.request.GET.get('q')
+        if search_query:
+            qs = qs.filter(
+                Q(nome__icontains=search_query) | 
+                Q(nome_professor__icontains=search_query) |
+                Q(tipo_curso__nome__icontains=search_query)
+            )
+
+        return qs.order_by('-data_inicio')
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -81,6 +96,10 @@ class CursoListView(LoginRequiredMixin, ListView):
             context['tipos_curso'] = TipoCurso.objects.filter(escola=user.profile.escola)
         else:
             context['tipos_curso'] = TipoCurso.objects.none()
+        
+        # Adiciona escolas para o filtro de admin
+        if user.is_superuser:
+            context['escolas'] = Escola.objects.all().order_by('nome')
             
         return context
 
@@ -208,6 +227,7 @@ class CursoConcluintesXLSXView(LoginRequiredMixin, StaffRequiredMixin, View):
                 'CPF': insc.aluno.cpf,
                 'Escola': curso.escola.nome,
                 'Curso': curso.nome,
+                'Parceiro': curso.parceiro.nome if curso.parceiro else '-',
                 'Data Fim': curso.data_fim.strftime('%d/%m/%Y')
             })
             
@@ -795,39 +815,84 @@ class RelatorioFrequenciaView(LoginRequiredMixin, StaffRequiredMixin, DetailView
         # Buscar todos os registros de aula do curso ordendos por data (antigas para novas)
         registros = RegistroAula.objects.filter(curso=curso).order_by('data_aula')
         
-        # Buscar alunos (cursando e desistentes) para manter histórico completo
-        inscricoes = Inscricao.objects.filter(curso=curso).order_by('aluno__nome_completo').select_related('aluno')
-        
+        # Buscar alunos (cursando e desistentes)
+        # Ordenação: Cursando primeiro (ordem alfabética), depois Desistentes (ordem alfabética)
+        inscricoes = Inscricao.objects.filter(curso=curso).annotate(
+            is_desistente=Case(
+                When(status='desistente', then=Value(1)),
+                default=Value(0),
+                output_field=IntegerField(),
+            )
+        ).order_by('is_desistente', 'aluno__nome_completo').select_related('aluno')
+
         # Criar matriz de frequência
-        # Precisamos de uma lista de registros para o cabeçalho e para iterar na matriz
-        # Na matriz: { inscricao_id: [ status_presenca, ... ] } mantendo a ordem dos registros
         matriz_frequencia = []
         
-        # Cache das chamadas num dicionário de busca rápida: {(inscricao_id, registro_id): status}
+        # Cache das chamadas num dicionário de busca rápida
         resumo_chamadas = {
             (c.inscricao_id, c.registro_aula_id): c.status_presenca 
             for c in Chamada.objects.filter(registro_aula__curso=curso)
         }
+
+        total_presentes = 0
+        total_ausentes = 0
 
         for inscricao in inscricoes:
             linha_aluno = {
                 'aluno': inscricao.aluno.nome_completo,
                 'inscricao_id': inscricao.id,
                 'status': inscricao.status,
-                'presencas': []
+                'presencas': [],
+                'total_presencas': 0,
+                'total_aulas_registradas': 0
             }
-            presents = 0
-            absents = 0
             for reg in registros:
                 status = resumo_chamadas.get((inscricao.id, reg.id), '—')
                 linha_aluno['presencas'].append({
                     'status': status,
                     'data': reg.data_aula
                 })
+                
+                # Contabilizar para o aluno individualmente (apenas se houver P, A ou J)
+                if status in ['P', 'A', 'J']:
+                    linha_aluno['total_aulas_registradas'] += 1
+                
+                # Contabilizar totais globais e individuais
+                if status == 'P':
+                    total_presentes += 1
+                    linha_aluno['total_presencas'] += 1
+                elif status == 'A':
+                    total_ausentes += 1
+                elif status == 'J':
+                    # Opcional: Você pode querer contabilizar justificativa como presença ou neutro
+                    # Por enquanto, J conta como aula registrada mas não como presença.
+                    pass
+            
+            # Calcular porcentagem de frequência individual
+            if linha_aluno['total_aulas_registradas'] > 0:
+                linha_aluno['porcentagem_freq'] = int((linha_aluno['total_presencas'] / linha_aluno['total_aulas_registradas']) * 100)
+            else:
+                linha_aluno['porcentagem_freq'] = 0
+
             matriz_frequencia.append(linha_aluno)
+
+        # Calculando totais por registro (coluna) para exibir no final da tabela
+        totais_colunas = []
+        for reg in registros:
+            # Contar status 'P' e 'A' para este registro específico
+            p_count = Chamada.objects.filter(registro_aula=reg, status_presenca='P').count()
+            a_count = Chamada.objects.filter(registro_aula=reg, status_presenca='A').count()
+            totais_colunas.append({
+                'registro_id': reg.id,
+                'presencas': p_count,
+                'ausencias': a_count
+            })
 
         context['registros'] = registros
         context['matriz'] = matriz_frequencia
+        context['totais_colunas'] = totais_colunas
+        context['total_presentes'] = total_presentes
+        context['total_ausentes'] = total_ausentes
         return context
 
 class CursoCSVUploadView(LoginRequiredMixin, UserPassesTestMixin, View):
@@ -1147,4 +1212,51 @@ class RegenerarTokensView(LoginRequiredMixin, UserPassesTestMixin, View):
                 tokens_seen.add(str(curso.token_acesso))
         
         messages.success(request, f"Processamento concluído: {total_count} cursos verificados, {fix_count} códigos (tokens) corrigidos.")
-        return redirect('cursos:lista_cursos')
+        return redirect('cursos:lista_cursos')
+
+# --- CRUD para Parceiro ---
+
+class ParceiroListView(LoginRequiredMixin, StaffRequiredMixin, ListView):
+    model = Parceiro
+    template_name = 'cursos/parceiro_list.html'
+    context_object_name = 'parceiros'
+
+    def get_queryset(self):
+        user = self.request.user
+        if user.is_superuser:
+            return Parceiro.objects.all().order_by('escola__nome', 'nome')
+        if hasattr(user, 'profile') and user.profile.escola:
+            return Parceiro.objects.filter(escola=user.profile.escola).order_by('nome')
+        return Parceiro.objects.none()
+
+class ParceiroCreateView(LoginRequiredMixin, StaffRequiredMixin, AuditLogMixin, CreateView):
+    model = Parceiro
+    form_class = ParceiroForm
+    template_name = 'cursos/parceiro_form.html'
+    success_url = reverse_lazy('cursos:lista_parceiros')
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['user'] = self.request.user
+        return kwargs
+
+    def form_valid(self, form):
+        if not self.request.user.is_superuser:
+            form.instance.escola = self.request.user.profile.escola
+        return super().form_valid(form)
+
+class ParceiroUpdateView(LoginRequiredMixin, StaffRequiredMixin, AuditLogMixin, UpdateView):
+    model = Parceiro
+    form_class = ParceiroForm
+    template_name = 'cursos/parceiro_form.html'
+    success_url = reverse_lazy('cursos:lista_parceiros')
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['user'] = self.request.user
+        return kwargs
+
+class ParceiroDeleteView(LoginRequiredMixin, StaffRequiredMixin, AuditLogMixin, DeleteView):
+    model = Parceiro
+    template_name = 'cursos/curso_confirm_delete.html' 
+    success_url = reverse_lazy('cursos:lista_parceiros')

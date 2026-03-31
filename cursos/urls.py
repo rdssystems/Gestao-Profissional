@@ -14,12 +14,17 @@ urlpatterns = [
     path('<int:pk>/imprimir-lista/', views.CursoImprimirListaView.as_view(), name='curso_imprimir_lista'),
     path('<int:pk>/alterar_status/', views.CursoStatusUpdateView.as_view(), name='alterar_status_curso'),
 
+    # URLs para Parceiro
+    path('parceiros/', views.ParceiroListView.as_view(), name='lista_parceiros'),
+    path('parceiro/novo/', views.ParceiroCreateView.as_view(), name='criar_parceiro'),
+    path('parceiro/<int:pk>/editar/', views.ParceiroUpdateView.as_view(), name='editar_parceiro'),
+    path('parceiro/<int:pk>/excluir/', views.ParceiroDeleteView.as_view(), name='excluir_parceiro'),
+
     # URLs para TipoCurso
     path('tipos/', views.TipoCursoListView.as_view(), name='lista_tipos_curso'),
     path('tipos/novo/', views.TipoCursoCreateView.as_view(), name='criar_tipo_curso'),
     path('tipos/<int:pk>/editar/', views.TipoCursoUpdateView.as_view(), name='editar_tipo_curso'),
     path('tipos/<int:pk>/excluir/', views.TipoCursoDeleteView.as_view(), name='excluir_tipo_curso'),
-
     # URLs para Inscrição
     path('<int:curso_pk>/inscrever/', views.InscricaoCreateView.as_view(), name='inscrever_aluno'),
     path('inscricao/<int:pk>/alterar-status/', views.UpdateInscricaoStatusView.as_view(), name='alterar_status_inscricao'),

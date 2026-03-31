@@ -118,8 +118,16 @@
         /* Ajuste de largura para os containers principal - Mais responsivo para telas menores que 1080p */
         .navbar-custom .container,
         main.container {
-            max-width: 1320px !important; /* Padrão do Bootstrap XXL */
+            max-width: 1440px !important; /* Aumentado para dar mais ar */
             width: 95% !important;
+            margin-left: auto !important;
+            margin-right: auto !important;
+        }
+
+        /* Container Fluído especial para tabelas largas */
+        main.container-fluid {
+            max-width: 98% !important;
+            width: 98% !important;
             margin-left: auto !important;
             margin-right: auto !important;
         }
@@ -403,7 +411,7 @@
     <!-- ================================ -->
     <!--              MAIN                -->
     <!-- ================================ -->
-    <main class="container mb-4">
+    <main class="{% block main_class %}container{% endblock %} mb-4">
 
         {% if messages %}
         {% for message in messages %}

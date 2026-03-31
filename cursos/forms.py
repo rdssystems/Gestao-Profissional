@@ -1,5 +1,5 @@
 from django import forms
-from .models import Curso, TipoCurso, Inscricao, RegistroAula, Chamada # Adicionar RegistroAula, Chamada
+from .models import Curso, TipoCurso, Inscricao, RegistroAula, Chamada, Parceiro # Adicionar RegistroAula, Chamada, Parceiro
 from alunos.models import Aluno
 from escolas.models import Escola # Import Escola for queryset filtering
 from django.forms import inlineformset_factory # Adicionar import
@@ -13,14 +13,14 @@ class CursoForm(forms.ModelForm):
             'tipo_curso': forms.Select(attrs={'class': 'form-select form-select-premium'}),
             'nome': forms.TextInput(attrs={'class': 'form-control form-control-premium'}),
             'nome_professor': forms.TextInput(attrs={'class': 'form-control form-control-premium', 'placeholder': 'Opcional'}),
-            'parceiro': forms.TextInput(attrs={'class': 'form-control form-control-premium', 'placeholder': 'Opcional'}),
+            'parceiro': forms.Select(attrs={'class': 'form-select form-select-premium'}),
             'carga_horaria': forms.NumberInput(attrs={'class': 'form-control form-control-premium'}),
             'vagas': forms.NumberInput(attrs={'class': 'form-control form-control-premium', 'placeholder': 'Ex: 30'}),
-            'data_inicio': forms.DateInput(attrs={'class': 'form-control form-control-premium', 'type': 'date'}),
-            'data_fim': forms.DateInput(attrs={'class': 'form-control form-control-premium', 'type': 'date'}),
+            'data_inicio': forms.DateInput(attrs={'class': 'form-control form-control-premium', 'type': 'date'}, format='%Y-%m-%d'),
+            'data_fim': forms.DateInput(attrs={'class': 'form-control form-control-premium', 'type': 'date'}, format='%Y-%m-%d'),
             'turno': forms.Select(attrs={'class': 'form-select form-select-premium'}),
-            'horario': forms.TimeInput(attrs={'class': 'form-control form-control-premium', 'type': 'time'}),
-            'horario_fim': forms.TimeInput(attrs={'class': 'form-control form-control-premium', 'type': 'time'}),
+            'horario': forms.TimeInput(attrs={'class': 'form-control form-control-premium', 'type': 'time'}, format='%H:%M'),
+            'horario_fim': forms.TimeInput(attrs={'class': 'form-control form-control-premium', 'type': 'time'}, format='%H:%M'),
             'dia_inicio_semana': forms.Select(attrs={'class': 'form-select form-select-premium'}),
             'dia_fim_semana': forms.Select(attrs={'class': 'form-select form-select-premium'}),
             'status': forms.Select(attrs={'class': 'form-select form-select-premium'}),
@@ -37,12 +37,27 @@ class CursoForm(forms.ModelForm):
                 self.fields['escola'].initial = escola
                 self.fields['escola'].disabled = True
                 self.fields['tipo_curso'].queryset = TipoCurso.objects.filter(escola=escola)
+                self.fields['parceiro'].queryset = Parceiro.objects.filter(escola=escola)
             else:
                 self.fields['escola'].queryset = Escola.objects.none()
                 self.fields['tipo_curso'].queryset = TipoCurso.objects.none()
+                self.fields['parceiro'].queryset = Parceiro.objects.none()
         else: # Superuser can see all schools and types
             self.fields['escola'].queryset = Escola.objects.all()
             self.fields['tipo_curso'].queryset = TipoCurso.objects.all()
+            self.fields['parceiro'].queryset = Parceiro.objects.all()
+
+        # Tornar campos obrigatórios conforme solicitado
+        self.fields['data_inicio'].required = True
+        self.fields['data_fim'].required = True
+        self.fields['turno'].required = True
+        self.fields['horario'].required = True
+        self.fields['carga_horaria'].required = True
+        self.fields['vagas'].required = True
+
+        # Se for criação de curso, status padrão é 'Aberta'
+        if not self.instance.pk:
+            self.fields['status'].initial = 'Aberta'
 
 class InscricaoForm(forms.ModelForm):
     class Meta:
@@ -144,3 +159,22 @@ ChamadaFormSet = inlineformset_factory(
 
 class CursoCSVUploadForm(forms.Form):
     csv_file = forms.FileField(label="Selecionar arquivo CSV", help_text="Faça o upload de um arquivo CSV com os dados dos cursos.", widget=forms.FileInput(attrs={'class': 'form-control form-control-premium'}))
+class ParceiroForm(forms.ModelForm):
+    class Meta:
+        model = Parceiro
+        fields = ['escola', 'nome']
+        widgets = {
+            'escola': forms.Select(attrs={'class': 'form-select form-select-premium'}),
+            'nome': forms.TextInput(attrs={'class': 'form-control form-control-premium', 'placeholder': 'Nome da empresa ou parceiro'}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        user = kwargs.pop('user', None)
+        super().__init__(*args, **kwargs)
+        
+        if user and not user.is_superuser and hasattr(user, 'profile') and user.profile.escola:
+            self.fields['escola'].queryset = Escola.objects.filter(pk=user.profile.escola.pk)
+            self.fields['escola'].initial = user.profile.escola
+            self.fields['escola'].disabled = True
+        elif not user.is_superuser:
+            self.fields['escola'].queryset = self.fields['escola'].queryset.none()

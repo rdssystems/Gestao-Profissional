@@ -58,13 +58,19 @@
 
                     <div class="row">
                         <div class="col-md-6 mb-3">
-                            <label class="form-label">{{ form.carga_horaria.label }}</label>
+                            <label class="form-label fw-bold">{{ form.carga_horaria.label }} <span class="text-danger">*</span></label>
                             <div class="custom-input">{{ form.carga_horaria }}</div>
                         </div>
                         <div class="col-md-6 mb-3">
-                            <label class="form-label">{{ form.vagas.label }}</label>
+                            <label class="form-label fw-bold">{{ form.vagas.label }} <span class="text-danger">*</span></label>
                             <div class="custom-input">{{ form.vagas }}</div>
                         </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">{{ form.parceiro.label }}</label>
+                        <div class="custom-input">{{ form.parceiro }}</div>
+                        <div class="form-text small">Se o parceiro não estiver na lista, cadastre-o na aba "Parceiros".</div>
                     </div>
 
                     <div class="mb-3">
@@ -74,25 +80,42 @@
 
                     <div class="row">
                         <div class="col-md-6 mb-3">
-                            <label class="form-label">{{ form.data_inicio.label }}</label>
+                            <label class="form-label fw-bold">{{ form.data_inicio.label }} <span class="text-danger">*</span></label>
                             <div class="custom-input">{{ form.data_inicio }}</div>
                         </div>
 
                         <div class="col-md-6 mb-3">
-                            <label class="form-label">{{ form.data_fim.label }}</label>
+                            <label class="form-label fw-bold">{{ form.data_fim.label }} <span class="text-danger">*</span></label>
                             <div class="custom-input">{{ form.data_fim }}</div>
                         </div>
                     </div>
 
                     <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">{{ form.turno.label }}</label>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label fw-bold">{{ form.turno.label }} <span class="text-danger">*</span></label>
                             <div class="custom-input">{{ form.turno }}</div>
                         </div>
 
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">{{ form.horario.label }}</label>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label fw-bold">{{ form.horario.label }} <span class="text-danger">*</span></label>
                             <div class="custom-input">{{ form.horario }}</div>
+                        </div>
+
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label fw-bold">{{ form.horario_fim.label }}</label>
+                            <div class="custom-input">{{ form.horario_fim }}</div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">{{ form.dia_inicio_semana.label }}</label>
+                            <div class="custom-input">{{ form.dia_inicio_semana }}</div>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">{{ form.dia_fim_semana.label }}</label>
+                            <div class="custom-input">{{ form.dia_fim_semana }}</div>
                         </div>
                     </div>
 

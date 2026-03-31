@@ -53,30 +53,17 @@
         font-size: 0.85rem;
     }
 
-    /* Coluna fixada para os nomes */
+    /* Coluna fixada (Nome + Frequência) - Única e Robusta */
     .sticky-col {
         position: sticky;
         left: 0;
         background-color: #f8fafc;
         z-index: 2;
-        min-width: 180px;
-        /* Reduced width */
-        max-width: 180px;
+        min-width: 240px; 
+        max-width: 240px;
         text-align: left !important;
         font-weight: 600;
         border-right: 2px solid #e2e8f0 !important;
-    }
-
-    /* Cabeçalho fixado */
-    .sticky-header {
-        position: sticky;
-        top: 0;
-        background-color: #f1f5f9;
-        z-index: 3;
-        font-weight: 700;
-        min-width: 45px;
-        /* Compact columns */
-        width: 45px;
     }
 
     /* Intersecção fixada (canto superior esquerdo) */
@@ -87,7 +74,7 @@
         z-index: 4;
         background-color: #e2e8f0;
         border-right: 2px solid #cbd5e1 !important;
-        min-width: 180px;
+        min-width: 240px;
     }
 
     .status-badge {
@@ -236,7 +223,9 @@
     </div>
 </div>
 
-<div class="d-flex justify-content-between align-items-center mb-4 no-print">
+    <!-- Cards removidos conforme solicitação para economizar espaço -->
+
+    <div class="d-flex justify-content-between align-items-center mb-4 no-print">
     <div>
         <h1 class="page-title mb-1">Relatório de Frequência</h1>
         <p class="text-muted mb-0">Curso: <strong>{{ curso.nome }}</strong></p>
@@ -263,7 +252,12 @@
         <table class="freq-table">
             <thead>
                 <tr>
-                    <th class="sticky-intersect">Alunos</th>
+                    <th class="sticky-intersect">
+                        <div class="d-flex justify-content-between align-items-center w-100 px-1">
+                            <span>Alunos</span>
+                            <span class="text-muted small">Freq. %</span>
+                        </div>
+                    </th>
                     {% for reg in registros %}
                     <th class="sticky-header">
                         <div style="font-size: 0.65rem; opacity: 0.8;">{{ reg.data_aula|date:"D" }}</div>
@@ -277,12 +271,23 @@
                 {% for linha in matriz %}
                 <tr {% if linha.status == 'desistente' %}style="background-color: #fff5f5; opacity: 0.85;"{% endif %}>
                     <td class="sticky-col">
-                        <span class="aluno-nome" title="{{ linha.aluno }}">
-                            {{ linha.aluno|nome_curto }}
-                            {% if linha.status == 'desistente' %}
-                                <div class="text-danger fw-bold" style="font-size: 0.6rem; margin-top: -3px;">(DESISTENTE)</div>
-                            {% endif %}
-                        </span>
+                        <div class="d-flex justify-content-between align-items-center w-100">
+                            <span class="aluno-nome flex-grow-1" title="{{ linha.aluno }}">
+                                {{ linha.aluno|nome_curto }}
+                                {% if linha.status == 'desistente' %}
+                                    <div class="text-danger fw-bold" style="font-size: 0.6rem; margin-top: -3px;">(DESISTENTE)</div>
+                                {% endif %}
+                            </span>
+                            <span class="ms-2">
+                                {% if linha.porcentagem_freq >= 75 %}
+                                    <span class="text-success">{{ linha.porcentagem_freq }}%</span>
+                                {% elif linha.porcentagem_freq >= 50 %}
+                                    <span class="text-warning">{{ linha.porcentagem_freq }}%</span>
+                                {% else %}
+                                    <span class="text-danger">{{ linha.porcentagem_freq }}%</span>
+                                {% endif %}
+                            </span>
+                        </div>
                     </td>
                     {% for presenca in linha.presencas %}
                     <td>
@@ -306,6 +311,35 @@
                 </tr>
                 {% endfor %}
             </tbody>
+            
+            {% if matriz %}
+            <tfoot>
+                <!-- Linha de Presentes -->
+                <tr style="background-color: #f0fdf4; border-top: 2px solid #b7e4c7 !important;">
+                    <td class="sticky-col fw-bold text-success" style="background-color: #f0fdf4;">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="small text-uppercase">Presentes</span>
+                            <span class="text-muted small fw-normal">—</span>
+                        </div>
+                    </td>
+                    {% for total in totais_colunas %}
+                    <td class="fw-bold text-success" style="background-color: #f0fdf4;">{{ total.presencas }}</td>
+                    {% endfor %}
+                </tr>
+                <!-- Linha de Ausentes -->
+                <tr style="background-color: #fef2f2; border-top: 1px solid #fecaca !important;">
+                    <td class="sticky-col fw-bold text-danger" style="background-color: #fef2f2;">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="small text-uppercase">Ausentes</span>
+                            <span class="text-muted small fw-normal">—</span>
+                        </div>
+                    </td>
+                    {% for total in totais_colunas %}
+                    <td class="fw-bold text-danger" style="background-color: #fef2f2;">{{ total.ausencias }}</td>
+                    {% endfor %}
+                </tr>
+            </tfoot>
+            {% endif %}
         </table>
     </div>
 </div>
