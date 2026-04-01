@@ -1,0 +1,126 @@
+<div class="modal-header border-0 pb-0">
+    <div class="d-flex align-items-center">
+        <div class="icon-shape bg-primary-soft text-primary rounded-circle me-3" style="width: 50px; height: 50px;">
+            <i class="bi bi-star-fill"></i>
+        </div>
+        <div>
+            <h5 class="modal-title fw-bold mb-0">Avaliando: {{ inscricao.aluno.nome_completo }}</h5>
+            <p class="text-muted small mb-0">Curso: {{ inscricao.curso.nome }}</p>
+        </div>
+    </div>
+    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+</div>
+
+<form method="POST" action="{% url 'cursos:avaliar_estudante_ajax' inscricao.pk %}">
+    {% csrf_token %}
+    <div class="modal-body p-4">
+        <!-- Seção: Conceitual -->
+        <div class="mb-4">
+            <h6 class="fw-bold text-uppercase small text-primary mb-3"><i class="bi bi-journal-text me-2"></i>Seção 1: Conceitual</h6>
+            <div class="rounded-3 p-3 bg-light border border-opacity-10">
+                <div class="row g-3 align-items-center mb-3">
+                    <div class="col-md-6">1. Prático</div>
+                    <div class="col-md-6 d-flex gap-2 justify-content-end">
+                        {% for radio in form.conceptual_pratico %}
+                            <input type="radio" name="{{ radio.data.name }}" id="{{ radio.id_for_label }}" value="{{ radio.data.value }}" class="btn-check" {% if radio.data.selected %}checked{% endif %} required>
+                            <label class="btn btn-sm btn-outline-primary px-3 rounded-pill" for="{{ radio.id_for_label }}">{{ radio.choice_label }}</label>
+                        {% endfor %}
+                    </div>
+                </div>
+                <div class="row g-3 align-items-center mb-3">
+                    <div class="col-md-6">2. Teórico</div>
+                    <div class="col-md-6 d-flex gap-2 justify-content-end">
+                        {% for radio in form.conceptual_teorico %}
+                            <input type="radio" name="{{ radio.data.name }}" id="{{ radio.id_for_label }}" value="{{ radio.data.value }}" class="btn-check" {% if radio.data.selected %}checked{% endif %} required>
+                            <label class="btn btn-sm btn-outline-primary px-3 rounded-pill" for="{{ radio.id_for_label }}">{{ radio.choice_label }}</label>
+                        {% endfor %}
+                    </div>
+                </div>
+                <div class="row g-3 align-items-center">
+                    <div class="col-md-6">3. Nota (Média Avaliações/Prova)</div>
+                    <div class="col-md-6 d-flex gap-2 justify-content-end">
+                        {% for radio in form.conceptual_nota %}
+                            <input type="radio" name="{{ radio.data.name }}" id="{{ radio.id_for_label }}" value="{{ radio.data.value }}" class="btn-check" {% if radio.data.selected %}checked{% endif %} required>
+                            <label class="btn btn-sm btn-outline-primary px-3 rounded-pill" for="{{ radio.id_for_label }}">{{ radio.choice_label }}</label>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Seção: Comportamental -->
+        <div class="mb-4">
+            <h6 class="fw-bold text-uppercase small text-info mb-3"><i class="bi bi-people me-2"></i>Seção 2: Comportamental</h6>
+            <div class="rounded-3 p-3 bg-light border border-opacity-10">
+                <div class="row g-3 align-items-center mb-3">
+                    <div class="col-md-6">1. Assiduidade</div>
+                    <div class="col-md-6 d-flex gap-2 justify-content-end">
+                        {% for radio in form.behavioral_pratico %}
+                            <input type="radio" name="{{ radio.data.name }}" id="{{ radio.id_for_label }}" value="{{ radio.data.value }}" class="btn-check" {% if radio.data.selected %}checked{% endif %} required>
+                            <label class="btn btn-sm btn-outline-info px-3 rounded-pill" for="{{ radio.id_for_label }}">{{ radio.choice_label }}</label>
+                        {% endfor %}
+                    </div>
+                </div>
+                <div class="row g-3 align-items-center mb-3">
+                    <div class="col-md-6">2. Interesse</div>
+                    <div class="col-md-6 d-flex gap-2 justify-content-end">
+                        {% for radio in form.behavioral_teorico %}
+                            <input type="radio" name="{{ radio.data.name }}" id="{{ radio.id_for_label }}" value="{{ radio.data.value }}" class="btn-check" {% if radio.data.selected %}checked{% endif %} required>
+                            <label class="btn btn-sm btn-outline-info px-3 rounded-pill" for="{{ radio.id_for_label }}">{{ radio.choice_label }}</label>
+                        {% endfor %}
+                    </div>
+                </div>
+                <div class="row g-3 align-items-center">
+                    <div class="col-md-6">3. Visual (Higiene/Postura)</div>
+                    <div class="col-md-6 d-flex gap-2 justify-content-end">
+                        {% for radio in form.behavioral_nota %}
+                            <input type="radio" name="{{ radio.data.name }}" id="{{ radio.id_for_label }}" value="{{ radio.data.value }}" class="btn-check" {% if radio.data.selected %}checked{% endif %} required>
+                            <label class="btn btn-sm btn-outline-info px-3 rounded-pill" for="{{ radio.id_for_label }}">{{ radio.choice_label }}</label>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Seção: Atitudinal -->
+        <div class="mb-2">
+            <h6 class="fw-bold text-uppercase small text-warning mb-3"><i class="bi bi-lightbulb me-2"></i>Seção 3: Atitudinal</h6>
+            <div class="rounded-3 p-3 bg-light border border-opacity-10">
+                <div class="row g-3 align-items-center mb-3">
+                    <div class="col-md-6">1. Relacionamento Interpessoal</div>
+                    <div class="col-md-6 d-flex gap-2 justify-content-end">
+                        {% for radio in form.attitudinal_pratico %}
+                            <input type="radio" name="{{ radio.data.name }}" id="{{ radio.id_for_label }}" value="{{ radio.data.value }}" class="btn-check" {% if radio.data.selected %}checked{% endif %} required>
+                            <label class="btn btn-sm btn-outline-warning px-3 rounded-pill" for="{{ radio.id_for_label }}">{{ radio.choice_label }}</label>
+                        {% endfor %}
+                    </div>
+                </div>
+                <div class="row g-3 align-items-center mb-3">
+                    <div class="col-md-6">2. Comunicação</div>
+                    <div class="col-md-6 d-flex gap-2 justify-content-end">
+                        {% for radio in form.attitudinal_teorico %}
+                            <input type="radio" name="{{ radio.data.name }}" id="{{ radio.id_for_label }}" value="{{ radio.data.value }}" class="btn-check" {% if radio.data.selected %}checked{% endif %} required>
+                            <label class="btn btn-sm btn-outline-warning px-3 rounded-pill" for="{{ radio.id_for_label }}">{{ radio.choice_label }}</label>
+                        {% endfor %}
+                    </div>
+                </div>
+                <div class="row g-3 align-items-center">
+                    <div class="col-md-6">3. Criatividade</div>
+                    <div class="col-md-6 d-flex gap-2 justify-content-end">
+                        {% for radio in form.attitudinal_nota %}
+                            <input type="radio" name="{{ radio.data.name }}" id="{{ radio.id_for_label }}" value="{{ radio.data.value }}" class="btn-check" {% if radio.data.selected %}checked{% endif %} required>
+                            <label class="btn btn-sm btn-outline-warning px-3 rounded-pill" for="{{ radio.id_for_label }}">{{ radio.choice_label }}</label>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-footer border-0 p-4 pt-0">
+        <button type="button" class="btn btn-light py-2 px-4 rounded-pill" data-bs-dismiss="modal">Cancelar</button>
+        <button type="submit" class="btn btn-premium py-2 px-5 rounded-pill shadow-sm">
+            <i class="bi bi-save me-2"></i>Salvar Avaliação
+        </button>
+    </div>
+</form>

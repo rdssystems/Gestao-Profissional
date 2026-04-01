@@ -1,0 +1,51 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Avaliação do Curso{% endblock %}
+
+{% block content %}
+<div class="container d-flex align-items-center justify-content-center min-vh-80 animate-up">
+    <div class="col-md-5 col-lg-4">
+        <div class="premium-card p-5 border-0 shadow-lg text-center">
+            <div class="icon-shape bg-success-soft text-success fs-1 mb-4 mx-auto rounded-circle" style="width: 80px; height: 80px;">
+                <i class="bi bi-star-fill"></i>
+            </div>
+            <h2 class="fw-bold mb-2">Avaliação do Aluno</h2>
+            <p class="text-muted mb-4 small">Sua opinião é muito importante! <br>Identifique-se com seu CPF para avaliar o curso: <br><strong>{{ curso.nome }}</strong></p>
+            
+            <form method="GET" action="{% url 'cursos:avaliar_curso_publico' curso.token_acesso %}">
+                <div class="form-floating mb-3 text-start">
+                    <input type="text" name="cpf" class="form-control form-control-premium" id="cpfInput" placeholder="000.000.000-00" required>
+                    <label for="cpfInput">Digite seu CPF</label>
+                </div>
+
+                {% if messages %}
+                <div class="mb-3">
+                    {% for message in messages %}
+                        <div class="alert alert-danger small py-2 mb-0 border-0 bg-danger bg-opacity-10 text-danger text-start">
+                            <i class="bi bi-exclamation-circle me-2"></i>{{ message }}
+                        </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+                <button type="submit" class="btn btn-premium btn-success w-100 py-3 mb-3 border-0">
+                    Acessar Formulário <i class="bi bi-arrow-right ms-2"></i>
+                </button>
+            </form>
+            
+            <p class="text-muted small mb-0">Apenas alunos concluintes podem participar da avaliação.</p>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.mask/1.14.16/jquery.mask.min.js"></script>
+<script>
+    $(document).ready(function(){
+        $('#cpfInput').mask('000.000.000-00');
+    });
+</script>
+{% endblock %}

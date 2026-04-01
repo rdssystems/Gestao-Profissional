@@ -1,0 +1,130 @@
+<div class="modal-header border-0 pb-0">
+    <div>
+        <h5 class="modal-title fw-bold" id="detalhesModalLabel">Detalhamento da Avaliação</h5>
+        <p class="text-muted small mb-0">{{ inscricao.aluno.nome_completo }}</p>
+    </div>
+    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+</div>
+<div class="modal-body pt-4">
+    <div class="nav nav-pills nav-pills-premium mb-4 d-flex justify-content-center" id="pills-tab-detalhes" role="tablist">
+        <button class="nav-link active" id="tab-prof" data-bs-toggle="pill" data-bs-target="#content-prof" type="button" role="tab" aria-controls="content-prof" aria-selected="true">
+            <i class="bi bi-mortarboard me-2"></i>Professor
+        </button>
+        <button class="nav-link" id="tab-aluno" data-bs-toggle="pill" data-bs-target="#content-aluno" type="button" role="tab" aria-controls="content-aluno" aria-selected="false">
+            <i class="bi bi-person-check me-2"></i>Aluno
+        </button>
+    </div>
+
+    <div class="tab-content" id="pills-tabContent">
+        <!-- Detalhes Professor -->
+        <div class="tab-pane fade show active" id="content-prof">
+            {% if av_prof %}
+                <div class="mb-4">
+                    <h6 class="fw-bold text-purple mb-3 border-bottom pb-1">🧠 Avaliação de Desempenho (Instrutor)</h6>
+                    
+                    <div class="mb-4">
+                        <p class="small text-muted fw-bold mb-2">Conceitual</p>
+                        <div class="row g-3">
+                            <div class="col-4"><span class="text-muted small d-block">Prático:</span> <span class="badge bg-purple-soft text-purple">{{ av_prof.get_conceptual_pratico_display }}</span></div>
+                            <div class="col-4"><span class="text-muted small d-block">Teórico:</span> <span class="badge bg-purple-soft text-purple">{{ av_prof.get_conceptual_teorico_display }}</span></div>
+                            <div class="col-4"><span class="text-muted small d-block">Nota:</span> <span class="badge bg-purple-soft text-purple">{{ av_prof.get_conceptual_nota_display }}</span></div>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <p class="small text-muted fw-bold mb-2">Comportamental</p>
+                        <div class="row g-3">
+                            <div class="col-4"><span class="text-muted small d-block">Prazos:</span> <span class="badge bg-purple-soft text-purple">{{ av_prof.get_behavioral_pratico_display }}</span></div>
+                            <div class="col-4"><span class="text-muted small d-block">Interesse:</span> <span class="badge bg-purple-soft text-purple">{{ av_prof.get_behavioral_teorico_display }}</span></div>
+                            <div class="col-4"><span class="text-muted small d-block">Apresentação:</span> <span class="badge bg-purple-soft text-purple">{{ av_prof.get_behavioral_nota_display }}</span></div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <p class="small text-muted fw-bold mb-2">Atitudinal</p>
+                        <div class="row g-3">
+                            <div class="col-4"><span class="text-muted small d-block">Interação:</span> <span class="badge bg-purple-soft text-purple">{{ av_prof.get_attitudinal_pratico_display }}</span></div>
+                            <div class="col-4"><span class="text-muted small d-block">Comunicação:</span> <span class="badge bg-purple-soft text-purple">{{ av_prof.get_attitudinal_teorico_display }}</span></div>
+                            <div class="col-4"><span class="text-muted small d-block">Criatividade:</span> <span class="badge bg-purple-soft text-purple">{{ av_prof.get_attitudinal_nota_display }}</span></div>
+                        </div>
+                    </div>
+                </div>
+            {% else %}
+                <div class="text-center py-5">
+                    <i class="bi bi-slash-circle fs-1 text-muted opacity-25"></i>
+                    <p class="text-muted mt-2">Nenhuma avaliação do professor disponível.</p>
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- Detalhes Aluno -->
+        <div class="tab-pane fade" id="content-aluno">
+            {% if av_aluno %}
+                <div class="row g-3 overflow-auto" style="max-height: 500px;">
+                    <!-- 1 - Conteúdo -->
+                    <div class="col-12">
+                        <h6 class="fw-bold text-primary mb-3 border-bottom pb-1"><i class="bi bi-book me-2"></i>Sobre o Conteúdo</h6>
+                        <div class="row g-2 small">
+                            <div class="col-12 d-flex justify-content-between"><span>Conteúdo Cumprido:</span> <span class="badge bg-primary-soft text-primary">{{ av_aluno.get_c1_1_display }}</span></div>
+                            <div class="col-12 d-flex justify-content-between"><span>Material Didático:</span> <span class="badge bg-primary-soft text-primary">{{ av_aluno.get_c1_2_display }}</span></div>
+                            <div class="col-12 d-flex justify-content-between"><span>Recursos Audiovisuais:</span> <span class="badge bg-primary-soft text-primary">{{ av_aluno.get_c1_3_display }}</span></div>
+                        </div>
+                    </div>
+
+                    <!-- 2 - Instrutor -->
+                    <div class="col-12 mt-4">
+                        <h6 class="fw-bold text-primary mb-3 border-bottom pb-1"><i class="bi bi-person-badge me-2"></i>Sobre o Instrutor</h6>
+                        <div class="row g-2 small">
+                            <div class="col-12 d-flex justify-content-between"><span>Conhecimento do Instrutor:</span> <span class="badge bg-primary-soft text-primary">{{ av_aluno.get_c2_1_display }}</span></div>
+                            <div class="col-12 d-flex justify-content-between"><span>Forma de ensinar:</span> <span class="badge bg-primary-soft text-primary">{{ av_aluno.get_c2_2_display }}</span></div>
+                            <div class="col-12 d-flex justify-content-between"><span>Estímulo à participação:</span> <span class="badge bg-primary-soft text-primary">{{ av_aluno.get_c2_3_display }}</span></div>
+                            <div class="col-12 d-flex justify-content-between"><span>Objetividade e Clareza:</span> <span class="badge bg-primary-soft text-primary">{{ av_aluno.get_c2_4_display }}</span></div>
+                            <div class="col-12 d-flex justify-content-between"><span>Técnicas de ensino:</span> <span class="badge bg-primary-soft text-primary">{{ av_aluno.get_c2_5_display }}</span></div>
+                            <div class="col-12 d-flex justify-content-between"><span>Esclarecimento de dúvidas:</span> <span class="badge bg-primary-soft text-primary">{{ av_aluno.get_c2_6_display }}</span></div>
+                            <div class="col-12 d-flex justify-content-between"><span>Atenção às solicitações:</span> <span class="badge bg-primary-soft text-primary">{{ av_aluno.get_c2_7_display }}</span></div>
+                            <div class="col-12 d-flex justify-content-between"><span>Cumprimento de horários:</span> <span class="badge bg-primary-soft text-primary">{{ av_aluno.get_c2_8_display }}</span></div>
+                            <div class="col-12 d-flex justify-content-between"><span>Assiduidade (Presença):</span> <span class="badge bg-primary-soft text-primary">{{ av_aluno.get_c2_9_display }}</span></div>
+                        </div>
+                    </div>
+
+                    <!-- 3 - Espaço Físico -->
+                    <div class="col-12 mt-4">
+                        <h6 class="fw-bold text-primary mb-3 border-bottom pb-1"><i class="bi bi-building me-2"></i>Estrutura e Organização</h6>
+                        <div class="row g-2 small">
+                            <div class="col-12 d-flex justify-content-between"><span>Espaço e Instalações:</span> <span class="badge bg-primary-soft text-primary">{{ av_aluno.get_c3_1_display }}</span></div>
+                            <div class="col-12 d-flex justify-content-between"><span>Facilidade na inscrição:</span> <span class="badge bg-primary-soft text-primary">{{ av_aluno.get_c3_2_display }}</span></div>
+                            <div class="col-12 d-flex justify-content-between"><span>Atendimento da coordenação:</span> <span class="badge bg-primary-soft text-primary">{{ av_aluno.get_c3_3_display }}</span></div>
+                            <div class="col-12 d-flex justify-content-between"><span>Carga horária adequada:</span> <span class="badge bg-primary-soft text-primary">{{ av_aluno.get_c3_4_display }}</span></div>
+                        </div>
+                    </div>
+
+                    <!-- 4 - Auto Avaliação -->
+                    <div class="col-12 mt-4">
+                        <h6 class="fw-bold text-primary mb-3 border-bottom pb-1"><i class="bi bi-stars me-2"></i>Auto-Avaliação</h6>
+                        <div class="row g-2 small">
+                            <div class="col-12 d-flex justify-content-between"><span>Aprendizado adquirido:</span> <span class="badge bg-primary-soft text-primary">{{ av_aluno.get_c4_1_display }}</span></div>
+                            <div class="col-12 d-flex justify-content-between"><span>Pontualidade própria:</span> <span class="badge bg-primary-soft text-primary">{{ av_aluno.get_c4_2_display }}</span></div>
+                            <div class="col-12 d-flex justify-content-between"><span>Minha participação:</span> <span class="badge bg-primary-soft text-primary">{{ av_aluno.get_c4_3_display }}</span></div>
+                            <div class="col-12 d-flex justify-content-between"><span>Relacionamento com colegas:</span> <span class="badge bg-primary-soft text-primary">{{ av_aluno.get_c4_4_display }}</span></div>
+                        </div>
+                    </div>
+
+                    <!-- Comentários -->
+                    {% if av_aluno.comentarios %}
+                    <div class="col-12 mt-4">
+                        <h6 class="fw-bold small mb-2 text-muted">Comentários e Sugestões:</h6>
+                        <div class="p-3 bg-light rounded text-muted small italic border-start border-4 border-primary">
+                            "{{ av_aluno.comentarios }}"
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            {% else %}
+                <div class="text-center py-5">
+                    <i class="bi bi-slash-circle fs-1 text-muted opacity-25"></i>
+                    <p class="text-muted mt-2">Nenhuma avaliação do aluno disponível.</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>

@@ -208,6 +208,7 @@
 
 <body class="d-flex flex-column min-vh-100">
 
+    {% if not hide_navbar %}
     <!-- ================================ -->
     <!--             NAVBAR               -->
     <!-- ================================ -->
@@ -274,6 +275,14 @@
                         {% url 'cursos:matricula' as matriculas_url %}
                         <a class="nav-link {% if request.path == matriculas_url or request.path|startswith:matriculas_url %}active-nav-link{% endif %}"
                             href="{{ matriculas_url }}">Matrículas</a>
+                    </li>
+                    {% endif %}
+
+                    {% if user.is_authenticated %}
+                    <li class="nav-item">
+                        {% url 'documentos:lista_documentos' as documentos_url %}
+                        <a class="nav-link {% if request.path == documentos_url or request.path|startswith:documentos_url %}active-nav-link{% endif %}"
+                            href="{{ documentos_url }}">Drive</a>
                     </li>
                     {% endif %}
 
@@ -406,12 +415,13 @@
 
         </div>
     </nav>
+    {% endif %}
 
 
     <!-- ================================ -->
     <!--              MAIN                -->
     <!-- ================================ -->
-    <main class="{% block main_class %}container{% endblock %} mb-4">
+    <main class="{% block main_class %}container{% endblock %} mb-4" {% if hide_navbar %}style="padding-top: 2rem !important;"{% endif %}>
 
         {% if messages %}
         {% for message in messages %}
@@ -547,6 +557,7 @@
         // ... (rest of scripts)
     </script>
 
+    {% block extra_body %}{% endblock %}
     {% block extra_js %}{% endblock %}
 </body>
 

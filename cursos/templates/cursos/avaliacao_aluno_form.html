@@ -1,0 +1,128 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Avaliação do Curso - {{ curso.nome }}{% endblock %}
+
+{% block content %}
+<div class="container py-5 animate-up">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <!-- Cabeçalho do Aluno -->
+            <div class="premium-card p-4 p-md-5 mb-5 border-0 shadow-sm bg-white text-center">
+                <div class="avatar-circle bg-success-soft text-success fs-2 mb-3 mx-auto" style="width: 70px; height: 70px;">
+                    {{ aluno.nome_completo|slice:":1" }}
+                </div>
+                <h2 class="fw-bold mb-1">Olá, {{ aluno.nome_completo|truncatewords:2 }}!</h2>
+                <p class="text-muted">Sua participação é fundamental para melhorarmos nossos cursos. <br>Por favor, preencha a pesquisa de satisfação abaixo referente ao curso <span class="fw-bold text-success">{{ curso.nome }}</span>.</p>
+            </div>
+
+            <form method="POST">
+                {% csrf_token %}
+                <input type="hidden" name="cpf" value="{{ cpf }}">
+
+                <!-- Seção 1: Conteúdo -->
+                <div class="premium-card p-4 mb-4 border-0 shadow-sm bg-white">
+                    <h5 class="fw-bold mb-4 text-primary border-bottom pb-2">1 – Quanto ao Conteúdo</h5>
+                    
+                    {% for field in form %}
+                        {% if field.name|slice:":2" == "c1" %}
+                        <div class="mb-4">
+                            <label class="form-label d-block fw-semibold mb-3">{{ field.label }}</label>
+                            <div class="d-flex gap-2 flex-wrap w-100">
+                                {% for radio in field %}
+                                    <input type="radio" name="{{ field.name }}" id="{{ radio.id_for_label }}" value="{{ radio.data.value }}" class="btn-check" {% if radio.data.selected %}checked{% endif %} required>
+                                    <label class="btn btn-outline-primary px-4 py-2 rounded-pill flex-grow-1" for="{{ radio.id_for_label }}">{{ radio.choice_label }}</label>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+
+                <!-- Seção 2: Instrutor -->
+                <div class="premium-card p-4 mb-4 border-0 shadow-sm bg-white">
+                    <h5 class="fw-bold mb-4 text-purple border-bottom pb-2">2 – Quanto ao Instrutor</h5>
+                    
+                    {% for field in form %}
+                        {% if field.name|slice:":2" == "c2" %}
+                        <div class="mb-4">
+                            <label class="form-label d-block fw-semibold mb-3">{{ field.label }}</label>
+                            <div class="d-flex gap-2 flex-wrap w-100">
+                                {% for radio in field %}
+                                    <input type="radio" name="{{ field.name }}" id="{{ radio.id_for_label }}" value="{{ radio.data.value }}" class="btn-check" {% if radio.data.selected %}checked{% endif %} required>
+                                    <label class="btn btn-outline-purple px-4 py-2 rounded-pill flex-grow-1" for="{{ radio.id_for_label }}">{{ radio.choice_label }}</label>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+
+                <!-- Seção 3: Espaço Físico -->
+                <div class="premium-card p-4 mb-4 border-0 shadow-sm bg-white">
+                    <h5 class="fw-bold mb-4 text-info border-bottom pb-2">3 – Quanto ao Espaço Físico e Organização</h5>
+                    {% for field in form %}
+                        {% if field.name|slice:":2" == "c3" %}
+                        <div class="mb-4">
+                            <label class="form-label d-block fw-semibold mb-3">{{ field.label }}</label>
+                            <div class="d-flex gap-2 flex-wrap w-100">
+                                {% for radio in field %}
+                                    <input type="radio" name="{{ field.name }}" id="{{ radio.id_for_label }}" value="{{ radio.data.value }}" class="btn-check" {% if radio.data.selected %}checked{% endif %} required>
+                                    <label class="btn btn-outline-info px-4 py-2 rounded-pill flex-grow-1" for="{{ radio.id_for_label }}">{{ radio.choice_label }}</label>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+
+                <!-- Seção 4: Auto Avaliação -->
+                <div class="premium-card p-4 mb-4 border-0 shadow-sm bg-white">
+                    <h5 class="fw-bold mb-4 text-warning border-bottom pb-2">4 – Auto Avaliação</h5>
+                    {% for field in form %}
+                        {% if field.name|slice:":2" == "c4" %}
+                        <div class="mb-4">
+                            <label class="form-label d-block fw-semibold mb-3">{{ field.label }}</label>
+                            <div class="d-flex gap-2 flex-wrap w-100">
+                                {% for radio in field %}
+                                    <input type="radio" name="{{ field.name }}" id="{{ radio.id_for_label }}" value="{{ radio.data.value }}" class="btn-check" {% if radio.data.selected %}checked{% endif %} required>
+                                    <label class="btn btn-outline-warning px-4 py-2 rounded-pill flex-grow-1" for="{{ radio.id_for_label }}">{{ radio.choice_label }}</label>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+
+                <!-- Seção 5: Divulgação -->
+                <div class="premium-card p-4 mb-4 border-0 shadow-sm bg-white">
+                    <h5 class="fw-bold mb-4 text-dark border-bottom pb-2">5 – Quanto à Divulgação</h5>
+                    <label class="form-label d-block fw-semibold mb-3">Como você tomou conhecimento do curso?</label>
+                    <div class="d-flex gap-2 flex-wrap mb-3">
+                        {% for radio in form.como_soube %}
+                            <input type="radio" name="{{ form.como_soube.name }}" id="{{ radio.id_for_label }}" value="{{ radio.data.value }}" class="btn-check" {% if radio.data.selected %}checked{% endif %} required>
+                            <label class="btn btn-outline-dark px-4 py-2 rounded-pill flex-grow-1" for="{{ radio.id_for_label }}">{{ radio.choice_label }}</label>
+                        {% endfor %}
+                    </div>
+                    <div class="mt-3">
+                        {{ form.como_soube_outro }}
+                    </div>
+                </div>
+
+                <!-- Seção 6: Comentários -->
+                <div class="premium-card p-4 mb-5 border-0 shadow-sm bg-white">
+                    <h5 class="fw-bold mb-4 text-muted border-bottom pb-2">6 – Comentários e Sugestões</h5>
+                    {{ form.comentarios }}
+                </div>
+
+                <div class="text-center mb-5">
+                    <button type="submit" class="btn btn-premium btn-success py-3 px-5 border-0 shadow-lg rounded-pill fw-bold fs-5">
+                        <i class="bi bi-send-check me-2"></i>Enviar Minha Avaliação
+                    </button>
+                    <p class="text-muted small mt-3">Uberlândia, {% now "d \d\e F \d\e Y" %}</p>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

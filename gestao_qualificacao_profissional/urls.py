@@ -18,6 +18,7 @@ urlpatterns = [
     path('declaracoes/', include('declaracao.urls', namespace='declaracao')),
     path('controle-diario/', include('controle_diario.urls', namespace='controle_diario')),
     path('whatsapp/', include('whatsapp.urls', namespace='whatsapp')),
+    path('documentos/', include('documentos.urls', namespace='documentos')),
 
     path('core/', include('core.urls', namespace='core')),
     path('', escolas_views.DashboardView.as_view(), name='dashboard_root'),

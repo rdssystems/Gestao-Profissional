@@ -1,0 +1,593 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Drive Qualificação Profissional{% endblock %}
+
+{% block content %}
+<!-- OVERLAY PARA ARRRASTAR ARQUIVOS -->
+<div id="drag-overlay" class="position-fixed top-0 start-0 w-100 h-100 bg-primary bg-opacity-75 d-none flex-column align-items-center justify-content-center" style="z-index: 9999; backdrop-filter: blur(5px);">
+    <div class="text-center text-white py-5 px-5 border border-4 border-white rounded-5 shadow-lg bg-dark bg-opacity-50" style="border-style: dashed !important;">
+        <i class="bi bi-cloud-upload display-1 mb-3"></i>
+        <h2 class="fw-bold">Solte os arquivos aqui</h2>
+        <p class="fs-5 mb-0">Eles serão enviados automaticamente para a pasta atual.</p>
+    </div>
+    <!-- Progress Indicator -->
+    <div id="upload-progress-container" class="mt-4 w-50 d-none text-white text-center">
+        <h5 id="upload-status-text" class="fw-bold mb-2">Enviando arquivos...</h5>
+        <div class="progress" style="height: 10px;">
+            <div id="upload-progress-bar" class="progress-bar progress-bar-striped progress-bar-animated bg-success" role="progressbar" style="width: 0%"></div>
+        </div>
+    </div>
+</div>
+
+<div class="container-fluid px-4 py-3 animate-up" id="main-container">
+    
+    <!-- Header -->
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+        <div>
+            <h1 class="h3 fw-bold mb-1"><i class="bi bi-hdd-network me-2 text-primary"></i>Drive Qualificação Profissional</h1>
+            <p class="text-muted mb-0 small">Arquivos, Manuais e Documentos Oficiais</p>
+        </div>
+        
+        <div class="d-flex gap-2 flex-wrap">
+            {% if user.is_superuser %}
+                <button class="btn btn-outline-primary rounded-pill shadow-sm bg-white" data-bs-toggle="modal" data-bs-target="#novaPastaModal">
+                    <i class="bi bi-folder-plus me-2"></i>Nova Pasta
+                </button>
+            {% endif %}
+
+            <a href="{% url 'documentos:documento_upload' %}" class="btn btn-primary rounded-pill shadow-sm">
+                <i class="bi bi-cloud-arrow-up me-2"></i>Enviar Arquivo
+            </a>
+        </div>
+    </div>
+
+    <!-- Navegação / Breadcrumb -->
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb bg-white p-3 rounded-4 shadow-sm mb-0 align-items-center border">
+            <li class="breadcrumb-item">
+                <a href="{% url 'documentos:lista_documentos' %}{% if escola_selecionada %}?escola={{ escola_selecionada }}{% endif %}" class="text-decoration-none text-dark fw-bold">
+                    <i class="bi bi-house-door-fill text-primary me-1"></i>Raiz
+                </a>
+            </li>
+            {% if caminho %}
+                {% for item in caminho %}
+                    {% if forloop.last %}
+                        <li class="breadcrumb-item active fw-bold text-muted" aria-current="page">{{ item.nome }}</li>
+                    {% else %}
+                        <li class="breadcrumb-item">
+                            <a href="{% url 'documentos:lista_documentos' %}?pasta={{ item.id }}{% if escola_selecionada %}&escola={{ escola_selecionada }}{% endif %}" class="text-decoration-none">{{ item.nome }}</a>
+                        </li>
+                    {% endif %}
+                {% endfor %}
+            {% endif %}
+        </ol>
+    </nav>
+
+    <!-- Search & Filters -->
+    <div class="card border-0 shadow-sm rounded-4 mb-4">
+        <div class="card-body p-3">
+            <form method="get" class="row g-2 align-items-center">
+                {% if pasta_atual %}
+                    <input type="hidden" name="pasta" value="{{ pasta_atual.id }}">
+                {% endif %}
+                <div class="col-md-5">
+                    <div class="input-group input-group-sm">
+                        <span class="input-group-text bg-light border-end-0"><i class="bi bi-search text-muted"></i></span>
+                        <input type="text" name="q" class="form-control border-start-0 bg-light" placeholder="Buscar arquivo por nome..." value="{{ q }}">
+                    </div>
+                </div>
+                
+                {% if user.is_superuser %}
+                <div class="col-md-4">
+                    <select name="escola" class="form-select form-select-sm bg-light" {% if pasta_atual %}disabled{% endif %} onchange="this.form.submit()">
+                        <option value="">Todas as Unidades (Global)</option>
+                        {% for esc in escolas %}
+                        <option value="{{ esc.id }}" {% if escola_selecionada|add:"0" == esc.id or pasta_atual.escola_id == esc.id %}selected{% endif %}>{{ esc.nome }}</option>
+                        {% endfor %}
+                    </select>
+                    {% if pasta_atual %}
+                        <input type="hidden" name="escola" value="{{ pasta_atual.escola_id }}">
+                    {% endif %}
+                </div>
+                {% endif %}
+                
+                <div class="col-md-auto ms-auto d-flex gap-2">
+                    <button type="submit" class="btn btn-sm btn-dark px-3 rounded-pill">Filtrar</button>
+                    {% if q or escola_selecionada %}
+                    <a href="{% url 'documentos:lista_documentos' %}{% if pasta_atual %}?pasta={{ pasta_atual.id }}{% endif %}" class="btn btn-sm btn-outline-secondary px-3 rounded-pill">Limpar</a>
+                    {% endif %}
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Alert se não é superuser nem tem escola (raro mas possível) -->
+    {% if not user.profile.escola and not user.is_superuser %}
+    <div class="alert alert-warning rounded-4 shadow-sm">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i>Seu usuário não está vinculado a uma escola. Você não poderá salvar documentos.
+    </div>
+    {% endif %}
+    {% if user.is_superuser and not escola_selecionada and not pasta_atual %}
+    <div class="alert alert-info rounded-4 shadow-sm border-0 bg-primary bg-opacity-10 text-primary">
+        <i class="bi bi-globe-americas me-2"></i>Você está visualizando a **Raiz Global**. Arquivos enviados aqui estarão visíveis para todos os usuários.
+    </div>
+    {% endif %}
+
+    <!-- File & Folder Grid -->
+    <div class="row g-4">
+        <!-- Renderizando Pastas -->
+        {% for pasta in pastas %}
+        <div class="col-sm-6 col-md-4 col-lg-3 col-xl-2">
+            <div class="card border border-2 shadow-sm rounded-4 h-100 position-relative file-card folder-card bg-light" style="cursor: pointer;" onclick="window.location.href='{% url 'documentos:lista_documentos' %}?pasta={{ pasta.id }}{% if escola_selecionada %}&escola={{ escola_selecionada }}{% endif %}'">
+                
+                {% if user.is_superuser %}
+                <div class="position-absolute top-0 end-0 p-2 file-actions" style="z-index: 10; opacity: 0; transition: opacity 0.2s;" onclick="event.stopPropagation();">
+                    <button type="button" class="btn btn-light btn-sm rounded-circle shadow border text-danger" onclick="prepareDeletePasta('{{ pasta.id }}', '{{ pasta.nome|escapejs }}')">
+                       <i class="bi bi-trash"></i>
+                    </button>
+                </div>
+                {% endif %}
+
+                <div class="card-body text-center p-4 d-flex flex-column justify-content-center">
+                    <div class="display-3 mb-2">
+                        <i class="bi bi-folder-fill text-warning" style="filter: drop-shadow(0 4px 6px rgba(0,0,0,0.1));"></i>
+                    </div>
+                    <h6 class="card-title text-dark text-truncate fw-bold mb-1" title="{{ pasta.nome }}">{{ pasta.nome }}</h6>
+                    <div class="mt-auto">
+                        <span class="small text-muted" style="font-size: 0.70rem;">
+                            {% if not pasta.escola %}
+                                <i class="bi bi-globe-americas text-primary me-1"></i>Todas as Unidades
+                            {% else %}
+                                Em: {{ pasta.escola.nome|truncatechars:20 }}
+                            {% endif %}
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+
+        <!-- Renderizando Arquivos -->
+        {% for doc in documentos %}
+        <div class="col-sm-6 col-md-4 col-lg-3 col-xl-2">
+            <div class="card border-0 shadow-sm rounded-4 h-100 position-relative file-card bg-white" style="transition: transform 0.2s, box-shadow 0.2s;">
+                
+                <!-- Botão Excluir -->
+                {% if user.is_superuser or user.profile.escola_id == doc.escola_id %}
+                <div class="position-absolute top-0 end-0 p-2 file-actions" style="z-index: 10; opacity: 0; transition: opacity 0.2s;">
+                    <button type="button" class="btn btn-light btn-sm rounded-circle shadow border text-danger" onclick="prepareDeleteFile('{{ doc.pk }}', '{{ doc.nome|escapejs }}')">
+                       <i class="bi bi-trash"></i>
+                    </button>
+                </div>
+                {% endif %}
+
+                <!-- Corpo do Card -->
+                <div class="card-body text-center p-4 d-flex flex-column" 
+                     {% if doc.is_image or doc.is_pdf %}style="cursor: pointer;" onclick="openPreview('{{ doc.arquivo.url }}', '{{ doc.extensao }}')"{% endif %}>
+                    
+                    <div class="display-1 mb-3">
+                        <i class="bi {{ doc.icon_class }}"></i>
+                    </div>
+                    
+                    <h6 class="card-title text-truncate fw-bold mb-1" title="{{ doc.nome }}">{{ doc.nome }}</h6>
+                    
+                    <div class="mt-auto">
+                        <span class="badge bg-light border text-muted mb-2">{{ doc.get_categoria_display }}</span>
+                        <div class="small text-muted" style="font-size: 0.70rem;">
+                            {{ doc.tamanho|filesizeformat }} • {{ doc.data_upload|date:"d/m/Y" }}
+                        </div>
+                        {% if user.is_superuser and not pasta_atual %}
+                        <div class="small text-primary fw-bold text-truncate mt-1" style="font-size: 0.70rem;" title="{{ doc.escola.nome|default:'Todas as Unidades' }}">
+                            {% if not doc.escola %}
+                                <i class="bi bi-globe-americas me-1"></i>Todas as Unidades
+                            {% else %}
+                                {{ doc.escola.nome }}
+                            {% endif %}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Footer de Download -->
+                <div class="card-footer bg-transparent border-top-0 p-0">
+                    <a href="{{ doc.arquivo.url }}" download class="btn btn-light bg-light w-100 rounded-bottom-4 py-2 border-top text-primary fw-bold hover-bg-primary hover-text-white transition-colors" style="font-size: 0.85rem;" onclick="event.stopPropagation();">
+                        <i class="bi bi-download me-2"></i>Baixar
+                    </a>
+                </div>
+            </div>
+            
+        </div>
+        {% endfor %}
+
+        {% if not pastas and not documentos %}
+        <div class="col-12 text-center py-5">
+            <i class="bi bi-folder-x display-1 text-muted opacity-25"></i>
+            <h4 class="mt-3 text-muted">A pasta está vazia</h4>
+            <p class="text-muted mb-0">Nenhum arquivo ou subpasta encontrado.</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Paginação apenas para arquivos -->
+    {% if is_paginated %}
+    <div class="d-flex justify-content-center mt-5">
+        <ul class="pagination pagination-sm shadow-sm rounded-pill overflow-hidden bg-white">
+            {% if page_obj.has_previous %}
+                <li class="page-item"><a class="page-link border-0 text-dark" href="?page={{ page_obj.previous_page_number }}{% if q %}&q={{ q }}{% endif %}{% if escola_selecionada %}&escola={{ escola_selecionada }}{% endif %}{% if pasta_atual %}&pasta={{ pasta_atual.id }}{% endif %}"><i class="bi bi-chevron-left"></i> Anterior</a></li>
+            {% endif %}
+            
+            <li class="page-item active"><span class="page-link border-0 bg-primary">{{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span></li>
+            
+            {% if page_obj.has_next %}
+                <li class="page-item"><a class="page-link border-0 text-dark" href="?page={{ page_obj.next_page_number }}{% if q %}&q={{ q }}{% endif %}{% if escola_selecionada %}&escola={{ escola_selecionada }}{% endif %}{% if pasta_atual %}&pasta={{ pasta_atual.id }}{% endif %}">Próxima <i class="bi bi-chevron-right"></i></a></li>
+            {% endif %}
+        </ul>
+    </div>
+    {% endif %}
+
+</div>
+
+<!-- Modal Preview Universal -->
+<div class="modal fade" id="previewModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-4 bg-dark">
+            <div class="modal-header border-0 bg-dark text-white p-3">
+                <h6 class="modal-title fw-bold" id="previewTitle">Pré-visualização</h6>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-0 text-center d-flex align-items-center justify-content-center" style="min-height: 50vh; overflow: hidden; position: relative;">
+                <div id="previewContent" class="w-100 h-100"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Criar Pasta (Apenas Superuser) -->
+{% if user.is_superuser %}
+<div class="modal fade" id="novaPastaModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-content border-0 shadow-lg rounded-4">
+            <div class="modal-header border-bottom border-light">
+                <h6 class="modal-title fw-bold"><i class="bi bi-folder-plus text-primary me-2"></i>Criar Pasta</h6>
+                <button type="button" class="btn-close btn-sm" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="post" action="{% url 'documentos:pasta_nova' %}">
+                {% csrf_token %}
+                <div class="modal-body p-4">
+                    {% if pasta_atual %}
+                        <input type="hidden" name="pasta_pai" value="{{ pasta_atual.id }}">
+                        <input type="hidden" name="escola" value="{{ pasta_atual.escola_id }}">
+                    {% else %}
+                        <input type="hidden" name="escola" value="{{ escola_selecionada }}">
+                    {% endif %}
+                    <div class="mb-0">
+                        <label class="form-label small fw-bold text-muted">Nome da Pasta</label>
+                        <input type="text" name="nome" class="form-control form-control-lg bg-light" placeholder="Ex: Financeiro 2024" required autofocus>
+                    </div>
+                </div>
+                <div class="modal-footer border-0 pt-0">
+                    <button type="submit" class="btn btn-primary w-100 rounded-pill fw-bold">Criar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Modal Único de Exclusão de Arquivo -->
+<div class="modal fade" id="deleteFileModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-4">
+            <div class="modal-header border-0">
+                <h5 class="modal-title fw-bold text-danger"><i class="bi bi-exclamation-triangle me-2"></i>Excluir Arquivo</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4 text-center">
+                <p class="mb-0">Tem certeza que deseja excluir o arquivo <strong id="deleteFileName"></strong>?</p>
+                <p class="text-muted small mt-2">Esta ação não pode ser desfeita.</p>
+            </div>
+            <div class="modal-footer border-0 d-flex justify-content-center">
+                <form id="deleteFileForm" method="post">
+                    {% csrf_token %}
+                    <button type="button" class="btn btn-light px-4 rounded-pill" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-danger px-4 rounded-pill">Excluir</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Único de Exclusão de Pasta -->
+<div class="modal fade" id="deletePastaModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-4">
+            <div class="modal-header border-0">
+                <h5 class="modal-title fw-bold text-danger"><i class="bi bi-exclamation-triangle me-2"></i>Excluir Pasta</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4 text-center">
+                <p class="mb-0">Tem certeza que deseja excluir a pasta <strong id="deletePastaName"></strong>?</p>
+                <p class="text-danger small mt-2 fw-bold">ATENÇÃO: Todos os arquivos e subpastas dentro dela também serão afetados.</p>
+            </div>
+            <div class="modal-footer border-0 d-flex justify-content-center">
+                <form id="deletePastaForm" method="post">
+                    {% csrf_token %}
+                    <button type="button" class="btn btn-light px-4 rounded-pill" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-danger px-4 rounded-pill">Excluir</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .file-card {
+        transition: all 0.2s ease;
+    }
+    .file-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 .5rem 1rem rgba(0,0,0,.15)!important;
+    }
+    .file-card:hover .file-actions {
+        opacity: 1 !important;
+    }
+    .folder-card:hover {
+        background-color: #fff !important;
+        border-color: var(--bs-primary) !important;
+    }
+    .hover-bg-primary:hover {
+        background-color: var(--bs-primary) !important;
+    }
+    .hover-text-white:hover {
+        color: white !important;
+    }
+    .transition-colors {
+        transition: background-color 0.2s, color 0.2s;
+    }
+    #previewContent img {
+        max-width: 100%;
+        max-height: 80vh;
+        object-fit: contain;
+    }
+    #previewContent iframe {
+        width: 100%;
+        height: 85vh;
+        border: none;
+    }
+    body.drag-active {
+        overflow: hidden;
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<!-- CSRF para AJAX -->
+<script>
+    function getCsrfToken() {
+        const input = document.querySelector('[name=csrfmiddlewaretoken]');
+        return input ? input.value : '';
+    }
+    const csrftoken = getCsrfToken();
+</script>
+
+<script>
+    function openPreview(url, ext) {
+        const modal = new bootstrap.Modal(document.getElementById('previewModal'));
+        const container = document.getElementById('previewContent');
+        
+        container.innerHTML = '<div class="spinner-border text-light mt-5" role="status"><span class="visually-hidden">Loading...</span></div>';
+        
+        if(['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext.toLowerCase())) {
+            container.innerHTML = `<img src="${url}" class="img-fluid rounded-bottom-4" alt="Pré-visualização">`;
+        } else if(ext.toLowerCase() === 'pdf') {
+            container.innerHTML = `<iframe src="${url}#toolbar=0" class="rounded-bottom-4"></iframe>`;
+        } else {
+            window.location.href = url;
+            return;
+        }
+        
+        modal.show();
+    }
+
+    function prepareDeleteFile(id, name) {
+        const modal = new bootstrap.Modal(document.getElementById('deleteFileModal'));
+        document.getElementById('deleteFileName').innerText = name;
+        document.getElementById('deleteFileForm').action = `/documentos/${id}/excluir/`;
+        modal.show();
+    }
+
+    function prepareDeletePasta(id, name) {
+        const modal = new bootstrap.Modal(document.getElementById('deletePastaModal'));
+        document.getElementById('deletePastaName').innerText = name;
+        document.getElementById('deletePastaForm').action = `/documentos/pasta/${id}/excluir/`;
+        modal.show();
+    }
+
+    // --- Drag and Drop Logic ---
+    const dropZoneID = 'drag-overlay';
+    const dropZone = document.getElementById(dropZoneID);
+    const body = document.body;
+    let dragCounter = 0;
+    
+    // Variáveis do contexto do Django
+    const pasta_id = "{{ pasta_atual.id|default:'' }}";
+    let escola_id = "{{ pasta_atual.escola_id|default:escola_selecionada|default:'' }}";
+    const isSuperuser = "{{ user.is_superuser }}" === "True";
+    const userHasEscola = "{{ user.profile.escola|yesno:'yes,no' }}" === "yes";
+
+    // Listener para caso o admin mude a escola no select sem dar 'Filtrar' ainda
+    const escolaSelect = document.querySelector('select[name="escola"]');
+    if (escolaSelect) {
+        escolaSelect.addEventListener('change', (e) => {
+            escola_id = e.target.value;
+            updateCanUpload();
+        });
+    }
+
+    let canUpload = false;
+    function updateCanUpload() {
+        canUpload = false;
+        if (isSuperuser) {
+            canUpload = true; // Admin sempre pode, seja global ou específico
+        } else if (userHasEscola) {
+            canUpload = true; // Coordenador sempre pode (para sua escola)
+        }
+        console.log("Can Upload:", canUpload, "Escola ID:", escola_id);
+    }
+    updateCanUpload();
+
+    // Sempre adicionar os ouvintes de Drag, mas controlar a mensagem interna
+    window.addEventListener('dragenter', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        dragCounter++;
+        
+        if (dragCounter === 1) {
+            dropZone.classList.remove('d-none');
+            dropZone.classList.add('d-flex');
+            body.classList.add('drag-active');
+            
+            // Atualizar mensagem baseada no status de upload
+            const dragTitle = dropZone.querySelector('h2');
+            const dragText = dropZone.querySelector('p');
+            
+            if (canUpload) {
+                if (escola_id === '' || escola_id === 'todas') {
+                    dragTitle.innerText = "Enviar para Todos";
+                    dragText.innerText = "Os arquivos estarão visíveis na raiz de todas as unidades.";
+                    dropZone.querySelector('div.text-center').classList.replace('bg-danger', 'bg-dark');
+                    dropZone.querySelector('div.text-center').style.borderColor = "#0d6efd";
+                } else {
+                    dragTitle.innerText = "Solte os arquivos aqui";
+                    dragText.innerText = "Eles serão enviados automaticamente para a pasta atual.";
+                    dropZone.querySelector('div.text-center').classList.replace('bg-danger', 'bg-dark');
+                }
+            } else {
+                dragTitle.innerText = "Upload Bloqueado";
+                dragText.innerText = isSuperuser ? "Selecione uma escola no filtro antes de arrastar." : "Você não tem permissão para enviar arquivos para esta unidade.";
+                dropZone.querySelector('div.text-center').classList.replace('bg-dark', 'bg-danger');
+            }
+        }
+    });
+
+    window.addEventListener('dragleave', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        dragCounter--;
+        if (dragCounter <= 0) {
+            dragCounter = 0;
+            hideDropZone();
+        }
+    });
+
+    window.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (canUpload) {
+            e.dataTransfer.dropEffect = 'copy';
+        } else {
+            e.dataTransfer.dropEffect = 'none';
+        }
+    });
+
+    window.addEventListener('drop', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        dragCounter = 0;
+        
+        if (canUpload) {
+            if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                handleFiles(e.dataTransfer.files);
+            } else {
+                hideDropZone();
+            }
+        } else {
+            hideDropZone();
+        }
+    });
+
+    function hideDropZone() {
+        // Retornar UI para normal
+        dropZone.classList.add('d-none');
+        dropZone.classList.remove('d-flex');
+        body.classList.remove('drag-active');
+    }
+
+    async function handleFiles(files) {
+        // Prepara a UI de progressão
+        document.getElementById('upload-progress-container').classList.remove('d-none');
+        document.getElementById('upload-progress-container').classList.add('d-block');
+        
+        const progressBar = document.getElementById('upload-progress-bar');
+        const statusText = document.getElementById('upload-status-text');
+        
+        let successCount = 0;
+        let errorCount = 0;
+
+        // Limita e Envia arquivos um a um. (Para acompanhamento mais simples, ou usa um só se for multi)
+        // O fetch não suporta progresso nativo no modo async await puro de forma trivial, 
+        // mas podemos atualizar a barra a cada arquivo.
+        
+        for (let i = 0; i < files.length; i++) {
+            const file = files[i];
+            
+            // Opcional: atualizar descrição
+            statusText.innerText = `Enviando ${i + 1} de ${files.length} (${file.name})...`;
+            const progressPercent = ((i) / files.length) * 100;
+            progressBar.style.width = `${progressPercent}%`;
+
+            const formData = new FormData();
+            formData.append('arquivo', file);
+            formData.append('nome', file.name);
+            if (pasta_id) formData.append('pasta_id', pasta_id);
+            if (escola_id) formData.append('escola_id', escola_id);
+
+            try {
+                const response = await fetch('{% url "documentos:documento_upload_ajax" %}', {
+                    method: 'POST',
+                    headers: { 'X-CSRFToken': csrftoken },
+                    body: formData
+                });
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`Servidor retornou erro ${response.status}: ${errorText}`);
+                }
+
+                const data = await response.json();
+                if (data.sucesso) {
+                    successCount++;
+                } else {
+                    console.error("Erro no arquivo:", file.name, data.erro);
+                    alert(`Erro no arquivo ${file.name}: ${data.erro}`);
+                    errorCount++;
+                }
+            } catch (err) {
+                console.error("Falha ao enviar arquivo:", file.name, err);
+                alert(`Falha ao enviar ${file.name}: ${err.message}`);
+                errorCount++;
+            }
+        }
+        
+        // Finaliza
+        progressBar.style.width = `100%`;
+        progressBar.classList.remove('bg-success');
+        
+        if (errorCount > 0) {
+             progressBar.classList.add('bg-warning');
+             statusText.innerText = `${successCount} enviados, ${errorCount} erros. Recarregando...`;
+        } else {
+            statusText.innerText = `Pronto! Todos os ${successCount} arquivos foram enviados.`;
+        }
+
+        // Dá um tempinho pro usuário ver e recarrega a página
+        setTimeout(() => {
+            window.location.reload();
+        }, 1200);
+    }
+</script>
+{% endblock %}

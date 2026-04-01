@@ -1,8 +1,11 @@
 from django import forms
-from .models import Curso, TipoCurso, Inscricao, RegistroAula, Chamada, Parceiro # Adicionar RegistroAula, Chamada, Parceiro
+from .models import (
+    Curso, TipoCurso, Inscricao, RegistroAula, Chamada, Parceiro, 
+    EmentaPadrao, AvaliacaoProfessorAluno, AvaliacaoAlunoCurso
+)
 from alunos.models import Aluno
-from escolas.models import Escola # Import Escola for queryset filtering
-from django.forms import inlineformset_factory # Adicionar import
+from escolas.models import Escola
+from django.forms import inlineformset_factory
 
 class CursoForm(forms.ModelForm):
     class Meta:
@@ -42,12 +45,11 @@ class CursoForm(forms.ModelForm):
                 self.fields['escola'].queryset = Escola.objects.none()
                 self.fields['tipo_curso'].queryset = TipoCurso.objects.none()
                 self.fields['parceiro'].queryset = Parceiro.objects.none()
-        else: # Superuser can see all schools and types
+        else:
             self.fields['escola'].queryset = Escola.objects.all()
             self.fields['tipo_curso'].queryset = TipoCurso.objects.all()
             self.fields['parceiro'].queryset = Parceiro.objects.all()
 
-        # Tornar campos obrigatórios conforme solicitado
         self.fields['data_inicio'].required = True
         self.fields['data_fim'].required = True
         self.fields['turno'].required = True
@@ -55,7 +57,6 @@ class CursoForm(forms.ModelForm):
         self.fields['carga_horaria'].required = True
         self.fields['vagas'].required = True
 
-        # Se for criação de curso, status padrão é 'Aberta'
         if not self.instance.pk:
             self.fields['status'].initial = 'Aberta'
 
@@ -81,7 +82,7 @@ class InscricaoForm(forms.ModelForm):
             else:
                 self.fields['aluno'].queryset = Aluno.objects.none()
                 self.fields['curso'].queryset = Curso.objects.none()
-        else: # Superuser
+        else:
             self.fields['curso'].queryset = Curso.objects.filter(status='Aberta')
 
         if curso_id:
@@ -103,12 +104,10 @@ class InscricaoForm(forms.ModelForm):
 
         return cleaned_data
 
-# --- Novos Formulários para Chamada ---
-
 class RegistroAulaForm(forms.ModelForm):
     class Meta:
         model = RegistroAula
-        fields = ['data_aula', 'observacoes'] # Curso será definido na view
+        fields = ['data_aula', 'observacoes']
         widgets = {
             'data_aula': forms.DateInput(attrs={'class': 'form-control form-control-premium', 'type': 'date'}, format='%Y-%m-%d'),
             'observacoes': forms.Textarea(attrs={'class': 'form-control form-control-premium', 'rows': 3}),
@@ -126,39 +125,30 @@ class ChamadaForm(forms.ModelForm):
         model = Chamada
         fields = ['inscricao', 'status_presenca']
         widgets = {
-            'inscricao': forms.HiddenInput(), # Ocultar o select, pois já exibimos o nome
+            'inscricao': forms.HiddenInput(),
             'status_presenca': forms.RadioSelect(attrs={'class': 'btn-check'}),
         }
     
-    # Adiciona um campo apenas para exibir o nome do aluno no template
     aluno_nome = forms.CharField(label="Aluno", required=False, widget=forms.TextInput(attrs={'class': 'form-control form-control-premium', 'readonly': 'readonly'}))
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        if self.instance.pk: # Se for uma instância existente
-            # Define o queryset para a inscrição específica para garantir que seja exibida
+        if self.instance.pk:
             self.fields['inscricao'].queryset = Inscricao.objects.filter(pk=self.instance.inscricao.pk)
-            # Preenche o campo de nome do aluno para exibição
             self.fields['aluno_nome'].initial = self.instance.inscricao.aluno.nome_completo
-            # Não desativar, pois o navegador não envia campos desativados no POST
 
-
-# Usar modelformset_factory se Chamada não é diretamente "inline" de RegistroAula (ou seja, se a relação não é diretamente pai-filho no contexto da view)
-# No entanto, como o inlineformset_factory é para modelos relacionados, ele é mais apropriado aqui.
-# ChamadaFormSet = modelformset_factory(Chamada, form=ChamadaForm, extra=0, can_delete=False)
-
-# Usando inlineformset_factory é mais direto para esta relação
 ChamadaFormSet = inlineformset_factory(
     RegistroAula, 
     Chamada, 
     form=ChamadaForm, 
     extra=0, 
-    can_delete=False, # Não permitir deletar registros de presença facilmente
+    can_delete=False,
     fields=['inscricao', 'status_presenca']
 )
 
 class CursoCSVUploadForm(forms.Form):
     csv_file = forms.FileField(label="Selecionar arquivo CSV", help_text="Faça o upload de um arquivo CSV com os dados dos cursos.", widget=forms.FileInput(attrs={'class': 'form-control form-control-premium'}))
+
 class ParceiroForm(forms.ModelForm):
     class Meta:
         model = Parceiro
@@ -178,3 +168,94 @@ class ParceiroForm(forms.ModelForm):
             self.fields['escola'].disabled = True
         elif not user.is_superuser:
             self.fields['escola'].queryset = self.fields['escola'].queryset.none()
+
+class EmentaPadraoForm(forms.ModelForm):
+    class Meta:
+        model = EmentaPadrao
+        fields = ['titulo', 'conteudo']
+        widgets = {
+            'titulo': forms.TextInput(attrs={'class': 'form-control form-control-premium', 'placeholder': 'Ex: Informática Básica'}),
+            'conteudo': forms.Textarea(attrs={'class': 'form-control form-control-premium', 'rows': 15, 'placeholder': 'Digite o conteúdo programático aqui...'}),
+        }
+
+# --- Novos Formulários de Avaliação ---
+
+class AvaliacaoProfessorAlunoForm(forms.ModelForm):
+    class Meta:
+        model = AvaliacaoProfessorAluno
+        fields = [
+            'conceptual_pratico', 'conceptual_teorico', 'conceptual_nota',
+            'behavioral_pratico', 'behavioral_teorico', 'behavioral_nota',
+            'attitudinal_pratico', 'attitudinal_teorico', 'attitudinal_nota'
+        ]
+        widgets = {
+            'conceptual_pratico': forms.RadioSelect(attrs={'class': 'btn-check'}),
+            'conceptual_teorico': forms.RadioSelect(attrs={'class': 'btn-check'}),
+            'conceptual_nota': forms.RadioSelect(attrs={'class': 'btn-check'}),
+            'behavioral_pratico': forms.RadioSelect(attrs={'class': 'btn-check'}),
+            'behavioral_teorico': forms.RadioSelect(attrs={'class': 'btn-check'}),
+            'behavioral_nota': forms.RadioSelect(attrs={'class': 'btn-check'}),
+            'attitudinal_pratico': forms.RadioSelect(attrs={'class': 'btn-check'}),
+            'attitudinal_teorico': forms.RadioSelect(attrs={'class': 'btn-check'}),
+            'attitudinal_nota': forms.RadioSelect(attrs={'class': 'btn-check'}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Remove default selection and the empty "---------" choice
+        for field_name in self.fields:
+            field = self.fields[field_name]
+            if isinstance(field.widget, forms.RadioSelect):
+                field.initial = None
+                # Force choice list to exclude the empty choice (usually index 0)
+                if field.choices and field.choices[0][0] in (None, ''):
+                    field.choices = field.choices[1:]
+                field.required = True
+
+class AvaliacaoAlunoCursoForm(forms.ModelForm):
+    class Meta:
+        model = AvaliacaoAlunoCurso
+        fields = [
+            'c1_1', 'c1_2', 'c1_3',
+            'c2_1', 'c2_2', 'c2_3', 'c2_4', 'c2_5', 'c2_6', 'c2_7', 'c2_8', 'c2_9',
+            'c3_1', 'c3_2', 'c3_3', 'c3_4',
+            'c4_1', 'c4_2', 'c4_3', 'c4_4',
+            'como_soube', 'como_soube_outro', 'comentarios'
+        ]
+        widgets = {
+            'c1_1': forms.RadioSelect(attrs={'class': 'btn-check'}),
+            'c1_2': forms.RadioSelect(attrs={'class': 'btn-check'}),
+            'c1_3': forms.RadioSelect(attrs={'class': 'btn-check'}),
+            'c2_1': forms.RadioSelect(attrs={'class': 'btn-check'}),
+            'c2_2': forms.RadioSelect(attrs={'class': 'btn-check'}),
+            'c2_3': forms.RadioSelect(attrs={'class': 'btn-check'}),
+            'c2_4': forms.RadioSelect(attrs={'class': 'btn-check'}),
+            'c2_5': forms.RadioSelect(attrs={'class': 'btn-check'}),
+            'c2_6': forms.RadioSelect(attrs={'class': 'btn-check'}),
+            'c2_7': forms.RadioSelect(attrs={'class': 'btn-check'}),
+            'c2_8': forms.RadioSelect(attrs={'class': 'btn-check'}),
+            'c2_9': forms.RadioSelect(attrs={'class': 'btn-check'}),
+            'c3_1': forms.RadioSelect(attrs={'class': 'btn-check'}),
+            'c3_2': forms.RadioSelect(attrs={'class': 'btn-check'}),
+            'c3_3': forms.RadioSelect(attrs={'class': 'btn-check'}),
+            'c3_4': forms.RadioSelect(attrs={'class': 'btn-check'}),
+            'c4_1': forms.RadioSelect(attrs={'class': 'btn-check'}),
+            'c4_2': forms.RadioSelect(attrs={'class': 'btn-check'}),
+            'c4_3': forms.RadioSelect(attrs={'class': 'btn-check'}),
+            'c4_4': forms.RadioSelect(attrs={'class': 'btn-check'}),
+            'como_soube': forms.RadioSelect(attrs={'class': 'btn-check'}),
+            'como_soube_outro': forms.TextInput(attrs={'class': 'form-control form-control-premium', 'placeholder': 'Se outros, especifique...'}),
+            'comentarios': forms.Textarea(attrs={'class': 'form-control form-control-premium', 'rows': 4, 'placeholder': 'Deixe seu comentário ou sugestão...'}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Remove default selection and the empty "---------" choice
+        for field_name in self.fields:
+            field = self.fields[field_name]
+            if isinstance(field.widget, forms.RadioSelect):
+                field.initial = None
+                # Force choice list to exclude the empty choice (usually index 0)
+                if field.choices and field.choices[0][0] in (None, ''):
+                    field.choices = field.choices[1:]
+                field.required = True

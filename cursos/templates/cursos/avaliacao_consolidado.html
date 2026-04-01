@@ -1,0 +1,411 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Indicadores de Avaliação - {{ curso.nome }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    :root {
+        --chart-item-bg: #ffffff;
+        --chart-section-border: #f1f5f9;
+        --accent-purple: #a855f7;
+        --accent-blue: #3b82f6;
+    }
+    
+    .stats-card {
+        border-radius: 1.5rem;
+        border: none;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+        transition: all 0.3s ease;
+        background: white;
+        overflow: hidden;
+    }
+    
+    .stats-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+    }
+
+    .chart-box {
+        background: var(--chart-item-bg);
+        border-radius: 1.25rem;
+        padding: 1.5rem;
+        border: 1px solid var(--chart-section-border);
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    .chart-container-premium {
+        position: relative;
+        height: 160px;
+        width: 160px;
+        margin: 0 auto;
+    }
+
+    .chart-center-info {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        text-align: center;
+        pointer-events: none;
+    }
+
+    .chart-center-val {
+        font-size: 1.2rem;
+        font-weight: 800;
+        color: #1e293b;
+        display: block;
+        line-height: 1;
+    }
+
+    .chart-center-label {
+        font-size: 0.65rem;
+        color: #64748b;
+        text-transform: uppercase;
+        font-weight: 600;
+    }
+
+    .category-group-title {
+        font-weight: 800;
+        letter-spacing: -0.01em;
+        color: #1e293b;
+        position: relative;
+        padding-left: 1.25rem;
+        margin-bottom: 2rem;
+    }
+
+    .category-group-title::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 3px;
+        bottom: 3px;
+        width: 5px;
+        border-radius: 10px;
+        background: var(--accent-purple);
+    }
+
+    .category-group-title.blue-bar::before {
+        background: var(--accent-blue);
+    }
+
+    .badge-score {
+        font-size: 0.7rem;
+        font-weight: 600;
+        padding: 0.4em 0.8em;
+        border-radius: 0.5rem;
+    }
+
+    .kpi-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+    }
+
+    .info-icon-tooltip {
+        font-size: 0.9rem;
+        color: #94a3b8;
+        cursor: help;
+        transition: color 0.2s;
+    }
+
+    .info-icon-tooltip:hover {
+        color: var(--accent-purple);
+    }
+
+    @media print {
+        .btn-premium-outline, .btn-premium, .nav-pills-premium { display: none !important; }
+        .container-fluid { padding: 0 !important; }
+        .stats-card { box-shadow: none; border: 1px solid #ddd; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 animate-up mb-5">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-end mb-4 pt-3">
+        <div>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-1">
+                    <li class="breadcrumb-item"><a href="{% url 'cursos:lista_cursos' %}" class="text-decoration-none">Cursos</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'cursos:dashboard_avaliacoes' curso.pk %}" class="text-decoration-none">Dashboard</a></li>
+                    <li class="breadcrumb-item active">Inteligência de Avaliação</li>
+                </ol>
+            </nav>
+            <h1 class="h2 fw-bold mb-1">Painel Analítico de Resultados</h1>
+            <p class="text-muted mb-0">Consolidado do curso <span class="badge bg-purple-soft text-purple">{{ curso.nome }}</span></p>
+        </div>
+        <div class="d-flex gap-2">
+            <button class="btn btn-premium-outline rounded-pill shadow-sm" onclick="window.print()">
+                <i class="bi bi-printer me-2"></i>Imprimir Relatório
+            </button>
+            <a href="{% url 'cursos:dashboard_avaliacoes' curso.pk %}" class="btn btn-premium rounded-pill shadow-sm">
+                <i class="bi bi-arrow-left me-2"></i>Voltar ao Painel
+            </a>
+        </div>
+    </div>
+
+    <!-- Guia Rápido (Noob Friendly) -->
+    <div class="stats-card p-3 mb-4 bg-light border-0">
+        <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+            <div class="d-flex align-items-center gap-2">
+                <i class="bi bi-info-circle-fill text-primary fs-5"></i>
+                <span class="fw-bold text-dark">Entenda os Gráficos:</span>
+            </div>
+            <div class="d-flex gap-4 flex-wrap">
+                <div class="d-flex align-items-center gap-2">
+                    <span class="rounded-circle" style="width: 12px; height: 12px; background-color: #10b981;"></span>
+                    <small class="fw-bold">Ótimo (Excelente)</small>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <span class="rounded-circle" style="width: 12px; height: 12px; background-color: #3b82f6;"></span>
+                    <small class="fw-bold">Bom (Atendeu)</small>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <span class="rounded-circle" style="width: 12px; height: 12px; background-color: #f59e0b;"></span>
+                    <small class="fw-bold">Regular (Pode melhorar)</small>
+                </div>
+                <div class="d-flex align-items-center gap-2 border-start ps-3">
+                    <i class="bi bi-graph-up text-success"></i>
+                    <small class="fw-bold text-success">Aprovação = Ótimo + Bom</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- KPI Summary Cards -->
+    <div class="row g-4 mb-5">
+        <div class="col-md-4">
+            <div class="stats-card p-4 h-100 border-start border-success border-5">
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                    <div class="kpi-icon bg-success-soft text-success"><i class="bi bi-lightning-charge"></i></div>
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="badge bg-success-soft text-success">Ótima Performance</span>
+                        <i class="bi bi-info-circle info-icon-tooltip" data-bs-toggle="tooltip" data-bs-placement="top" title="Identifica o item que recebeu a maior porcentagem de avaliações 'Ótimo'. É o ponto mais forte do curso."></i>
+                    </div>
+                </div>
+                <h6 class="text-muted small fw-bold text-uppercase mb-1">Ponto Mais Forte</h6>
+                <h4 class="fw-bold mb-0" id="kpi-best-label">Carregando...</h4>
+                <p class="text-success small fw-bold mt-2 mb-0"><i class="bi bi-hand-thumbs-up-fill me-1"></i><span id="kpi-best-val">0</span>% adoraram este item</p>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="stats-card p-4 h-100 border-start border-warning border-5">
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                    <div class="kpi-icon bg-warning-soft text-warning"><i class="bi bi-exclamation-octagon"></i></div>
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="badge bg-warning-soft text-warning">Oportunidade</span>
+                        <i class="bi bi-info-circle info-icon-tooltip" data-bs-toggle="tooltip" data-bs-placement="top" title="Este item teve a maior quantidade de avaliações 'Regular'. Focar aqui trará resultados rápidos."></i>
+                    </div>
+                </div>
+                <h6 class="text-muted small fw-bold text-uppercase mb-1">Ajuste Necessário</h6>
+                <h4 class="fw-bold mb-0" id="kpi-worst-label">Carregando...</h4>
+                <p class="text-warning small fw-bold mt-2 mb-0"><i class="bi bi-hammer me-1"></i><span id="kpi-worst-val">0</span>% sugerem melhoria</p>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="stats-card p-4 h-100 border-start border-primary border-5">
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                    <div class="kpi-icon bg-primary-soft text-primary"><i class="bi bi-trophy-fill"></i></div>
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="badge bg-primary-soft text-primary">Nota Geral</span>
+                        <i class="bi bi-info-circle info-icon-tooltip" data-bs-toggle="tooltip" data-bs-placement="top" title="Média de todas as respostas positivas (Ótimo e Bom). Reflete a saúde geral do curso."></i>
+                    </div>
+                </div>
+                <h6 class="text-muted small fw-bold text-uppercase mb-1">Clima do Curso</h6>
+                <h4 class="fw-bold mb-0" id="kpi-avg-label">Média de Satisfação</h4>
+                <p class="text-primary small fw-bold mt-2 mb-0"><i class="bi bi-heart-fill me-1"></i><span id="kpi-avg-val">0</span>% de aprovação total</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Navigation Pills -->
+    <div class="text-center mb-5">
+        <div class="nav-pills-premium bg-white shadow rounded-pill p-2">
+            <button class="nav-link active px-5 py-2 fw-bold" id="btn-show-aluno" onclick="switchView('aluno')">
+                <i class="bi bi-person-hearts me-2"></i>Visão do Aluno ({{ total_aluno }})
+            </button>
+            <button class="nav-link px-5 py-2 fw-bold" id="btn-show-prof" onclick="switchView('prof')">
+                <i class="bi bi-diagram-3 me-2"></i>Visão do Professor ({{ total_prof }})
+            </button>
+        </div>
+    </div>
+
+    <!-- Main Content View -->
+    <div id="analytics-master-container">
+        <!-- Rendered by JS -->
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+
+{{ prof_data|json_script:"prof-data" }}
+{{ aluno_data|json_script:"aluno-data" }}
+
+<script>
+    const profDataRaw = JSON.parse(document.getElementById('prof-data').textContent);
+    const alunoDataRaw = JSON.parse(document.getElementById('aluno-data').textContent);
+
+    Chart.register(ChartDataLabels);
+
+    const categories = {
+        'aluno': {
+            'c1': '📘 Sobre as Aulas e Material',
+            'c2': '👨‍🏫 Sobre o Professor',
+            'c3': '🏫 Sobre a Escola e Local',
+            'c4': '⭐ Opinião do Aluno sobre si mesmo'
+        },
+        'prof': {
+            'conceptual': '🧠 Conhecimento Técnico',
+            'behavioral': '🤝 Comportamento em Aula',
+            'attitudinal': '💡 Atitude e Iniciativa'
+        }
+    };
+
+    const chartColors = ['#10b981', '#3b82f6', '#f59e0b']; // Ótimo, Bom, Regular
+    let activeMode = 'aluno';
+
+    function switchView(mode) {
+        activeMode = mode;
+        document.getElementById('btn-show-aluno').classList.toggle('active', mode === 'aluno');
+        document.getElementById('btn-show-prof').classList.toggle('active', mode === 'prof');
+        renderDashboard();
+    }
+
+    function calculateKPIs(data) {
+        let best = { val: -1, label: '' };
+        let worst = { val: -1, label: '' };
+        let totalPositive = 0;
+        let count = 0;
+
+        Object.keys(data).forEach(key => {
+            const item = data[key];
+            const sum = item.counts.reduce((a, b) => a + b, 0);
+            if (sum === 0) return;
+
+            const positivePerc = Math.round(((item.counts[0] + item.counts[1]) / sum) * 100);
+            const otimoPerc = Math.round((item.counts[0] / sum) * 100);
+            const regularPerc = Math.round((item.counts[2] / sum) * 100);
+
+            if (otimoPerc > best.val) {
+                best = { val: otimoPerc, label: item.label };
+            }
+            if (regularPerc > worst.val) {
+                worst = { val: regularPerc, label: item.label };
+            }
+            totalPositive += positivePerc;
+            count++;
+        });
+
+        document.getElementById('kpi-best-label').innerText = best.label || 'Sem dados';
+        document.getElementById('kpi-best-val').innerText = best.val || 0;
+        document.getElementById('kpi-worst-label').innerText = worst.label || 'Sem dados';
+        document.getElementById('kpi-worst-val').innerText = worst.val || 0;
+        document.getElementById('kpi-avg-val').innerText = count > 0 ? Math.round(totalPositive / count) : 0;
+    }
+
+    function renderDashboard() {
+        const masterContainer = document.getElementById('analytics-master-container');
+        masterContainer.innerHTML = '';
+        
+        const data = activeMode === 'aluno' ? alunoDataRaw : profDataRaw;
+        const currentCats = categories[activeMode];
+        
+        calculateKPIs(data);
+
+        Object.keys(currentCats).forEach(catKey => {
+            const sectionHeader = document.createElement('h3');
+            sectionHeader.className = `category-group-title ${activeMode === 'aluno' ? 'blue-bar' : 'purple-bar'}`;
+            sectionHeader.innerText = currentCats[catKey];
+            masterContainer.appendChild(sectionHeader);
+
+            const row = document.createElement('div');
+            row.className = 'row g-3 mb-5';
+            
+            Object.keys(data).filter(k => k.startsWith(catKey)).forEach(fieldKey => {
+                const item = data[fieldKey];
+                const sum = item.counts.reduce((a, b) => a + b, 0);
+                const satPerc = sum > 0 ? Math.round(((item.counts[0] + item.counts[1]) / sum) * 100) : 0;
+                
+                const col = document.createElement('div');
+                col.className = 'col-sm-6 col-md-4 col-lg-3';
+                col.innerHTML = `
+                    <div class="chart-box shadow-sm">
+                        <div class="chart-container-premium">
+                            <canvas id="canvas-${fieldKey}"></canvas>
+                            <div class="chart-center-info">
+                                <span class="chart-center-val">${satPerc}%</span>
+                                <span class="chart-center-label">Aprovado</span>
+                            </div>
+                        </div>
+                        <h6 class="fw-bold mt-3 text-center small text-muted">${item.label.split('-').pop().trim()}</h6>
+                        <div class="d-flex justify-content-between w-100 mt-2 px-1">
+                             <span class="badge-score bg-success-soft text-success">Ótimo: ${item.counts[0]}</span>
+                             <span class="badge-score bg-info-soft text-info mx-1">Bom: ${item.counts[1]}</span>
+                             <span class="badge-score bg-warning-soft text-warning">Regular: ${item.counts[2]}</span>
+                        </div>
+                    </div>
+                `;
+                row.appendChild(col);
+                masterContainer.appendChild(row);
+
+                new Chart(document.getElementById(`canvas-${fieldKey}`), {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Ótimo', 'Bom', 'Regular'],
+                        datasets: [{
+                            data: item.counts,
+                            backgroundColor: chartColors,
+                            borderWidth: 2,
+                            borderColor: '#ffffff',
+                        }]
+                    },
+                    options: {
+                        cutout: '75%',
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false },
+                            datalabels: {
+                                display: function(context) { 
+                                    return context.dataset.data[context.dataIndex] > 0; 
+                                },
+                                color: '#fff',
+                                font: { weight: 'bold', size: 10 },
+                                formatter: (value, ctx) => {
+                                    let sum = ctx.dataset.data.reduce((a, b) => a + b, 0);
+                                    let percentage = Math.round((value * 100) / sum) + "%";
+                                    return percentage;
+                                },
+                                textAlign: 'center'
+                            },
+                        }
+                    }
+                });
+            });
+        });
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        renderDashboard();
+        
+        // Inicializar Tooltips do Bootstrap
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl)
+        });
+    });
+</script>
+{% endblock %}

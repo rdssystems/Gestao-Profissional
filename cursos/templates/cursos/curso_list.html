@@ -20,6 +20,11 @@
             <a href="{% url 'cursos:lista_parceiros' %}" class="btn btn-premium-outline btn-sm fw-semibold">
                 <i class="bi bi-building me-1"></i> Parceiros
             </a>
+            {% if user.is_superuser %}
+            <a href="{% url 'cursos:lista_ementas' %}" class="btn btn-premium-outline btn-sm fw-semibold">
+                <i class="bi bi-journal-text me-1"></i> Catálogo de Ementas
+            </a>
+            {% endif %}
             {% endif %}
         </div>
     </div>
@@ -145,8 +150,8 @@
                                     </span>
                                     {% endif %}
                                 </td>
-                                <td>
-                                    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 4px; width: fit-content;">
+                                <td class="action-column">
+                                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; width: fit-content;">
                                         <a href="{% url 'cursos:detalhe_curso' pk=curso.pk %}"
                                             class="btn btn-action-premium text-white"
                                             style="background-color: var(--brand-primary);" title="Ver Detalhes">
@@ -167,6 +172,17 @@
                                             title="Lista de Presença Completa">
                                             <i class="bi bi-table"></i>
                                         </a>
+                                        {% if curso.tipo_curso.ementa %}
+                                        <button type="button" 
+                                            class="btn btn-action-premium text-white btn-ver-ementa" 
+                                            style="background-color: #7c3aed;" 
+                                            data-bs-toggle="modal" 
+                                            data-bs-target="#ementaModal" 
+                                            data-url="{% url 'cursos:obter_ementa_conteudo' pk=curso.tipo_curso.ementa.pk %}"
+                                            title="Ver Ementa do Curso">
+                                            <i class="bi bi-journal-richtext"></i>
+                                        </button>
+                                        {% endif %}
                                     </div>
                                 </td>
                             </tr>
@@ -242,8 +258,8 @@
                                     </span>
                                     {% endif %}
                                 </td>
-                                <td>
-                                    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 4px; width: fit-content;">
+                                <td class="action-column">
+                                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; width: fit-content;">
                                         <a href="{% url 'cursos:detalhe_curso' pk=curso.pk %}"
                                             class="btn btn-action-premium text-white"
                                             style="background-color: var(--brand-primary);" title="Ver Detalhes">
@@ -259,6 +275,17 @@
                                             title="Lista de Presença Completa">
                                             <i class="bi bi-table"></i>
                                         </a>
+                                        {% if curso.tipo_curso.ementa %}
+                                        <button type="button" 
+                                            class="btn btn-action-premium text-white btn-ver-ementa" 
+                                            style="background-color: #7c3aed;" 
+                                            data-bs-toggle="modal" 
+                                            data-bs-target="#ementaModal" 
+                                            data-url="{% url 'cursos:obter_ementa_conteudo' pk=curso.tipo_curso.ementa.pk %}"
+                                            title="Ver Ementa do Curso">
+                                            <i class="bi bi-journal-richtext"></i>
+                                        </button>
+                                        {% endif %}
                                     </div>
                                 </td>
                             </tr>
@@ -276,4 +303,65 @@
     </div>
 </div>
 
+{% endblock %}
+
+{% block extra_body %}
+<!-- Modal de Ementa -->
+<div class="modal fade" id="ementaModal" tabindex="-1" aria-labelledby="ementaModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg" id="ementaModalContent">
+            <!-- Conteúdo será carregado via AJAX -->
+            <div class="p-5 text-center">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Carregando...</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const ementaModal = document.getElementById('ementaModal');
+        const modalContent = document.getElementById('ementaModalContent');
+        
+        // Capturar cliques nos botões de ementa
+        document.querySelectorAll('.btn-ver-ementa').forEach(button => {
+            button.addEventListener('click', function() {
+                const url = this.getAttribute('data-url');
+                
+                // Mostrar loading
+                modalContent.innerHTML = `
+                    <div class="p-5 text-center">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Carregando...</span>
+                        </div>
+                        <p class="mt-2 text-muted">Carregando ementa...</p>
+                    </div>
+                `;
+                
+                // Buscar conteúdo via AJAX
+                fetch(url)
+                    .then(response => response.text())
+                    .then(html => {
+                        modalContent.innerHTML = html;
+                    })
+                    .catch(error => {
+                        modalContent.innerHTML = `
+                            <div class="modal-header bg-danger text-white">
+                                <h5 class="modal-title">Erro</h5>
+                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body text-center p-4">
+                                <i class="bi bi-exclamation-triangle display-4 text-danger mb-3"></i>
+                                <p>Não foi possível carregar a ementa. Tente novamente mais tarde.</p>
+                            </div>
+                        `;
+                    });
+            });
+        });
+    });
+</script>
 {% endblock %}

@@ -59,6 +59,7 @@ INSTALLED_APPS = [
     'alunos',
     'usuarios',
     'score_config',
+    'documentos',
     'declaracao.apps.DeclaracaoConfig',
     'controle_diario', # Novo app
     'whatsapp',
@@ -237,3 +238,6 @@ MESSAGE_TAGS = {
     messages_constants.WARNING: 'warning',
     messages_constants.ERROR: 'danger',
 }
+
+# Permitir visualização de arquivos (PDFs) em iframes
+X_FRAME_OPTIONS = 'SAMEORIGIN'

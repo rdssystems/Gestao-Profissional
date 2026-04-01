@@ -25,6 +25,14 @@ urlpatterns = [
     path('tipos/novo/', views.TipoCursoCreateView.as_view(), name='criar_tipo_curso'),
     path('tipos/<int:pk>/editar/', views.TipoCursoUpdateView.as_view(), name='editar_tipo_curso'),
     path('tipos/<int:pk>/excluir/', views.TipoCursoDeleteView.as_view(), name='excluir_tipo_curso'),
+
+    # URLs para Ementa Padrão
+    path('ementas/', views.EmentaPadraoListView.as_view(), name='lista_ementas'),
+    path('ementas/novo/', views.EmentaPadraoCreateView.as_view(), name='criar_ementa'),
+    path('ementas/<int:pk>/editar/', views.EmentaPadraoUpdateView.as_view(), name='editar_ementa'),
+    path('ementas/<int:pk>/excluir/', views.EmentaPadraoDeleteView.as_view(), name='excluir_ementa'),
+    path('ementas/<int:pk>/conteudo/', views.ObterEmentaView.as_view(), name='obter_ementa_conteudo'),
+
     # URLs para Inscrição
     path('<int:curso_pk>/inscrever/', views.InscricaoCreateView.as_view(), name='inscrever_aluno'),
     path('inscricao/<int:pk>/alterar-status/', views.UpdateInscricaoStatusView.as_view(), name='alterar_status_inscricao'),
@@ -49,4 +57,14 @@ urlpatterns = [
     # Chamada Pública (via Token)
     path('chamada-publica/<uuid:token>/', views.ChamadaPublicaView.as_view(), name='chamada_publica'),
     path('admin/fix-tokens/', views.RegenerarTokensView.as_view(), name='fix_tokens'),
+
+    # URLs para Avaliações
+    path('<int:pk>/avaliacoes/', views.CursoAvaliacaoDashboardView.as_view(), name='dashboard_avaliacoes'),
+    path('token/<uuid:token>/avaliar-professor-acesso/', views.AvaliarProfessorAcessoView.as_view(), name='avaliar_professor_acesso'),
+    path('token/<uuid:token>/avaliar-professor-lista/', views.AvaliarProfessorListaView.as_view(), name='avaliacao_professor_lista'),
+    path('token/<uuid:token>/avaliar-aluno/', views.AvaliarCursoPublicView.as_view(), name='avaliar_curso_publico'),
+    path('avaliacao/aluno/<int:inscricao_pk>/ajax/', views.AvaliarEstudanteAjaxView.as_view(), name='avaliar_estudante_ajax'),
+    path('avaliacao/detalhes/<int:inscricao_pk>/', views.AvaliacaoDetalhesView.as_view(), name='detalhes_avaliacao_ajax'),
+    path('avaliacao/<int:pk>/consolidado/', views.CursoAvaliacaoConsolidadoView.as_view(), name='consolidado_avaliacoes'),
+    path('avaliacao/<int:pk>/dados-graficos/', views.ObterDadosGraficosAvaliacaoView.as_view(), name='dados_graficos_avaliacao'),
 ]
