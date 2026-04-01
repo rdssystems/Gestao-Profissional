@@ -230,9 +230,60 @@ main {
 }
 
 .bg-purple-soft {
-    background: var(--bg-purple-soft);
-    color: var(--text-purple-soft);
+    background: var(--bg-purple-soft) !important;
+    color: var(--text-purple-soft) !important;
 }
+
+.btn-purple {
+    background: #a855f7;
+    color: white;
+    padding: 0.6rem 1.2rem;
+    border-radius: 0.75rem;
+    font-weight: 600;
+    border: none;
+    box-shadow: 0 4px 6px -1px rgba(168, 85, 247, 0.2);
+    transition: all 0.2s;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.btn-purple:hover {
+    background: #9333ea;
+    transform: scale(1.02);
+    color: white;
+}
+
+.btn-outline-purple {
+    background: transparent;
+    color: #a855f7;
+    padding: 0.6rem 1.2rem;
+    border-radius: 0.75rem;
+    font-weight: 600;
+    border: 1px solid #a855f7;
+    transition: all 0.2s;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.btn-outline-purple:hover {
+    background: var(--bg-purple-soft);
+    color: #a855f7;
+}
+
+.btn-check:checked + .btn-outline-purple,
+.btn-outline-purple.active,
+.btn-outline-purple:active {
+    color: #ffffff !important;
+    background-color: #a855f7 !important;
+    border-color: #a855f7 !important;
+    box-shadow: 0 4px 6px -1px rgba(168, 85, 247, 0.3) !important;
+}
+
+.text-purple { color: #a855f7 !important; }
 
 /* Novas Cores para Tipos de Curso */
 .bg-primary   { background-color: var(--brand-primary) !important; color: white !important; }

@@ -2,6 +2,21 @@ import uuid
 from django.db import models
 from escolas.models import Escola # Importar o modelo Escola
 from datetime import date, time
+from django.utils.translation import gettext_lazy as _
+
+class EmentaPadrao(models.Model):
+    titulo = models.CharField(max_length=200, verbose_name="Título da Ementa")
+    conteudo = models.TextField(verbose_name="Conteúdo Programático")
+    data_criacao = models.DateTimeField(auto_now_add=True)
+    data_atualizacao = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Ementa Padrão"
+        verbose_name_plural = "Ementas Padrão"
+        ordering = ['titulo']
+
+    def __str__(self):
+        return self.titulo
 
 class TipoCurso(models.Model):
     escola = models.ForeignKey(Escola, on_delete=models.CASCADE, related_name='tipos_curso')
@@ -23,6 +38,7 @@ class TipoCurso(models.Model):
         ('teal', 'Verde Água (Teal)'),
     )
     cor = models.CharField(max_length=20, choices=COR_CHOICES, default='primary', verbose_name="Cor")
+    ementa = models.ForeignKey(EmentaPadrao, on_delete=models.SET_NULL, null=True, blank=True, related_name='tipos_curso', verbose_name="Ementa Padrão")
 
     class Meta:
         verbose_name = "Tipo de Curso"
@@ -155,3 +171,94 @@ class Chamada(models.Model):
 
     def __str__(self):
         return f"{self.inscricao.aluno.nome_completo} - {self.get_status_presenca_display()}"
+
+
+# --- Novos modelos para Avaliações ---
+
+VALOR_CHOICES = (
+    ('Otimo', 'Ótimo'),
+    ('Bom', 'Bom'),
+    ('Regular', 'Regular'),
+)
+
+class AvaliacaoProfessorAluno(models.Model):
+    """Ficha de avaliação de desempenho do aluno preenchida pelo professor"""
+    inscricao = models.OneToOneField(Inscricao, on_delete=models.CASCADE, related_name='avaliacao_professor', verbose_name="Inscrição")
+    professor_nome = models.CharField(max_length=200, verbose_name="Nome do Professor")
+    data_preenchimento = models.DateTimeField(auto_now_add=True)
+
+    # Seção: Conceitual
+    conceptual_pratico = models.CharField(max_length=10, choices=VALOR_CHOICES, verbose_name="Conceitual - Prático")
+    conceptual_teorico = models.CharField(max_length=10, choices=VALOR_CHOICES, verbose_name="Conceitual - Teórico")
+    conceptual_nota = models.CharField(max_length=10, choices=VALOR_CHOICES, verbose_name="Conceitual - Nota")
+
+    # Seção: Comportamental
+    behavioral_pratico = models.CharField(max_length=10, choices=VALOR_CHOICES, verbose_name="Assiduidade e Pontualidade")
+    behavioral_teorico = models.CharField(max_length=10, choices=VALOR_CHOICES, verbose_name="Interesse e Participação")
+    behavioral_nota = models.CharField(max_length=10, choices=VALOR_CHOICES, verbose_name="Apresentação Pessoal")
+
+    # Seção: Atitudinal
+    attitudinal_pratico = models.CharField(max_length=10, choices=VALOR_CHOICES, verbose_name="Atitudinal - Relacionamento Interpessoal")
+    attitudinal_teorico = models.CharField(max_length=10, choices=VALOR_CHOICES, verbose_name="Atitudinal - Comunicação")
+    attitudinal_nota = models.CharField(max_length=10, choices=VALOR_CHOICES, verbose_name="Atitudinal - Criatividade")
+
+    class Meta:
+        verbose_name = "Avaliação do Professor (Aluno)"
+        verbose_name_plural = "Avaliações do Professor (Alunos)"
+
+    def __str__(self):
+        return f"Desempenho: {self.inscricao.aluno.nome_completo} ({self.inscricao.curso.nome})"
+
+class AvaliacaoAlunoCurso(models.Model):
+    """Ficha de avaliação do curso preenchida pelo aluno"""
+    inscricao = models.OneToOneField(Inscricao, on_delete=models.CASCADE, related_name='avaliacao_aluno', verbose_name="Inscrição")
+    data_preenchimento = models.DateTimeField(auto_now_add=True)
+
+    # 1 - Quanto ao Conteúdo
+    c1_1 = models.CharField(max_length=10, choices=VALOR_CHOICES, verbose_name="Conteúdo cumprido")
+    c1_2 = models.CharField(max_length=10, choices=VALOR_CHOICES, verbose_name="Material didático")
+    c1_3 = models.CharField(max_length=10, choices=VALOR_CHOICES, verbose_name="Recursos audiovisuais")
+
+    # 2 - Quanto ao Instrutor
+    c2_1 = models.CharField(max_length=10, choices=VALOR_CHOICES, verbose_name="Conhecimento do Instrutor")
+    c2_2 = models.CharField(max_length=10, choices=VALOR_CHOICES, verbose_name="Forma de ensinar")
+    c2_3 = models.CharField(max_length=10, choices=VALOR_CHOICES, verbose_name="Estímulo à participação")
+    c2_4 = models.CharField(max_length=10, choices=VALOR_CHOICES, verbose_name="Objetividade e Clareza")
+    c2_5 = models.CharField(max_length=10, choices=VALOR_CHOICES, verbose_name="Técnicas de ensino")
+    c2_6 = models.CharField(max_length=10, choices=VALOR_CHOICES, verbose_name="Esclarecimento de dúvidas")
+    c2_7 = models.CharField(max_length=10, choices=VALOR_CHOICES, verbose_name="Atenção às solicitações")
+    c2_8 = models.CharField(max_length=10, choices=VALOR_CHOICES, verbose_name="Cumprimento de horários")
+    c2_9 = models.CharField(max_length=10, choices=VALOR_CHOICES, verbose_name="Assiduidade (Presença)")
+
+    # 3 - Quanto ao Espaço Físico e Organização
+    c3_1 = models.CharField(max_length=10, choices=VALOR_CHOICES, verbose_name="Espaço e Instalações")
+    c3_2 = models.CharField(max_length=10, choices=VALOR_CHOICES, verbose_name="Facilidade na inscrição")
+    c3_3 = models.CharField(max_length=10, choices=VALOR_CHOICES, verbose_name="Atendimento da coordenação")
+    c3_4 = models.CharField(max_length=10, choices=VALOR_CHOICES, verbose_name="Carga horária adequada")
+
+    # 4 - Auto Avaliação
+    c4_1 = models.CharField(max_length=10, choices=VALOR_CHOICES, verbose_name="Aprendizado adquirido")
+    c4_2 = models.CharField(max_length=10, choices=VALOR_CHOICES, verbose_name="Pontualidade própria")
+    c4_3 = models.CharField(max_length=10, choices=VALOR_CHOICES, verbose_name="Minha participação")
+    c4_4 = models.CharField(max_length=10, choices=VALOR_CHOICES, verbose_name="Relacionamento com colegas")
+
+    # 5 - Divulgação
+    DIVULGACAO_CHOICES = (
+        ('Cartaz', 'Cartaz, folder'),
+        ('Internet', 'Internet'),
+        ('Jornal', 'Jornal'),
+        ('Televisao', 'Televisão'),
+        ('Outros', 'Outros'),
+    )
+    como_soube = models.CharField(max_length=20, choices=DIVULGACAO_CHOICES, verbose_name="Como soube")
+    como_soube_outro = models.CharField(max_length=100, blank=True, null=True, verbose_name="Outros divulgação")
+
+    # 6 - Comentários e Sugestões
+    comentarios = models.TextField(blank=True, null=True, verbose_name="Comentários/Sugestões")
+
+    class Meta:
+        verbose_name = "Avaliação do Aluno (Curso)"
+        verbose_name_plural = "Avaliações do Aluno (Cursos)"
+
+    def __str__(self):
+        return f"Satisfação: {self.inscricao.aluno.nome_completo} ({self.inscricao.curso.nome})"

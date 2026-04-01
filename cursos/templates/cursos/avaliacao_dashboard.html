@@ -1,0 +1,270 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Avaliações - {{ curso.nome }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 animate-up">
+    <!-- Cabeçalho -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-1">
+                    <li class="breadcrumb-item"><a href="{% url 'cursos:lista_cursos' %}" class="text-decoration-none">Cursos</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'cursos:detalhe_curso' curso.pk %}" class="text-decoration-none">{{ curso.nome }}</a></li>
+                    <li class="breadcrumb-item active">Avaliações</li>
+                </ol>
+            </nav>
+            <h1 class="h2 fw-bold mb-0">Gestão de Avaliações</h1>
+            <p class="text-muted small mb-0">
+                <i class="bi bi-calendar-event me-1"></i> Período: {{ curso.data_inicio|date:"d/m/Y" }} a {{ curso.data_fim|date:"d/m/Y" }}
+            </p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{% url 'cursos:consolidado_avaliacoes' curso.pk %}" class="btn btn-premium">
+                <i class="bi bi-pie-chart-fill me-2"></i>Relatório Consolidado
+            </a>
+            <button class="btn btn-premium-secondary" onclick="window.print()">
+                <i class="bi bi-printer me-2"></i>Imprimir
+            </button>
+            <a href="{% url 'cursos:detalhe_curso' curso.pk %}" class="btn btn-premium-outline">
+                <i class="bi bi-arrow-left me-2"></i>Voltar
+            </a>
+        </div>
+    </div>
+
+    <!-- Cards de Resumo -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-4">
+            <div class="premium-card p-4 h-100 border-0 shadow-sm">
+                <div class="d-flex align-items-center mb-3">
+                    <div class="icon-shape bg-info-soft text-info rounded-3 me-3">
+                        <i class="bi bi-people-fill fs-4"></i>
+                    </div>
+                    <div>
+                        <h6 class="text-muted mb-0">Total de Alunos</h6>
+                        <h3 class="fw-bold mb-0">{{ total_concluintes }}</h3>
+                    </div>
+                </div>
+                <p class="small text-muted mb-0">🎓 Alunos que terminaram o curso.</p>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="premium-card p-4 h-100 border-0 shadow-sm">
+                <h6 class="text-muted mb-2">👨‍🏫 Avaliação do Professor</h6>
+                <div class="d-flex align-items-end justify-content-between mb-2">
+                    <h3 class="fw-bold mb-0">{{ avaliacoes_prof_count }} <small class="text-muted fs-6">/ {{ total_concluintes }}</small></h3>
+                    <span class="badge bg-purple-soft text-purple-soft">{{ perc_prof }}%</span>
+                </div>
+                <div class="progress" style="height: 8px;">
+                    <div class="progress-bar bg-purple" role="progressbar" style="width: {{ perc_prof }}%"></div>
+                </div>
+                <p class="small text-muted mt-2 mb-0">Fichas preenchidas pelo instrutor.</p>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="premium-card p-4 h-100 border-0 shadow-sm">
+                <h6 class="text-muted mb-2">⭐ Satisfação do Aluno</h6>
+                <div class="d-flex align-items-end justify-content-between mb-2">
+                    <h3 class="fw-bold mb-0">{{ avaliacoes_aluno_count }} <small class="text-muted fs-6">/ {{ total_concluintes }}</small></h3>
+                    <span class="badge bg-success-soft text-success">{{ perc_aluno }}%</span>
+                </div>
+                <div class="progress" style="height: 8px;">
+                    <div class="progress-bar bg-success" role="progressbar" style="width: {{ perc_aluno }}%"></div>
+                </div>
+                <p class="small text-muted mt-2 mb-0">Opinião dos alunos sobre o curso.</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Tabela de Alunos -->
+        <div class="col-lg-8">
+            <div class="premium-card bg-white border-0 shadow-sm overflow-hidden">
+                <div class="p-4 border-bottom d-flex justify-content-between align-items-center">
+                    <h5 class="fw-bold mb-0">Status por Aluno</h5>
+                    <div class="input-group input-group-sm w-auto">
+                        <span class="input-group-text bg-light border-0"><i class="bi bi-search"></i></span>
+                        <input type="text" id="filterAlunos" class="form-control border-0 bg-light" placeholder="Buscar aluno...">
+                    </div>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0" id="alunosTable">
+                        <thead class="bg-light">
+                            <tr>
+                                <th class="ps-4">Aluno</th>
+                                <th class="text-center">Avaliação Prof.</th>
+                                <th class="text-center">Avaliação Aluno</th>
+                                <th class="text-end pe-4">Ação</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for insc in inscricoes %}
+                            <tr>
+                                <td class="ps-4">
+                                    <div class="fw-bold">{{ insc.aluno.nome_completo }}</div>
+                                    <div class="text-muted small">CPF: {{ insc.aluno.cpf_formatado }}</div>
+                                </td>
+                                <td class="text-center">
+                                    {% if insc.avaliacao_professor %}
+                                        <span class="badge bg-success-soft text-success rounded-pill px-3">
+                                            <i class="bi bi-check-circle me-1"></i>Realizada
+                                        </span>
+                                    {% else %}
+                                        <span class="badge bg-warning-soft text-warning rounded-pill px-3">
+                                            <i class="bi bi-clock me-1"></i>Pendente
+                                        </span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-center">
+                                    {% if insc.avaliacao_aluno %}
+                                        <span class="badge bg-success-soft text-success rounded-pill px-3">
+                                            <i class="bi bi-check-circle me-1"></i>Realizada
+                                        </span>
+                                    {% else %}
+                                        <span class="badge bg-warning-soft text-warning rounded-pill px-3">
+                                            <i class="bi bi-clock me-1"></i>Pendente
+                                        </span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-end pe-4">
+                                    <button class="btn btn-sm btn-premium-outline view-details" data-insc-id="{{ insc.pk }}">
+                                        <i class="bi bi-eye"></i> Detalhes
+                                    </button>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="4" class="text-center py-5 text-muted">
+                                    Nenhum aluno concluinte encontrado para este curso.
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Links e QR Codes -->
+        <div class="col-lg-4">
+            <div class="premium-card p-4 mb-4 border-0 shadow-sm bg-purple text-white">
+                <h5 class="fw-bold mb-3"><i class="bi bi-person-badge me-2"></i>Acesso Professor</h5>
+                <p class="small opacity-75">O professor deve usar o link abaixo para avaliar o desempenho individual dos alunos.</p>
+                <div class="bg-white bg-opacity-10 rounded p-3 mb-3 border border-white border-opacity-20">
+                    <code class="text-white small d-block mb-2 overflow-hidden text-nowrap" style="text-overflow: ellipsis;">
+                        {{ request.scheme }}://{{ request.get_host }}{% url 'cursos:avaliar_professor_acesso' curso.token_acesso %}
+                    </code>
+                    <button class="btn btn-sm btn-light w-100 copy-link" data-url="{{ request.scheme }}://{{ request.get_host }}{% url 'cursos:avaliar_professor_acesso' curso.token_acesso %}">
+                        <i class="bi bi-clipboard me-2"></i>Copiar Link
+                    </button>
+                </div>
+            </div>
+
+            <div class="premium-card p-4 border-0 shadow-sm bg-success text-white">
+                <h5 class="fw-bold mb-3"><i class="bi bi-star-fill me-2"></i>Acesso Aluno</h5>
+                <p class="small opacity-75">Link público para os alunos avaliarem o curso (solicitará o CPF).</p>
+                <div class="bg-white bg-opacity-10 rounded p-3 mb-3 border border-white border-opacity-20">
+                    <code class="text-white small d-block mb-2 overflow-hidden text-nowrap" style="text-overflow: ellipsis;">
+                        {{ request.scheme }}://{{ request.get_host }}{% url 'cursos:avaliar_curso_publico' curso.token_acesso %}
+                    </code>
+                    <button class="btn btn-sm btn-light w-100 copy-link" data-url="{{ request.scheme }}://{{ request.get_host }}{% url 'cursos:avaliar_curso_publico' curso.token_acesso %}">
+                        <i class="bi bi-clipboard me-2"></i>Copiar Link
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Detalhes -->
+<div class="modal fade" id="detalhesModal" tabindex="-1" aria-labelledby="detalhesModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden" id="detalhesModalContent">
+            <!-- Conteúdo carregado via AJAX -->
+            <div class="modal-body text-center py-5">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Carregando...</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Filtro de Alunos
+        const filterInput = document.getElementById('filterAlunos');
+        const table = document.getElementById('alunosTable');
+        
+        filterInput.addEventListener('keyup', function() {
+            const term = filterInput.value.toLowerCase();
+            const rows = table.getElementsByTagName('tbody')[0].getElementsByTagName('tr');
+            
+            for (let row of rows) {
+                const text = row.textContent.toLowerCase();
+                row.style.display = text.includes(term) ? '' : 'none';
+            }
+        });
+
+        // Copiar Link
+        document.querySelectorAll('.copy-link').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const url = this.getAttribute('data-url');
+                navigator.clipboard.writeText(url).then(() => {
+                    const originalText = this.innerHTML;
+                    this.innerHTML = '<i class="bi bi-check2 me-2"></i>Copiado!';
+                    this.classList.replace('btn-light', 'btn-success');
+                    setTimeout(() => {
+                        this.innerHTML = originalText;
+                        this.classList.replace('btn-success', 'btn-light');
+                    }, 2000);
+                });
+            });
+        });
+
+        // Modal de Detalhes
+        const detalhesModal = new bootstrap.Modal(document.getElementById('detalhesModal'));
+        const modalContent = document.getElementById('detalhesModalContent');
+
+        document.querySelectorAll('.view-details').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const inscId = this.getAttribute('data-insc-id');
+                modalContent.innerHTML = `
+                    <div class="modal-body text-center py-5">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Carregando...</span>
+                        </div>
+                    </div>`;
+                detalhesModal.show();
+
+                fetch(`/cursos/avaliacao/detalhes/${inscId}/`)
+                    .then(response => response.text())
+                    .then(html => {
+                        modalContent.innerHTML = html;
+                        // Forçar inicialização dos tabs no conteúdo injetado
+                        const tabEls = modalContent.querySelectorAll('button[data-bs-toggle="pill"]');
+                        tabEls.forEach(el => {
+                            el.addEventListener('click', function (event) {
+                                event.preventDefault();
+                                const tab = new bootstrap.Tab(el);
+                                tab.show();
+                            });
+                        });
+                    })
+                    .catch(err => {
+                        modalContent.innerHTML = `
+                            <div class="modal-body text-center py-5">
+                                <i class="bi bi-exclamation-triangle fs-1 text-danger"></i>
+                                <p class="mt-2">Erro ao carregar detalhes.</p>
+                            </div>`;
+                    });
+            });
+        });
+    });
+</script>
+{% endblock %}

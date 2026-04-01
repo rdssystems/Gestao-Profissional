@@ -1,0 +1,144 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Avaliar Alunos - {{ curso.nome }}{% endblock %}
+
+{% block content %}
+<div class="container py-4 animate-up">
+    <!-- Cabeçalho Professor -->
+    <div class="premium-card p-4 mb-5 border-0 shadow-sm bg-white overflow-hidden position-relative">
+        <div class="row align-items-center">
+            <div class="col-md-9">
+                <h4 class="fw-bold mb-1">Ficha de Avaliação de Desempenho do Aluno</h4>
+                <p class="text-muted small mb-0 pe-md-5">O objetivo deste questionário é avaliar o aluno no que diz respeito a capacidade de perceber a realidade, distinguir pontos chaves, resolver problemas e produzir resultados aplicando seus conhecimentos.</p>
+            </div>
+            <div class="col-md-3 text-md-end mt-3 mt-md-0">
+                <span class="badge bg-purple-soft text-purple fs-6 px-3 py-2 rounded-pill shadow-sm">
+                    <i class="bi bi-mortarboard me-2"></i>{{ curso.nome }}
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lista de Alunos -->
+    <div class="row g-4">
+        {% for insc in concluintes %}
+        <div class="col-md-6 col-lg-4">
+            <div class="premium-card p-4 border-0 shadow-sm transition-all hover-up bg-white h-100 d-flex flex-column">
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                    <div class="avatar-circle bg-light border text-primary fw-bold" style="width: 45px; height: 45px; font-size: 1.2rem;">
+                        {{ insc.aluno.nome_completo|slice:":1" }}
+                    </div>
+                    {% if insc.avaliacao_professor %}
+                        <span class="badge bg-success-soft text-success"><i class="bi bi-check-lg me-1"></i>Avaliado</span>
+                    {% else %}
+                        <span class="badge bg-warning-soft text-warning"><i class="bi bi-clock me-1"></i>Pendente</span>
+                    {% endif %}
+                </div>
+                
+                <h5 class="fw-bold mb-1 text-truncate">{{ insc.aluno.nome_completo }}</h5>
+                <p class="text-muted small mb-3">CPF: {{ insc.aluno.cpf_formatado }}</p>
+
+                <div class="mt-auto pt-3">
+                    <button class="btn {% if insc.avaliacao_professor %}btn-premium-outline{% else %}btn-premium{% endif %} w-100 btn-avaliar" 
+                            data-url="{% url 'cursos:avaliar_estudante_ajax' insc.pk %}"
+                            data-aluno="{{ insc.aluno.nome_completo }}">
+                        {% if insc.avaliacao_professor %}
+                            <i class="bi bi-pencil-square me-2"></i>Editar Avaliação
+                        {% else %}
+                            <i class="bi bi-star me-2"></i>Avaliar Agora
+                        {% endif %}
+                    </button>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12 text-center py-5">
+            <div class="icon-shape bg-light text-muted fs-1 mb-3 mx-auto">
+                <i class="bi bi-people"></i>
+            </div>
+            <p>Não há alunos concluintes registrados para este curso.</p>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Modal de Avaliação -->
+<div class="modal fade" id="modalAvaliacao" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content border-0 shadow-lg" id="modalContent">
+            <!-- Conteúdo carregado via AJAX -->
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const modal = new bootstrap.Modal(document.getElementById('modalAvaliacao'));
+        const modalContent = document.getElementById('modalContent');
+
+        document.querySelectorAll('.btn-avaliar').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const url = this.getAttribute('data-url');
+                
+                modalContent.innerHTML = `
+                    <div class="p-5 text-center">
+                        <div class="spinner-border text-primary mb-3"></div>
+                        <p class="text-muted">Carregando ficha de avaliação...</p>
+                    </div>
+                `;
+                modal.show();
+
+                fetch(url)
+                    .then(response => response.text())
+                    .then(html => {
+                        modalContent.innerHTML = html;
+                        setupFormSubmission();
+                    });
+            });
+        });
+
+        function setupFormSubmission() {
+            const form = modalContent.querySelector('form');
+            if (!form) return;
+
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+                const formData = new FormData(form);
+                const submitBtn = form.querySelector('button[type="submit"]');
+                const originalBtnText = submitBtn.innerHTML;
+
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Salvando...';
+
+                fetch(form.action, {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        location.reload(); // Recarregar para atualizar badges
+                    } else {
+                        alert('Erro ao salvar: Verifique se todos os campos foram preenchidos.');
+                        submitBtn.disabled = false;
+                        submitBtn.innerHTML = originalBtnText;
+                    }
+                })
+                .catch(error => {
+                    console.error('Erro:', error);
+                    alert('Erro de conexão ao salvar.');
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = originalBtnText;
+                });
+            });
+        }
+    });
+</script>
+{% endblock %}

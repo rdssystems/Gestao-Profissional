@@ -20,8 +20,8 @@ from django import forms
 from django.forms import inlineformset_factory # Adicionar import
 
 # Importar modelos e formulários
-from .models import Curso, TipoCurso, Inscricao, RegistroAula, Chamada, Parceiro # Adicionar RegistroAula, Chamada, Parceiro
-from .forms import CursoForm, InscricaoForm, RegistroAulaForm, ChamadaFormSet, CursoCSVUploadForm, ChamadaForm, ParceiroForm # Adicionar ParceiroForm
+from .models import Curso, TipoCurso, Inscricao, RegistroAula, Chamada, Parceiro, EmentaPadrao, AvaliacaoProfessorAluno, AvaliacaoAlunoCurso # Adicionar RegistroAula, Chamada, Parceiro, EmentaPadrao, AvaliacaoProfessorAluno, AvaliacaoAlunoCurso
+from .forms import CursoForm, InscricaoForm, RegistroAulaForm, ChamadaFormSet, CursoCSVUploadForm, ChamadaForm, ParceiroForm, EmentaPadraoForm # Adicionar ParceiroForm, EmentaPadraoForm
 from core.mixins import StaffRequiredMixin, AuditLogMixin, CoordenadorRequiredMixin
 from alunos.models import Aluno
 from .validators import validar_conflito_matricula 
@@ -34,7 +34,13 @@ from escolas.models import Escola
 class TipoCursoForm(forms.ModelForm):
     class Meta:
         model = TipoCurso
-        fields = ['escola', 'nome', 'cor']
+        fields = ['escola', 'nome', 'cor', 'ementa']
+        widgets = {
+            'escola': forms.Select(attrs={'class': 'form-select form-select-premium'}),
+            'nome': forms.TextInput(attrs={'class': 'form-control form-control-premium'}),
+            'cor': forms.Select(attrs={'class': 'form-select form-select-premium'}),
+            'ementa': forms.Select(attrs={'class': 'form-select form-select-premium'}),
+        }
 
     def __init__(self, *args, **kwargs):
         user = kwargs.pop('user', None)
@@ -1259,4 +1265,226 @@ class ParceiroUpdateView(LoginRequiredMixin, StaffRequiredMixin, AuditLogMixin, 
 class ParceiroDeleteView(LoginRequiredMixin, StaffRequiredMixin, AuditLogMixin, DeleteView):
     model = Parceiro
     template_name = 'cursos/curso_confirm_delete.html' 
-    success_url = reverse_lazy('cursos:lista_parceiros')
+    success_url = reverse_lazy('cursos:lista_parceiros')
+
+# --- CRUD para Ementa Padrão (Global - Admin) ---
+
+class EmentaPadraoListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
+    model = EmentaPadrao
+    template_name = 'cursos/ementapadrao_list.html'
+    context_object_name = 'ementas'
+
+    def test_func(self):
+        return self.request.user.is_superuser
+
+class EmentaPadraoCreateView(LoginRequiredMixin, UserPassesTestMixin, AuditLogMixin, CreateView):
+    model = EmentaPadrao
+    form_class = EmentaPadraoForm
+    template_name = 'cursos/ementapadrao_form.html'
+    success_url = reverse_lazy('cursos:lista_ementas')
+
+    def test_func(self):
+        return self.request.user.is_superuser
+
+class EmentaPadraoUpdateView(LoginRequiredMixin, UserPassesTestMixin, AuditLogMixin, UpdateView):
+    model = EmentaPadrao
+    form_class = EmentaPadraoForm
+    template_name = 'cursos/ementapadrao_form.html'
+    success_url = reverse_lazy('cursos:lista_ementas')
+
+    def test_func(self):
+        return self.request.user.is_superuser
+
+class EmentaPadraoDeleteView(LoginRequiredMixin, UserPassesTestMixin, AuditLogMixin, DeleteView):
+    model = EmentaPadrao
+    template_name = 'cursos/curso_confirm_delete.html'
+    success_url = reverse_lazy('cursos:lista_ementas')
+
+    def test_func(self):
+        return self.request.user.is_superuser
+
+class ObterEmentaView(LoginRequiredMixin, View):
+    """View para retornar o conteúdo da ementa via requisição (pode ser usada em modal)"""
+    def get(self, request, pk):
+        ementa = get_object_or_404(EmentaPadrao, pk=pk)
+        return render(request, 'cursos/ementa_modal_content.html', {'ementa': ementa})
+# --- Novas Views para Sistema de Avaliacoes ---
+
+class CursoAvaliacaoDashboardView(LoginRequiredMixin, StaffRequiredMixin, DetailView):
+    model = Curso
+    template_name = 'cursos/avaliacao_dashboard.html'
+    context_object_name = 'curso'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        curso = self.object
+        inscricoes_concluidas = curso.inscricao_set.filter(status='concluido').select_related('aluno')
+        total_concluintes = inscricoes_concluidas.count()
+        avaliacoes_prof = AvaliacaoProfessorAluno.objects.filter(inscricao__curso=curso).count()
+        avaliacoes_aluno = AvaliacaoAlunoCurso.objects.filter(inscricao__curso=curso).count()
+        context['inscricoes'] = inscricoes_concluidas
+        context['total_concluintes'] = total_concluintes
+        context['avaliacoes_prof_count'] = avaliacoes_prof
+        context['avaliacoes_aluno_count'] = avaliacoes_aluno
+        context['perc_prof'] = int((avaliacoes_prof / total_concluintes * 100)) if total_concluintes > 0 else 0
+        context['perc_aluno'] = int((avaliacoes_aluno / total_concluintes * 100)) if total_concluintes > 0 else 0
+        return context
+
+class AvaliarProfessorAcessoView(View):
+    template_name = 'cursos/avaliacao_professor_acesso.html'
+    def get(self, request, token):
+        curso = get_object_or_404(Curso, token_acesso=token)
+        return render(request, self.template_name, {'curso': curso, 'hide_navbar': True})
+    def post(self, request, token):
+        curso = get_object_or_404(Curso, token_acesso=token)
+        nome_digitado = request.POST.get('professor_nome', '').strip().lower()
+        nome_real = curso.nome_professor.strip().lower() if curso.nome_professor else ''
+        if nome_digitado == nome_real and nome_real != '':
+            request.session[f'prof_auth_{curso.pk}'] = True
+            return redirect('cursos:avaliacao_professor_lista', token=token)
+        else:
+            from django.contrib import messages
+            messages.error(request, 'Nome do professor invalido para este curso.')
+            return render(request, self.template_name, {'curso': curso, 'hide_navbar': True})
+
+class AvaliarProfessorListaView(View):
+    template_name = 'cursos/avaliacao_professor_lista.html'
+    def get(self, request, token):
+        curso = get_object_or_404(Curso, token_acesso=token)
+        if not request.session.get(f'prof_auth_{curso.pk}'):
+            return redirect('cursos:avaliacao_professor_acesso', token=token)
+        concluintes = curso.inscricao_set.filter(status='concluido').select_related('aluno').prefetch_related('avaliacao_professor')
+        return render(request, self.template_name, {'curso': curso, 'concluintes': concluintes, 'hide_navbar': True})
+
+class AvaliarEstudanteAjaxView(View):
+    def get(self, request, inscricao_pk):
+        inscricao = get_object_or_404(Inscricao, pk=inscricao_pk)
+        instance = getattr(inscricao, 'avaliacao_professor', None)
+        from .forms import AvaliacaoProfessorAlunoForm
+        form = AvaliacaoProfessorAlunoForm(instance=instance)
+        return render(request, 'cursos/avaliacao_professor_modal_content.html', {'form': form, 'inscricao': inscricao})
+    def post(self, request, inscricao_pk):
+        inscricao = get_object_or_404(Inscricao, pk=inscricao_pk)
+        instance = getattr(inscricao, 'avaliacao_professor', None)
+        from .forms import AvaliacaoProfessorAlunoForm
+        form = AvaliacaoProfessorAlunoForm(request.POST, instance=instance)
+        if form.is_valid():
+            avaliacao = form.save(commit=False)
+            avaliacao.inscricao = inscricao
+            avaliacao.professor_nome = inscricao.curso.nome_professor
+            avaliacao.save()
+            import json
+            return HttpResponse(json.dumps({'status': 'success'}), content_type='application/json')
+        import json
+        return HttpResponse(json.dumps({'status': 'error', 'errors': form.errors}), content_type='application/json')
+
+class AvaliarCursoPublicView(View):
+    template_name = 'cursos/avaliacao_aluno_form.html'
+    def get(self, request, token):
+        curso = get_object_or_404(Curso, token_acesso=token)
+        cpf = request.GET.get('cpf')
+        if not cpf:
+            return render(request, 'cursos/avaliacao_aluno_identificacao.html', {'curso': curso, 'hide_navbar': True})
+        import re
+        cpf_limpo = re.sub(r'\D', '', cpf)
+        from .models import Inscricao
+        inscricao = Inscricao.objects.filter(curso=curso, status='concluido', aluno__cpf__icontains=cpf_limpo).first()
+        if not inscricao:
+            from django.contrib import messages
+            messages.error(request, 'CPF nao encontrado entre os alunos concluintes deste curso.')
+            return redirect(reverse('cursos:avaliar_curso_publico', kwargs={'token': token}))
+        if hasattr(inscricao, 'avaliacao_aluno'):
+            return render(request, 'cursos/avaliacao_aluno_concluida.html', {'curso': curso, 'aluno': inscricao.aluno, 'hide_navbar': True})
+        from .forms import AvaliacaoAlunoCursoForm
+        form = AvaliacaoAlunoCursoForm()
+        return render(request, self.template_name, {'curso': curso, 'aluno': inscricao.aluno, 'form': form, 'cpf': cpf, 'hide_navbar': True})
+    def post(self, request, token):
+        curso = get_object_or_404(Curso, token_acesso=token)
+        cpf = request.POST.get('cpf')
+        import re
+        cpf_limpo = re.sub(r'\D', '', cpf)
+        from .models import Inscricao
+        inscricao = get_object_or_404(Inscricao, curso=curso, status='concluido', aluno__cpf__icontains=cpf_limpo)
+        from .forms import AvaliacaoAlunoCursoForm
+        form = AvaliacaoAlunoCursoForm(request.POST)
+        if form.is_valid():
+            avaliacao = form.save(commit=False)
+            avaliacao.inscricao = inscricao
+            avaliacao.save()
+            return render(request, 'cursos/avaliacao_aluno_concluida.html', {'curso': curso, 'aluno': inscricao.aluno, 'sucesso': True, 'hide_navbar': True})
+        return render(request, self.template_name, {'curso': curso, 'aluno': inscricao.aluno, 'form': form, 'cpf': cpf, 'hide_navbar': True})
+
+class ObterDadosGraficosAvaliacaoView(LoginRequiredMixin, StaffRequiredMixin, View):
+    def get(self, request, pk):
+        curso = get_object_or_404(Curso, pk=pk)
+        from .models import AvaliacaoAlunoCurso
+        from django.db.models import Count
+        avaliacoes = AvaliacaoAlunoCurso.objects.filter(inscricao__curso=curso)
+        stats = avaliacoes.values('c1_1').annotate(total=Count('c1_1'))
+        data = {'labels': ['Otimo', 'Bom', 'Regular'], 'values': [0, 0, 0]}
+        for s in stats:
+            if s['c1_1'] == 'Otimo': data['values'][0] = s['total']
+            elif s['c1_1'] == 'Bom': data['values'][1] = s['total']
+            elif s['c1_1'] == 'Regular': data['values'][2] = s['total']
+        import json
+        return HttpResponse(json.dumps(data), content_type='application/json')
+
+class AvaliacaoDetalhesView(LoginRequiredMixin, StaffRequiredMixin, View):
+    template_name = 'cursos/avaliacao_detalhes_modal.html'
+    def get(self, request, inscricao_pk):
+        inscricao = get_object_or_404(Inscricao, pk=inscricao_pk)
+        return render(request, self.template_name, {
+            'inscricao': inscricao,
+            'av_prof': getattr(inscricao, 'avaliacao_professor', None),
+            'av_aluno': getattr(inscricao, 'avaliacao_aluno', None),
+        })
+
+class CursoAvaliacaoConsolidadoView(LoginRequiredMixin, StaffRequiredMixin, View):
+    template_name = 'cursos/avaliacao_consolidado.html'
+
+    def get_distribution(self, queryset, fields):
+        from django.db.models import Count
+        data = {}
+        for field in fields:
+            dist = queryset.values(field).annotate(total=Count(field))
+            # Valor real -> Contagem
+            counts = {'Otimo': 0, 'Bom': 0, 'Regular': 0}
+            for d in dist:
+                val = d[field]
+                if val in counts:
+                    counts[val] = d['total']
+            data[field] = {
+                'label': queryset.model._meta.get_field(field).verbose_name,
+                'counts': list(counts.values()), # [Otimo, Bom, Regular]
+                'labels': ['Ótimo', 'Bom', 'Regular']
+            }
+        return data
+
+    def get(self, request, pk):
+        curso = get_object_or_404(Curso, pk=pk)
+        from .models import AvaliacaoProfessorAluno, AvaliacaoAlunoCurso
+        
+        av_prof_qs = AvaliacaoProfessorAluno.objects.filter(inscricao__curso=curso)
+        prof_fields = [
+            'conceptual_pratico', 'conceptual_teorico', 'conceptual_nota',
+            'behavioral_pratico', 'behavioral_teorico', 'behavioral_nota',
+            'attitudinal_pratico', 'attitudinal_teorico', 'attitudinal_nota'
+        ]
+        prof_data = self.get_distribution(av_prof_qs, prof_fields)
+
+        av_aluno_qs = AvaliacaoAlunoCurso.objects.filter(inscricao__curso=curso)
+        aluno_fields = [
+            'c1_1', 'c1_2', 'c1_3',
+            'c2_1', 'c2_2', 'c2_3', 'c2_4', 'c2_5', 'c2_6', 'c2_7', 'c2_8', 'c2_9',
+            'c3_1', 'c3_2', 'c3_3', 'c3_4',
+            'c4_1', 'c4_2', 'c4_3', 'c4_4'
+        ]
+        aluno_data = self.get_distribution(av_aluno_qs, aluno_fields)
+
+        return render(request, self.template_name, {
+            'curso': curso,
+            'prof_data': prof_data,
+            'aluno_data': aluno_data,
+            'total_prof': av_prof_qs.count(),
+            'total_aluno': av_aluno_qs.count(),
+        })

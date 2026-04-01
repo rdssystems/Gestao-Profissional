@@ -41,6 +41,17 @@
                         </div>
                     </div>
 
+                    <div class="mb-4">
+                        <label class="form-label-premium">Ementa Padrão (Opcional)</label>
+                        <div class="custom-input">{{ form.ementa }}</div>
+                        {% if form.ementa.errors %}
+                        <div class="invalid-feedback d-block">{{ form.ementa.errors.0 }}</div>
+                        {% endif %}
+                        <div class="form-text small text-muted mt-2">
+                            <i class="bi bi-info-circle me-1"></i> Vincule este curso ao catálogo central de ementas do administrador.
+                        </div>
+                    </div>
+
                     {% if user.is_superuser %}
                     <div class="mb-4">
                         <label class="form-label-premium">Unidade Vinculada</label>

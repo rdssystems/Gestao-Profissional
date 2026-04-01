@@ -1,0 +1,158 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Upload de Documento - Drive{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-3 animate-up">
+    <!-- Header -->
+    <div class="d-flex align-items-center mb-4 gap-3">
+        <a href="{% url 'documentos:lista_documentos' %}" class="btn btn-light rounded-circle p-2 shadow-sm">
+            <i class="bi bi-arrow-left fs-5"></i>
+        </a>
+        <div>
+            <h1 class="h3 fw-bold mb-1"><i class="bi bi-cloud-arrow-up me-2 text-primary"></i>Enviar Arquivo</h1>
+            <p class="text-muted mb-0 small">Adicione um novo documento ao drive da unidade</p>
+        </div>
+    </div>
+
+    <!-- Formulário -->
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+            <div class="card border-0 shadow-sm rounded-4">
+                <div class="card-body p-4 p-md-5">
+                    
+                    <form method="post" enctype="multipart/form-data" class="needs-validation">
+                        {% csrf_token %}
+                        
+                        <!-- Upload Field Prominente -->
+                        <div class="text-center p-5 mb-4 border border-2 border-primary border-dashed rounded-4 bg-light" id="drop-zone" style="cursor: pointer; transition: 0.3s;">
+                            <i class="bi bi-cloud-upload display-3 text-primary mb-3 d-block"></i>
+                            <h5 class="fw-bold">Selecionar ou Arrastar Arquivo</h5>
+                            <p class="text-muted small mb-0">PDFs, Imagens, Word, Excel, ZIP (Max 25MB)</p>
+                            
+                            {{ form.arquivo }}
+                            {% if form.arquivo.errors %}
+                                <div class="text-danger small mt-2 fw-bold">{{ form.arquivo.errors|join:", " }}</div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Detalhes Opcionais -->
+                        <div class="mb-3">
+                            <label class="form-label fw-bold text-muted small">Nome do Arquivo <span class="fw-normal text-secondary">(Opcional)</span></label>
+                            <input type="text" name="{{ form.nome.name }}" class="form-control bg-light rounded-3" placeholder="Se deixar em branco, usará o nome original..." value="{{ form.nome.value|default:'' }}">
+                            {% if form.nome.errors %}
+                                <div class="text-danger small mt-1">{{ form.nome.errors|join:", " }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold text-muted small">Categoria</label>
+                                {{ form.categoria }}
+                                {% if form.categoria.errors %}
+                                    <div class="text-danger small mt-1">{{ form.categoria.errors|join:", " }}</div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold text-muted small">Escola Destino</label>
+                                {{ form.escola }}
+                                {% if user.is_superuser %}
+                                    <div class="form-text small">Selecione para qual escola o arquivo será enviado.</div>
+                                {% else %}
+                                    <div class="form-text small">Você só pode enviar para sua escola.</div>
+                                {% endif %}
+                                {% if form.escola.errors %}
+                                    <div class="text-danger small mt-1">{{ form.escola.errors|join:", " }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <hr class="my-4">
+                        
+                        <div class="d-flex justify-content-end gap-2">
+                            <a href="{% url 'documentos:lista_documentos' %}" class="btn btn-light rounded-pill px-4 fw-bold">Cancelar</a>
+                            <button type="submit" class="btn btn-primary rounded-pill px-5 fw-bold shadow-sm" id="btn-submit">
+                                <i class="bi bi-check-lg me-2"></i>Salvar
+                            </button>
+                        </div>
+                    </form>
+
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* Custom Styling for Selects/Inputs from standard Django form generation */
+    select.form-control, select,
+    input[type="text"].form-control, input[type="text"] {
+        background-color: #f8f9fa !important;
+        border: 1px solid #dee2e6 !important;
+        border-radius: 0.5rem !important;
+        padding: 0.5rem 1rem !important;
+        width: 100%;
+        display: block;
+    }
+    
+    input[type="file"] {
+        display: none; /* Escondido para o dropzone funcionar */
+    }
+    
+    .border-dashed {
+        border-style: dashed !important;
+    }
+    
+    #drop-zone:hover {
+        background-color: #e9ecef !important;
+        border-color: #0d6efd !important;
+    }
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const dropZone = document.getElementById('drop-zone');
+        const fileInput = document.querySelector('input[type="file"]');
+        const fileNameDisplay = document.createElement('div');
+        fileNameDisplay.className = "mt-3 fw-bold text-success";
+        dropZone.appendChild(fileNameDisplay);
+
+        // Click to open file dialog
+        dropZone.addEventListener('click', () => fileInput.click());
+
+        // Update name when selected
+        fileInput.addEventListener('change', function() {
+            if(this.files && this.files.length > 0) {
+                fileNameDisplay.innerHTML = `<i class="bi bi-file-earmark-check me-2"></i> ${this.files[0].name}`;
+                dropZone.classList.add('bg-success', 'bg-opacity-10');
+                dropZone.classList.remove('bg-light', 'border-primary');
+                dropZone.classList.add('border-success');
+            }
+        });
+
+        // Drag and Drop
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('bg-secondary', 'bg-opacity-25');
+        });
+        
+        dropZone.addEventListener('dragleave', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('bg-secondary', 'bg-opacity-25');
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('bg-secondary', 'bg-opacity-25');
+            
+            if (e.dataTransfer.files.length) {
+                fileInput.files = e.dataTransfer.files;
+                // Dispara o evento change manualmente
+                fileInput.dispatchEvent(new Event('change'));
+            }
+        });
+    });
+</script>
+{% endblock %}

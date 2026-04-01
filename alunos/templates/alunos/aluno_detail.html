@@ -292,6 +292,58 @@
     </div>
 </div>
 
+<!-- Avaliações de Desempenho (Novo) -->
+<div class="row">
+    <div class="col-12">
+        <div class="premium-card mb-4 no-print shadow-sm border-0">
+            <h5 class="text-muted fw-bold mb-3"><i class="bi bi-star-fill text-warning me-2"></i>Histórico de Desempenho Profissional</h5>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead class="bg-light">
+                        <tr>
+                            <th>Curso</th>
+                            <th class="text-center">Conceitual</th>
+                            <th class="text-center">Comportamental</th>
+                            <th class="text-center">Atitudinal</th>
+                            <th class="text-center">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for insc in aluno.inscricao_set.all %}
+                            {% if insc.avaliacao_professor %}
+                            <tr>
+                                <td>
+                                    <div class="fw-bold">{{ insc.curso.nome }}</div>
+                                    <small class="text-muted">Concluído em: {{ insc.curso.data_fim|date:"d/m/Y" }}</small>
+                                </td>
+                                <td class="text-center">
+                                    <span class="badge bg-primary-soft text-primary">{{ insc.avaliacao_professor.get_conceptual_nota_display }}</span>
+                                </td>
+                                <td class="text-center">
+                                    <span class="badge bg-info-soft text-info">{{ insc.avaliacao_professor.get_behavioral_nota_display }}</span>
+                                </td>
+                                <td class="text-center">
+                                    <span class="badge bg-warning-soft text-warning">{{ insc.avaliacao_professor.get_attitudinal_nota_display }}</span>
+                                </td>
+                                <td class="text-center">
+                                    <button class="btn btn-sm btn-premium-outline" onclick="alert('Funcionalidade de visualização detalhada em desenvolvimento.')">
+                                        <i class="bi bi-file-earmark-pdf"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                            {% endif %}
+                        {% empty %}
+                            <tr>
+                                <td colspan="5" class="text-center py-4 text-muted small">Nenhuma avaliação registrada.</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Termo de Compromisso -->
 <div class="premium-card mt-4 termo-compromisso">
     <h5 class="text-muted fw-bold mb-3 text-center">📄 Comprovante de Inscrição e Termo de Compromisso</h5>
