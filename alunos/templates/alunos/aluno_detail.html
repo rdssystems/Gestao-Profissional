@@ -171,6 +171,10 @@
             style="background-color: #f59e0b;">
             <i class="bi bi-pencil me-1"></i> Editar
         </a>
+        <button type="button" class="btn btn-action-premium text-white" data-bs-toggle="modal" data-bs-target="#modalPastaDigital"
+            style="background-color: #1e3a8a;">
+            <i class="bi bi-folder2-open me-1"></i> Pasta Digital
+        </button>
         {% if perms.alunos.delete_aluno %}
         <a href="{% url 'alunos:excluir_aluno' pk=aluno.pk %}" class="btn btn-action-premium text-white"
             style="background-color: #dc2626;">
@@ -387,15 +391,227 @@
     </div>
 </div>
 
+<!-- Modal Pasta Digital -->
+<div class="modal fade" id="modalPastaDigital" tabindex="-1" aria-labelledby="modalPastaDigitalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden" style="background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px);">
+            <div class="modal-header border-0 bg-primary text-white p-4">
+                <h5 class="modal-title fw-bold" id="modalPastaDigitalLabel">
+                    <i class="bi bi-folder2-open me-2"></i>Pasta Digital: {{ aluno.nome_completo }}
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <!-- Drop Zone -->
+                <div id="dropZoneAluno" class="position-relative overflow-hidden rounded-4 border-2 border-dashed mb-4 d-flex align-items-center justify-content-center flex-column py-5" 
+                     style="border-color: #0d6efd; background: rgba(13, 110, 253, 0.05); transition: all 0.3s ease-in-out; cursor: pointer;">
+                    <div class="text-center">
+                        <i class="bi bi-cloud-arrow-up display-4 text-primary mb-2"></i>
+                        <h6 class="fw-bold text-dark">Arraste seus documentos aqui</h6>
+                        <p class="text-muted small mb-0">(PDF, JPG, PNG)</p>
+                    </div>
+                    <input type="file" id="fileInputAluno" class="position-absolute top-0 start-0 w-100 h-100 opacity-0" style="cursor: pointer;" multiple>
+                </div>
+
+                <!-- Lista de Arquivos -->
+                <h6 class="fw-bold text-muted mb-3"><i class="bi bi-files me-2"></i>Documentos Salvos</h6>
+                <div id="listaArquivosAluno" class="row g-3">
+                    <!-- Gerado via JS -->
+                    <div class="col-12 text-center py-4" id="placeholderArquivos">
+                        <i class="bi bi-inbox text-muted display-6 d-block mb-2"></i>
+                        <span class="text-muted small">Nenhum documento anexado ainda.</span>
+                    </div>
+                </div>
+
+                <!-- Upload Progress (Oculto) -->
+                <div id="uploadProgressContainer" class="mt-4 d-none">
+                    <div class="d-flex justify-content-between mb-1">
+                        <span class="small fw-bold text-primary">Enviando arquivos...</span>
+                        <span id="uploadPercentage" class="small fw-bold text-primary">0%</span>
+                    </div>
+                    <div class="progress rounded-pill" style="height: 10px;">
+                        <div id="uploadProgressBar" class="progress-bar progress-bar-striped progress-bar-animated bg-primary" role="progressbar" style="width: 0%"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 {% endblock %}
 
 {% block extra_js %}
 <script>
     document.addEventListener('DOMContentLoaded', function () {
+        // Lógica de Impressão
         const urlParams = new URLSearchParams(window.location.search);
         if (urlParams.get('print') === 'true') {
             window.print();
         }
+
+        // Pasta Digital Configs
+        const alunoId = "{{ aluno.id }}";
+        const dropZone = document.getElementById('dropZoneAluno');
+        const fileInput = document.getElementById('fileInputAluno');
+        const listaArquivos = document.getElementById('listaArquivosAluno');
+        const progressContainer = document.getElementById('uploadProgressContainer');
+        const progressBar = document.getElementById('uploadProgressBar');
+        const progressText = document.getElementById('uploadPercentage');
+
+        // Carregar arquivos Iniciais
+        carregarArquivos();
+
+        // Drag & Drop Visual
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropZone.addEventListener(eventName, e => {
+                e.preventDefault();
+                dropZone.style.background = "rgba(13, 110, 253, 0.1)";
+                dropZone.style.borderColor = "var(--brand-primary)";
+            }, false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, e => {
+                e.preventDefault();
+                dropZone.style.background = "rgba(13, 110, 253, 0.05)";
+                dropZone.style.borderColor = "#0d6efd";
+            }, false);
+        });
+
+        dropZone.addEventListener('drop', e => {
+            const files = e.dataTransfer.files;
+            handleFiles(files);
+        });
+
+        fileInput.addEventListener('change', e => {
+            handleFiles(e.target.files);
+        });
+
+        function handleFiles(files) {
+            if (files.length === 0) return;
+            
+            progressContainer.classList.remove('d-none');
+            
+            let uploaded = 0;
+            const total = files.length;
+
+            Array.from(files).forEach(file => {
+                const formData = new FormData();
+                formData.append('arquivo', file);
+                formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+
+                const xhr = new XMLHttpRequest();
+                xhr.open('POST', `{% url 'alunos:aluno_arquivos_upload' pk=aluno.id %}`, true);
+
+                xhr.upload.onprogress = e => {
+                    if (e.lengthComputable) {
+                        const percent = Math.round((e.loaded / e.total) * 100);
+                        // Aqui o progresso é por arquivo, mas vamos simplificar
+                        progressBar.style.width = percent + '%';
+                        progressText.innerText = percent + '%';
+                    }
+                };
+
+                xhr.onload = function() {
+                    uploaded++;
+                    if (xhr.status === 200) {
+                        const response = JSON.parse(xhr.responseText);
+                        adicionarArquivoNaLista(response.arquivo);
+                    } else {
+                        alert("Erro ao enviar: " + file.name);
+                    }
+
+                    if (uploaded === total) {
+                        setTimeout(() => {
+                            progressContainer.classList.add('d-none');
+                            progressBar.style.width = '0%';
+                        }, 1000);
+                    }
+                };
+
+                xhr.send(formData);
+            });
+        }
+
+        function carregarArquivos() {
+            fetch(`{% url 'alunos:aluno_arquivos_lista' pk=aluno.id %}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.sucesso) {
+                        listaArquivos.innerHTML = '';
+                        if (data.arquivos.length === 0) {
+                            listaArquivos.innerHTML = `
+                                <div class="col-12 text-center py-4" id="placeholderArquivos">
+                                    <i class="bi bi-inbox text-muted display-6 d-block mb-2"></i>
+                                    <span class="text-muted small">Nenhum documento anexado ainda.</span>
+                                </div>`;
+                        } else {
+                            data.arquivos.forEach(adicionarArquivoNaLista);
+                        }
+                    }
+                });
+        }
+
+        function adicionarArquivoNaLista(arq) {
+            const placeholder = document.getElementById('placeholderArquivos');
+            if (placeholder) placeholder.remove();
+
+            const col = document.createElement('div');
+            col.className = 'col-sm-6 col-md-4';
+            col.id = `arquivo-${arq.id}`;
+            
+            let iconClass = 'bi-file-earmark-text';
+            let iconColor = 'text-primary';
+            if (arq.is_pdf) { iconClass = 'bi-file-earmark-pdf'; iconColor = 'text-danger'; }
+            if (arq.is_image) { iconClass = 'bi-file-earmark-image'; iconColor = 'text-success'; }
+
+            col.innerHTML = `
+                <div class="card h-100 border shadow-sm rounded-3 overflow-hidden position-relative group-hover-action">
+                    <div class="card-body p-2 d-flex align-items-center">
+                        <div class="flex-shrink-0 me-2 bg-light rounded p-2">
+                             <i class="bi ${iconClass} ${iconColor} h4 mb-0"></i>
+                        </div>
+                        <div class="flex-grow-1 min-width-0">
+                            <h6 class="mb-0 text-truncate small fw-bold" title="${arq.nome}">${arq.nome}</h6>
+                            <div class="d-flex justify-content-between align-items-center mt-1">
+                                <span class="text-muted" style="font-size: 0.65rem;">${arq.data}</span>
+                                <div class="d-flex gap-2">
+                                    <a href="${arq.url}" target="_blank" class="text-primary" title="Visualizar/Baixar">
+                                        <i class="bi bi-cloud-download"></i>
+                                    </a>
+                                    <a href="javascript:void(0)" onclick="excluirArquivo(${arq.id})" class="text-danger" title="Excluir">
+                                        <i class="bi bi-trash"></i>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            listaArquivos.appendChild(col);
+        }
+
+        window.excluirArquivo = function(id) {
+            if (!confirm("Tem certeza que deseja excluir este documento?")) return;
+            
+            fetch(`{% url 'alunos:aluno_arquivo_excluir' pk=aluno.id file_id=999 %}`.replace('999', id), {
+                method: 'DELETE',
+                headers: { 'X-CSRFToken': '{{ csrf_token }}' }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.sucesso) {
+                    document.getElementById(`arquivo-${id}`).remove();
+                    if (listaArquivos.children.length === 0) {
+                        listaArquivos.innerHTML = `
+                            <div class="col-12 text-center py-4" id="placeholderArquivos">
+                                <i class="bi bi-inbox text-muted display-6 d-block mb-2"></i>
+                                <span class="text-muted small">Nenhum documento anexado ainda.</span>
+                            </div>`;
+                    }
+                }
+            });
+        };
     });
 </script>
 {% endblock %}
