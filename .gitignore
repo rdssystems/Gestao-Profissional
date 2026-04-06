@@ -52,3 +52,9 @@ backups/
 *.png
 !logopmu.png
 !logologin.png
+
+# Database and sensitive local files
+*.sql
+*.db
+backup_manual.sql
+banco_cadastro.db

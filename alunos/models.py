@@ -131,10 +131,34 @@ class Aluno(models.Model):
 
     @property
     def cpf_formatado(self):
-        if self.cpf:
-            # Remove qualquer formatação existente primeiro
-            import re
-            cpf = re.sub(r'\D', '', self.cpf)
-            if len(cpf) == 11:
-                return f"{cpf[:3]}.{cpf[3:6]}.{cpf[6:9]}-{cpf[9:]}"
         return self.cpf
+
+
+class ArquivoAluno(models.Model):
+    aluno = models.ForeignKey(Aluno, on_delete=models.CASCADE, related_name='arquivos', verbose_name="Aluno")
+    arquivo = models.FileField(upload_to='documentos_alunos/%Y/%m/%d/', verbose_name="Arquivo")
+    nome = models.CharField(max_length=255, verbose_name="Nome do Arquivo")
+    data_upload = models.DateTimeField(auto_now_add=True, verbose_name="Data de Upload")
+    enviado_por = models.ForeignKey('auth.User', on_delete=models.SET_NULL, null=True, verbose_name="Enviado por")
+
+    class Meta:
+        verbose_name = "Arquivo do Aluno"
+        verbose_name_plural = "Arquivos dos Alunos"
+        ordering = ['-data_upload']
+
+    def __str__(self):
+        return f"{self.nome} - {self.aluno.nome_completo}"
+
+    @property
+    def extensao(self):
+        import os
+        name, extension = os.path.splitext(self.arquivo.name)
+        return extension.lower()
+
+    @property
+    def is_image(self):
+        return self.extensao in ['.jpg', '.jpeg', '.png', '.gif', '.webp']
+
+    @property
+    def is_pdf(self):
+        return self.extensao == '.pdf'

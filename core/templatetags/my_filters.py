@@ -34,3 +34,9 @@ def nome_curto(nome_completo):
     
     # Caso contrário, apenas Primeiro + Segundo
     return f"{primeiro} {partes[1]}"
+
+@register.filter
+def apenas_numeros(valor):
+    if not valor:
+        return ""
+    return "".join(filter(str.isdigit, str(valor)))

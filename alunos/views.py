@@ -157,10 +157,31 @@ class AlunoClonarView(AuditLogMixin, StaffRequiredMixin, View):
         
         try:
             novo_aluno.save()
+            
+            # Clonar os Arquivos Digitais (Pasta Digital)
+            from .models import ArquivoAluno
+            arquivos_originais = aluno_original.arquivos.all()
+            for arq_orig in arquivos_originais:
+                # Criar novo arquivo copiando o conteúdo
+                novo_arquivo = ArquivoAluno(
+                    aluno=novo_aluno,
+                    nome=arq_orig.nome,
+                    enviado_por=request.user
+                )
+                # Copiar o arquivo físico
+                if arq_orig.arquivo:
+                    from django.core.files.base import ContentFile
+                    novo_arquivo.arquivo.save(
+                        os.path.basename(arq_orig.arquivo.name),
+                        ContentFile(arq_orig.arquivo.read()),
+                        save=False
+                    )
+                novo_arquivo.save()
+
             # Log manual da clonagem para acionar WebSocket
             self.save_log(novo_aluno, 'CREATE', {'origem_clonagem': str(aluno_original.pk), 'acao': 'clonagem'})
             
-            messages.success(request, f"Aluno {novo_aluno.nome_completo} importado com sucesso! Verifique os dados e matricule nos cursos.")
+            messages.success(request, f"Aluno {novo_aluno.nome_completo} importado com sucesso! Os documentos digitais também foram transferidos.")
             return redirect('alunos:editar_aluno', pk=novo_aluno.pk)
         except Exception as e:
             messages.error(request, f"Erro ao importar aluno: {e}")
@@ -600,3 +621,62 @@ class AlunoCSVUploadView(LoginRequiredMixin, SuperuserRequiredMixin, View): # Ap
             sample_csv_content = sample_csv_headers + "\n" + "\n".join(sample_csv_data)
             context = self.get_context_data(form, sample_csv_headers, sample_csv_content)
             return render(request, self.template_name, context)
+
+
+class AlunoArquivoAjaxUploadView(LoginRequiredMixin, StaffRequiredMixin, View):
+    def post(self, request, pk):
+        aluno = get_object_or_404(Aluno, pk=pk)
+        arquivo = request.FILES.get('arquivo')
+        nome = request.POST.get('nome', '')
+
+        if not arquivo:
+            return JsonResponse({'sucesso': False, 'erro': 'Nenhum arquivo enviado.'}, status=400)
+
+        from .models import ArquivoAluno
+        doc = ArquivoAluno.objects.create(
+            aluno=aluno,
+            arquivo=arquivo,
+            nome=nome or arquivo.name,
+            enviado_por=request.user
+        )
+
+        return JsonResponse({
+            'sucesso': True,
+            'arquivo': {
+                'id': doc.id,
+                'nome': doc.nome,
+                'url': doc.arquivo.url,
+                'data': doc.data_upload.strftime('%d/%m/%Y'),
+                'is_pdf': doc.is_pdf,
+                'is_image': doc.is_image
+            }
+        })
+
+
+class AlunoArquivoActionView(LoginRequiredMixin, StaffRequiredMixin, View):
+    def delete(self, request, pk, file_id):
+        from .models import ArquivoAluno
+        arquivo_obj = get_object_or_404(ArquivoAluno, id=file_id, aluno_id=pk)
+        
+        # Remover arquivo físico
+        if arquivo_obj.arquivo:
+            if os.path.isfile(arquivo_obj.arquivo.path):
+                os.remove(arquivo_obj.arquivo.path)
+        
+        arquivo_obj.delete()
+        return JsonResponse({'sucesso': True})
+
+    def get(self, request, pk):
+        aluno = get_object_or_404(Aluno, pk=pk)
+        arquivos = aluno.arquivos.all()
+        data = []
+        for a in arquivos:
+            data.append({
+                'id': a.id,
+                'nome': a.nome,
+                'url': a.arquivo.url,
+                'data': a.data_upload.strftime('%d/%m/%Y'),
+                'is_pdf': a.is_pdf,
+                'is_image': a.is_image
+            })
+        return JsonResponse({'sucesso': True, 'arquivos': data})
