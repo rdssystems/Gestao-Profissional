@@ -58,3 +58,7 @@ backups/
 *.db
 backup_manual.sql
 banco_cadastro.db
+
+# Media and Uploads
+media/
+documentos_alunos/
