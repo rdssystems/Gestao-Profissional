@@ -213,3 +213,39 @@ class ConcluintesGlobalView(LoginRequiredMixin, SuperuserRequiredMixin, ListView
         context['todas_escolas'] = Escola.objects.all().order_by('nome')
         context['selected_escola_id'] = self.request.GET.get('escola_id', 'all')
         return context
+
+class ConcluinteUnificadoView(LoginRequiredMixin, ListView):
+    model = Inscricao
+    template_name = 'escolas/concluinte_unificado.html'
+    context_object_name = 'concluintes'
+
+    def get_queryset(self):
+        escola_id = self.request.GET.get('escola_id')
+        queryset = Inscricao.objects.filter(status='concluido').select_related(
+            'aluno', 'curso', 'curso__escola', 'curso__escola__coordenador_user'
+        ).order_by('curso__escola__nome', 'aluno__nome_completo')
+        
+        if escola_id and escola_id != 'all':
+            queryset = queryset.filter(curso__escola_id=escola_id)
+            
+        return queryset
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        concluintes = self.get_queryset()
+        
+        # Agrupar por escola para facilitar no template
+        from itertools import groupby
+        def key_func(k): return k.curso.escola
+        
+        grouped = []
+        for escola, items in groupby(concluintes, key_func):
+            grouped.append({
+                'escola': escola,
+                'items': list(items)
+            })
+            
+        context['grouped_concluintes'] = grouped
+        context['todas_escolas'] = Escola.objects.all().order_by('nome')
+        context['selected_escola_id'] = self.request.GET.get('escola_id', 'all')
+        return context
