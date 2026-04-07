@@ -27,6 +27,10 @@ if [ $? -eq 0 ]; then
     echo "Enviando para o Google Drive..."
     rclone copy "$BACKUP_DIR/$FILE_NAME" "${REMOTE_NAME}:${REMOTE_PATH}"
     
+    # 3. Sincroniza a pasta de mídia (Imagens/PDFs) - Executado a partir da raiz do projeto
+    echo "Sincronizando arquivos de mídia (Fotos/PDFs)..."
+    rclone copy "./media" "${REMOTE_NAME}:${REMOTE_PATH}/media"
+    
     if [ $? -eq 0 ]; then
         echo "Backup enviado com sucesso para o Google Drive!"
         

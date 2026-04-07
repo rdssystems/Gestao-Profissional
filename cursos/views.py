@@ -901,6 +901,37 @@ class RelatorioFrequenciaView(LoginRequiredMixin, StaffRequiredMixin, DetailView
         context['total_ausentes'] = total_ausentes
         return context
 
+class ExcluirRegistroAulaView(LoginRequiredMixin, StaffRequiredMixin, View):
+    def post(self, request, pk):
+        registro = get_object_or_404(RegistroAula, pk=pk)
+        curso = registro.curso
+        
+        # Verificar permissão de escola se não for superuser
+        user = request.user
+        if not user.is_superuser and hasattr(user, 'profile') and user.profile.escola != curso.escola:
+            raise PermissionDenied("Você não tem permissão para excluir registros desta escola.")
+            
+        data_formatada = registro.data_aula.strftime('%d/%m/%Y')
+        registro.delete()
+        
+        # Log manual para auditoria
+        try:
+            from core.models import AuditLog
+            from django.contrib.contenttypes.models import ContentType
+            AuditLog.objects.create(
+                usuario=request.user,
+                acao='DELETE',
+                content_type=ContentType.objects.get_for_model(RegistroAula),
+                object_id=str(pk),
+                detalhes=f"Registro de aula ({data_formatada}) excluído para o curso {curso.nome}",
+                ip_address=request.META.get('REMOTE_ADDR')
+            )
+        except Exception as e:
+            print(f"Erro ao gerar log de exclusão de chamada: {e}")
+
+        messages.success(request, f"O registro de presença do dia {data_formatada} para o curso '{curso.nome}' foi removido com sucesso!")
+        return redirect('cursos:relatorio_frequencia', curso_pk=curso.pk)
+
 class CursoCSVUploadView(LoginRequiredMixin, UserPassesTestMixin, View):
     template_name = 'cursos/upload_cursos_csv.html'
 

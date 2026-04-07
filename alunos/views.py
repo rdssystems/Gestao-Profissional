@@ -1,5 +1,7 @@
 import csv
 import io
+import os
+import json
 import openpyxl
 from datetime import datetime
 from urllib.parse import quote
@@ -12,7 +14,7 @@ from django.urls import reverse_lazy
 from django.shortcuts import get_object_or_404, redirect, render
 from django.contrib import messages
 from django.core.exceptions import ValidationError
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 
 from .models import Aluno
 from .forms import AlunoForm, AuxiliarAlunoForm, AlunoCSVUploadForm, VerificarCPFForm
@@ -360,7 +362,6 @@ class AlunoHistoricoView(StaffRequiredMixin, DetailView):
         ).select_related('usuario', 'content_type').order_by('-data_hora')
 
         # Extraír apenas mudanças de status
-        import json
         timeline = []
         for log in logs_status_raw:
             try:
@@ -665,6 +666,16 @@ class AlunoArquivoActionView(LoginRequiredMixin, StaffRequiredMixin, View):
         
         arquivo_obj.delete()
         return JsonResponse({'sucesso': True})
+
+    def post(self, request, pk, file_id):
+        from .models import ArquivoAluno
+        arquivo_obj = get_object_or_404(ArquivoAluno, id=file_id, aluno_id=pk)
+        novo_nome = request.POST.get('novo_nome')
+        if novo_nome:
+            arquivo_obj.nome = novo_nome
+            arquivo_obj.save()
+            return JsonResponse({'sucesso': True, 'nome': arquivo_obj.nome})
+        return JsonResponse({'sucesso': False, 'erro': 'Nome inválido.'}, status=400)
 
     def get(self, request, pk):
         aluno = get_object_or_404(Aluno, pk=pk)
