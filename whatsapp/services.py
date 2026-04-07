@@ -4,6 +4,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+# Defaults for Docker environment
 EVOLUTION_API_URL = os.getenv('EVOLUTION_API_URL', 'http://localhost:8080')
 EVOLUTION_API_KEY = os.getenv('EVOLUTION_API_KEY', 'gq-evolution-secret-key-2026')
 
@@ -25,7 +26,7 @@ def _make_request(method, endpoint, data=None, timeout=10):
         response.raise_for_status()
         return response.json()
     except requests.exceptions.ConnectionError:
-        raise EvolutionAPIError("Não foi possível conectar à Evolution API. Verifique se o serviço está rodando.")
+        raise EvolutionAPIError(f"Não foi possível conectar à Evolution API em {EVOLUTION_API_URL}. Verifique se o container docker 'gq-evolution' está rodando.")
     except requests.exceptions.Timeout:
         raise EvolutionAPIError("A Evolution API não respondeu a tempo (timeout).")
     except requests.exceptions.HTTPError as e:
@@ -34,41 +35,31 @@ def _make_request(method, endpoint, data=None, timeout=10):
 
 
 def create_instance(instance_name):
-    """Creates a new WhatsApp instance on the Evolution API."""
-    # First, try to delete existing instance if any (idempotent)
-    try:
-        _make_request('DELETE', f'/instance/delete/{instance_name}')
-    except EvolutionAPIError:
-        pass  # Instance didn't exist, that's fine
-
+    """Creates a new WhatsApp instance on the Evolution API. No pre-delete to avoid race conditions."""
     data = {
         "instanceName": instance_name,
         "qrcode": True,
         "integration": "WHATSAPP-BAILEYS",
     }
-    return _make_request('POST', '/instance/create', data=data)
+    
+    try:
+        return _make_request('POST', '/instance/create', data=data)
+    except EvolutionAPIError as e:
+        # If the instance already exists, we skip creation and just return its current status
+        if "already exists" in str(e).lower():
+            logger.info(f"Instância {instance_name} já existe na API. Prosseguindo.")
+            return get_instance_status(instance_name)
+        raise e
 
 
 def get_qr_code(instance_name):
-    """
-    Fetches the current QR code for a given instance.
-    Evolution API v1: GET /instance/connect/{name} can return the QR or connection info. 
-    Alternatively, some v1 versions use /instance/qrcode/{name}.
-    """
+    """Fetches the current QR code for a given instance with fallback endpoints."""
     try:
         # First try the qrcode endpoint (v1 specific)
         return _make_request('GET', f'/instance/qrcode/{instance_name}')
     except EvolutionAPIError:
         # Fallback to connect endpoint
         return _make_request('GET', f'/instance/connect/{instance_name}')
-
-
-def get_pairing_code(instance_name, phone_number):
-    """
-    Note: Pairing codes are only available in Evolution API v2+. 
-    Returning dummy or raising error for v1.
-    """
-    raise EvolutionAPIError("Códigos de pareamento via texto só estão disponíveis na Evolution API v2. Favor usar o QR Code.")
 
 
 def get_instance_status(instance_name):
@@ -82,15 +73,15 @@ def get_instance_status(instance_name):
 
 def delete_instance(instance_name):
     """Deletes a WhatsApp instance from the Evolution API."""
-    return _make_request('DELETE', f'/instance/delete/{instance_name}')
+    try:
+        return _make_request('DELETE', f'/instance/delete/{instance_name}')
+    except EvolutionAPIError:
+        # If it doesn't exist to delete, that's already what we wanted
+        return {"status": "already_deleted"}
 
 
 def send_text_message(instance_name, phone_number, text):
-    """
-    Sends a text message via WhatsApp.
-    phone_number should contain only digits, e.g. '5534997648892'
-    """
-    # Ensure the phone number has the country code
+    """Sends a text message via WhatsApp."""
     if not phone_number.startswith('55'):
         phone_number = '55' + phone_number
 

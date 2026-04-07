@@ -18,6 +18,7 @@ urlpatterns = [
     path('<int:pk>/arquivos/upload/', views.AlunoArquivoAjaxUploadView.as_view(), name='aluno_arquivos_upload'),
     path('<int:pk>/arquivos/', views.AlunoArquivoActionView.as_view(), name='aluno_arquivos_lista'),
     path('<int:pk>/arquivos/<int:file_id>/excluir/', views.AlunoArquivoActionView.as_view(), name='aluno_arquivo_excluir'),
+    path('<int:pk>/arquivos/<int:file_id>/renomear/', views.AlunoArquivoActionView.as_view(), name='aluno_arquivo_renomear'),
     path('upload-csv/', views.AlunoCSVUploadView.as_view(), name='upload_alunos_csv'),
     path('download-modelo-xlsx/', views.download_model_xlsx, name='download_modelo_aluno_xlsx'),
 ]

@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}WhatsApp — Gerenciamento (Admin){% endblock %}
+
+{% block content %}
+<div class="row justify-content-center mt-3">
+    <div class="col-lg-10">
+
+        <!-- Header -->
+        <div class="d-flex align-items-center justify-content-between mb-4">
+            <div>
+                <h2 class="mb-0 fw-bold" style="color:#1a1d2e;">
+                    <i class="bi bi-whatsapp me-2" style="color:#25D366;"></i>WhatsApp
+                </h2>
+                <p class="text-muted mb-0">Painel Geral de Conexões</p>
+            </div>
+            <a href="{% url 'escolas:dashboard' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left me-1"></i>Voltar
+            </a>
+        </div>
+
+        <div class="premium-card">
+            <h5 class="fw-bold mb-4" style="color:#1a1d2e;">Status das Unidades</h5>
+            
+            <div class="table-responsive">
+                <table class="table table-hover align-middle border-top">
+                    <thead class="bg-light">
+                        <tr>
+                            <th class="border-0">Unidade/Escola</th>
+                            <th class="border-0 text-center">Instância</th>
+                            <th class="border-0 text-center">Status</th>
+                            <th class="border-0 text-end">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for config in configs %}
+                        <tr>
+                            <td>
+                                <div class="fw-bold" style="color:#1a1d2e;">{{ config.escola.nome }}</div>
+                                <small class="text-muted">{{ config.escola.cidade }} - {{ config.escola.estado }}</small>
+                            </td>
+                            <td class="text-center">
+                                <code>{{ config.instance_name }}</code>
+                            </td>
+                            <td class="text-center">
+                                <span class="badge 
+                                    {% if config.status == 'connected' %}bg-success
+                                    {% elif config.status == 'connecting' %}bg-warning text-dark
+                                    {% elif config.status == 'error' %}bg-danger
+                                    {% else %}bg-secondary{% endif %}">
+                                    {{ config.get_status_display }}
+                                </span>
+                            </td>
+                            <td class="text-end">
+                                <a href="{% url 'whatsapp:config_escola' config.escola.id %}" class="btn btn-sm btn-outline-primary" title="Gerenciar Unidade">
+                                    <i class="bi bi-gear me-1"></i>Gerenciar
+                                </a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="4" class="text-center py-5 text-muted">
+                                <i class="bi bi-inbox display-4 d-block mb-3 opacity-25"></i>
+                                Nenhuma configuração de WhatsApp encontrada até o momento.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- System Stats Info -->
+        <div class="alert alert-info mt-4 border-0 shadow-sm rounded-4 d-flex align-items-center">
+            <i class="bi bi-info-circle-fill me-3 fs-3"></i>
+            <div>
+                <strong>Aviso de Administrador:</strong> Esta página lista o status de conexão de todas as escolas cadastradas. 
+                As mensagens automáticas usam estas instâncias da Evolution API para envio.
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}
