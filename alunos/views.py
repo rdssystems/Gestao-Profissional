@@ -388,8 +388,10 @@ class AlunoUpdateObservacoesView(AuditLogMixin, StaffRequiredMixin, View):
     def post(self, request, pk):
         aluno = get_object_or_404(Aluno, pk=pk)
         observacoes = request.POST.get('observacoes')
-        aluno.observacoes = observacoes
-        aluno.save()
+        from core.utils import audit_context
+        with audit_context(skip=True):
+            aluno.observacoes = observacoes
+            aluno.save()
         
         # Log manual
         self.save_log(aluno, 'UPDATE', {'campo': 'observacoes', 'valor': 'atualizado'})
@@ -413,8 +415,10 @@ class AlunoUpdateCursosInteresseView(AuditLogMixin, StaffRequiredMixin, View):
                 ).values_list('id', flat=True))
                 cursos_ids = valid_ids
         
-        aluno.cursos_interesse.set(cursos_ids)
-        aluno.save() # Força atualização do timestamp 'data_atualizacao'
+        from core.utils import audit_context
+        with audit_context(skip=True):
+            aluno.cursos_interesse.set(cursos_ids)
+            aluno.save() # Força atualização do timestamp 'data_atualizacao'
         
         # Log manual
         self.save_log(aluno, 'UPDATE', {'campo': 'cursos_interesse', 'total': len(cursos_ids)})

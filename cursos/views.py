@@ -185,10 +185,11 @@ class CursoStatusUpdateView(LoginRequiredMixin, StaffRequiredMixin, View):
             old_status = curso.status
             curso.status = novo_status
             # Use skip to prevent duplicate signal log
-            from core.utils import set_audit_skip
-            set_audit_skip(True)
-            try:
+            from core.utils import audit_context
+            with audit_context(skip=True):
                 curso.save()
+            
+            try:
                 AuditLog.objects.create(
                     usuario=request.user,
                     acao='UPDATE',
@@ -199,8 +200,6 @@ class CursoStatusUpdateView(LoginRequiredMixin, StaffRequiredMixin, View):
                 )
             except Exception as e:
                 print(f"Erro ao gerar log de auditoria manual: {e}")
-            finally:
-                set_audit_skip(False)
 
         return redirect('cursos:lista_cursos')
 
@@ -366,12 +365,12 @@ class UpdateInscricaoStatusView(LoginRequiredMixin, StaffRequiredMixin, SingleOb
         novo_status = request.POST.get('status')
         if novo_status in ['concluido', 'desistente', 'cursando']:
             inscricao.status = novo_status
-            from core.utils import set_audit_skip
-            set_audit_skip(True)
-            try:
+            from core.utils import audit_context
+            with audit_context(skip=True):
                 inscricao.save()
 
-                # Log manual para WS
+            # Log manual para WS
+            try:
                 AuditLog.objects.create(
                     usuario=request.user,
                     acao='UPDATE',
@@ -382,8 +381,6 @@ class UpdateInscricaoStatusView(LoginRequiredMixin, StaffRequiredMixin, SingleOb
                 )
             except Exception as e:
                 print(f"Erro log status inscricao: {e}")
-            finally:
-                set_audit_skip(False)
 
             # Se o aluno concluiu o curso, removemos este tipo de curso dos interesses dele
             if novo_status == 'concluido':
@@ -483,13 +480,13 @@ class MatricularAlunoDiretoView(LoginRequiredMixin, StaffRequiredMixin, View):
 
 
 
-        from core.utils import set_audit_skip
-        set_audit_skip(True)
-        try:
+        from core.utils import audit_context
+        with audit_context(skip=True):
             # Cria a inscrição
             inscricao = Inscricao.objects.create(aluno=aluno, curso=curso)
             
-            # Log manual
+        # Log manual
+        try:
             AuditLog.objects.create(
                 usuario=request.user,
                 acao='CREATE',
@@ -500,8 +497,6 @@ class MatricularAlunoDiretoView(LoginRequiredMixin, StaffRequiredMixin, View):
             )
         except Exception as e:
             print(f"Erro log matricula direta: {e}")
-        finally:
-            set_audit_skip(False)
 
         messages.success(request, f'Aluno {aluno.nome_completo} matriculado com sucesso no curso {curso.nome}.')
 
@@ -526,12 +521,12 @@ class CancelarMatriculaDiretoView(LoginRequiredMixin, StaffRequiredMixin, View):
         # Salva o content type antes de deletar
         inscricao_content_type = ContentType.objects.get_for_model(inscricao)
         
-        from core.utils import set_audit_skip
-        set_audit_skip(True)
-        try:
+        from core.utils import audit_context
+        with audit_context(skip=True):
             inscricao.delete()
             
-            # Log manual para WS
+        # Log manual para WS
+        try:
             AuditLog.objects.create(
                 usuario=request.user,
                 acao='DELETE',
@@ -542,8 +537,6 @@ class CancelarMatriculaDiretoView(LoginRequiredMixin, StaffRequiredMixin, View):
             )
         except Exception as e:
             print(f"Erro log cancelamento: {e}")
-        finally:
-            set_audit_skip(False)
         
         messages.success(request, f"Matrícula de {aluno_nome} cancelada com sucesso.")
         return redirect(reverse('cursos:matricula') + f'?curso_id={curso_id}')
