@@ -57,13 +57,17 @@ class UserDeleteView(AuditLogMixin, LoginRequiredMixin, PermissionRequiredMixin,
     def delete(self, request, *args, **kwargs):
         obj = self.get_object()
         
-        # Adicionar Log Manualmente aqui (já que estamos sobrescrevendo o delete)
-        # Ou apenas deixar o AuditLogMixin agir se removermos este override, mas queremos a mensagem.
-        # Vamos chamar o save_log do mixin explicitamente.
-        self.save_log(obj, 'DELETE', {'removido': str(obj)})
-
+        from core.utils import audit_context
+        with audit_context(skip=True):
+            response = super().delete(request, *args, **kwargs)
+        
+        # O Mixin já salvaria se não tivéssemos sobrescrevido, ou se chamássemos dele.
+        # Como o Mixin define o método delete(), chamá-lo explicitamente ou via super() funciona.
+        # Mas aqui, como o Mixin JÁ tem o método delete, ao chamar super().delete() chamamos o Mixin.
+        # E o Mixin agora usa o audit_context(skip=True).
+        
         messages.success(request, f"Usuário '{obj.username}' excluído com sucesso.")
-        return super().delete(request, *args, **kwargs) 
+        return response
         # Nota: super().delete() aqui vai chamar DeleteView.delete, que faz a deleção real.
         # O delete do AuditLogMixin seria ignorado a menos que chamássemos super(UserDeleteView, self) de forma diferente.
         # Mas como chamamos save_log manualmente acima, está resolvido.
