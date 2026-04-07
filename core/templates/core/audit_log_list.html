@@ -144,9 +144,9 @@
                         <td>{{ log.data_hora|date:"d/m/Y H:i:s" }}</td>
                         <td>
                             {% if log.usuario %}
-                                <span class="fw-medium">{{ log.usuario.username }}</span>
+                                <span class="fw-medium">{% firstof log.usuario.first_name log.usuario.get_full_name log.usuario.username %}</span>
                             {% else %}
-                                <span class="text-muted">Sistema/Anônimo</span>
+                                <span class="text-muted">Sistema</span>
                             {% endif %}
                         </td>
                         <td>

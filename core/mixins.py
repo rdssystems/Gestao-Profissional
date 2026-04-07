@@ -104,8 +104,17 @@ class AuditLogMixin:
             print(f"Erro ao salvar log de auditoria: {e}")
 
     def form_valid(self, form):
+        from core.utils import set_audit_skip
+        
+        # Ativamos o skip para que o sinal post_save não gere um log duplicado e anônimo
+        set_audit_skip(True)
+        
         # Capturar ação baseada na View
-        response = super().form_valid(form)
+        try:
+            response = super().form_valid(form)
+        finally:
+            # Sempre desativamos o skip depois, idependente de erro
+            set_audit_skip(False)
         
         # O objeto já foi salvo pelo super().form_valid()
         obj = self.object
@@ -135,12 +144,20 @@ class AuditLogMixin:
         return response
 
     def delete(self, request, *args, **kwargs):
+        from core.utils import set_audit_skip
+        
         # Para DeleteView, precisamos pegar o objeto ANTES de deletar
         obj = self.get_object()
         details = {'removido': str(obj)}
         
-        # Chama o delete original (que deleta o objeto)
-        response = super().delete(request, *args, **kwargs)
+        # Ativamos o skip
+        set_audit_skip(True)
+        
+        try:
+            # Chama o delete original (que deleta o objeto)
+            response = super().delete(request, *args, **kwargs)
+        finally:
+            set_audit_skip(False)
         
         # Salva o log
         self.save_log(obj, 'DELETE', details)

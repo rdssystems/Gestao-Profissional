@@ -13,10 +13,17 @@ from controle_diario.models import ControleDiario # Import do modelo ControleDia
 
 # Uma função auxiliar para criar o AuditLog
 def create_audit_log(sender, instance, action, user=None, **kwargs):
+    from core.utils import get_current_user, get_audit_skip
+    
+    # Se o skip estiver ativado (pela view), não duplicamos o log do sinal
+    if get_audit_skip():
+        return
+
     if kwargs.get('raw', False): # Evita logging durante fixture loading
         return
 
-    # Tenta obter o usuário da instância, se não for passado explicitamente
+    # Tenta obter o usuário da thread-local se não for passado e não estiver na instância
+    current_user = get_current_user()
     if user is None:
         if hasattr(instance, 'usuario') and instance.usuario:
             user = instance.usuario
@@ -24,14 +31,13 @@ def create_audit_log(sender, instance, action, user=None, **kwargs):
             user = instance.emitido_por
         elif hasattr(instance, 'user') and instance.user:
             user = instance.user
-        else:
-            # Se não conseguir determinar o usuário da instância, usa um usuário padrão ou None
-            # Para este caso, vamos deixar como None e o AuditLog vai registrar "usuário desconhecido"
-            pass
+        elif current_user:
+            user = current_user
             
     # Garantir que object_id é uma string para GenericForeignKey
     object_id_str = str(instance.pk) if instance.pk else None
 
+    # Verificamos se já existe um log idêntico nos últimos segundos para evitar loops de sinal se houver
     AuditLog.objects.create(
         usuario=user,
         acao=action,
