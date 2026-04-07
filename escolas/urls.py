@@ -13,4 +13,5 @@ urlpatterns = [
     path('<int:escola_id>/cursos/', views.CursosPorEscolaListView.as_view(), name='cursos_da_escola'),
     path('<int:escola_id>/alunos/', views.AlunosPorEscolaListView.as_view(), name='alunos_da_escola'),
     path('concluintes-global/', views.ConcluintesGlobalView.as_view(), name='concluintes_global'),
+    path('concluinte-unificado/', views.ConcluinteUnificadoView.as_view(), name='concluinte_unificado'),
 ]
