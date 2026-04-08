@@ -74,6 +74,19 @@
 
 {% endblock %}
 
+{% block extra_css %}
+<style>
+.modal-content {
+    max-height: 80vh;
+    overflow-y: auto;
+}
+#modalContent {
+    max-height: 70vh;
+    overflow-y: auto;
+}
+</style>
+{% endblock %}
+
 {% block extra_js %}
 <script>
     document.addEventListener('DOMContentLoaded', function() {
