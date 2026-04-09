@@ -13,6 +13,7 @@ urlpatterns = [
     path('<int:pk>/concluintes/xlsx/', views.CursoConcluintesXLSXView.as_view(), name='curso_concluintes_xlsx'),
     path('<int:pk>/imprimir-lista/', views.CursoImprimirListaView.as_view(), name='curso_imprimir_lista'),
     path('<int:pk>/alterar_status/', views.CursoStatusUpdateView.as_view(), name='alterar_status_curso'),
+    path('<int:pk>/qualitativos/', views.CursoQualitativosView.as_view(), name='curso_qualitativos'),
 
     # URLs para Parceiro
     path('parceiros/', views.ParceiroListView.as_view(), name='lista_parceiros'),

@@ -440,6 +440,56 @@
                 }
             });
         }
+
+        // --- MÁSCARAS DE ENTRADA ---
+        const cpfInput = document.getElementById('{{ form.cpf.id_for_label }}');
+        const whatsappInput = document.getElementById('{{ form.whatsapp.id_for_label }}');
+        const phoneInput = document.getElementById('{{ form.telefone_principal.id_for_label }}');
+
+        const applyMask = (input, maskFn) => {
+            if (!input) return;
+            input.addEventListener('input', (e) => {
+                const cursor = e.target.selectionStart;
+                const oldValue = e.target.value;
+                const newValue = maskFn(oldValue);
+                e.target.value = newValue;
+                
+                // Tentar manter a posição do cursor se não for deletar
+                if (e.inputType !== 'deleteContentBackward') {
+                    // Simples ajuste de cursor (pode ser melhorado)
+                }
+            });
+        };
+
+        const cpfMask = (v) => {
+            v = v.replace(/\D/g, "");
+            if (v.length > 11) v = v.slice(0, 11);
+            v = v.replace(/(\d{3})(\d)/, "$1.$2");
+            v = v.replace(/(\d{3})(\d)/, "$1.$2");
+            v = v.replace(/(\d{3})(\d{1,2})$/, "$1-$2");
+            return v;
+        };
+
+        const phoneMask = (v) => {
+            v = v.replace(/\D/g, "");
+            if (v.length > 11) v = v.slice(0, 11);
+            v = v.replace(/^(\d{2})(\d)/g, "($1) $2");
+            if (v.length > 10) { // Com o DDD e 9 dígitos: (99) 99999-9999
+                v = v.replace(/(\d{5})(\d)/, "$1-$2");
+            } else { // Com o DDD e 8 dígitos: (99) 9999-9999
+                v = v.replace(/(\d{4})(\d)/, "$1-$2");
+            }
+            return v;
+        };
+
+        applyMask(cpfInput, cpfMask);
+        applyMask(whatsappInput, phoneMask);
+        applyMask(phoneInput, phoneMask);
+
+        // Inicializar máscaras se já houver valor
+        if (cpfInput && cpfInput.value) cpfInput.value = cpfMask(cpfInput.value);
+        if (whatsappInput && whatsappInput.value) whatsappInput.value = phoneMask(whatsappInput.value);
+        if (phoneInput && phoneInput.value) phoneInput.value = phoneMask(phoneInput.value);
     });
 </script>
 {% endblock %}

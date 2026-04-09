@@ -173,6 +173,7 @@ class CursoStatusUpdateView(LoginRequiredMixin, StaffRequiredMixin, View):
         if novo_status in [choice[0] for choice in Curso.STATUS_CHOICES]:
             # Validação: Não permitir concluir curso se houver alunos "Cursando"
             if novo_status == 'Concluído':
+                # 1. Validação de Status (nenhum aluno pode estar 'cursando')
                 cursando_count = curso.inscricao_set.filter(status='cursando').count()
                 if cursando_count > 0:
                     messages.error(
@@ -181,6 +182,38 @@ class CursoStatusUpdateView(LoginRequiredMixin, StaffRequiredMixin, View):
                         "Por favor, lance os concluintes e desistentes na lista de alunos antes de concluir o curso."
                     )
                     return redirect('cursos:detalhe_curso', pk=pk)
+
+                # 2. Validação de Avaliações (Professor e Aluno)
+                inscricoes_concluidas = curso.inscricao_set.filter(status='concluido')
+                total_concluintes = inscricoes_concluidas.count()
+                
+                # Se houver concluintes, validar avaliações
+                if total_concluintes > 0:
+                    # Avaliações do Professor (100% dos concluintes)
+                    # Usamos Count com o related_name 'avaliacao_professor'
+                    prof_eval_count = AvaliacaoProfessorAluno.objects.filter(inscricao__curso=curso, inscricao__status='concluido').count()
+                    
+                    # Avaliações dos Alunos (50% dos concluintes)
+                    # Usamos Count com o related_name 'avaliacao_aluno'
+                    student_eval_count = AvaliacaoAlunoCurso.objects.filter(inscricao__curso=curso, inscricao__status='concluido').count()
+                    
+                    min_student_eval = (total_concluintes + 1) // 2  # Metade arredondada para cima
+                    
+                    erros_avaliacao = []
+                    
+                    if prof_eval_count < total_concluintes:
+                        erros_avaliacao.append(f"Faltam {total_concluintes - prof_eval_count} avaliações de desempenho do professor.")
+                    
+                    if student_eval_count < min_student_eval:
+                        erros_avaliacao.append(f"Faltam {min_student_eval - student_eval_count} avaliações de feedback dos alunos (necessário pelo menos 50%).")
+                    
+                    if erros_avaliacao:
+                        msg = f"Não é possível concluir o curso '{curso.nome}' devido a pendências: " + " ".join(erros_avaliacao)
+                        messages.warning(request, msg)
+                        return redirect('cursos:detalhe_curso', pk=pk)
+                elif total_concluintes == 0:
+                    # Se não houver concluintes (apenas desistentes), permite concluir mas avisa
+                    messages.info(request, "O curso está sendo concluído sem nenhum aluno aprovado (apenas desistentes).")
 
             old_status = curso.status
             curso.status = novo_status
@@ -1526,3 +1559,49 @@ class CursoAvaliacaoConsolidadoView(LoginRequiredMixin, StaffRequiredMixin, View
             'total_prof': av_prof_qs.count(),
             'total_aluno': av_aluno_qs.count(),
         })
+
+class CursoQualitativosView(LoginRequiredMixin, StaffRequiredMixin, View):
+    template_name = 'cursos/qualitativos_form.html'
+
+    def get(self, request, pk):
+        curso = get_object_or_404(Curso, pk=pk)
+        data_selecionada = request.GET.get('data')
+        
+        chamadas = None
+        if data_selecionada:
+            # Encontrar registro de aula para esta data
+            registro = RegistroAula.objects.filter(curso=curso, data_aula=data_selecionada).first()
+            if registro:
+                chamadas = Chamada.objects.filter(registro_aula=registro, status_presenca__in=['A', 'J'])
+            else:
+                messages.warning(request, f"Nenhum registro de aula encontrado para a data {data_selecionada}.")
+
+        return render(request, self.template_name, {
+            'curso': curso,
+            'chamadas': chamadas,
+            'data_selecionada': data_selecionada,
+            'motivos': Chamada.MOTIVO_FALTA_CHOICES
+        })
+
+    def post(self, request, pk):
+        curso = get_object_or_404(Curso, pk=pk)
+        chamadas_ids = request.POST.getlist('chamada_id')
+        data_aula = request.POST.get('data_aula')
+        
+        for cid in chamadas_ids:
+            try:
+                chamada = Chamada.objects.get(id=cid)
+                motivo = request.POST.get(f'motivo_{cid}')
+                outro = request.POST.get(f'outro_{cid}')
+                
+                chamada.motivo_falta = motivo
+                if motivo == 'Outros':
+                    chamada.motivo_falta_outro = outro
+                else:
+                    chamada.motivo_falta_outro = None
+                chamada.save()
+            except Chamada.DoesNotExist:
+                continue
+
+        messages.success(request, "Motivos de falta atualizados com sucesso.")
+        return redirect(reverse('cursos:curso_qualitativos', kwargs={'pk': pk}) + f"?data={data_aula}")

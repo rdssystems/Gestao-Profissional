@@ -122,8 +122,16 @@ class Aluno(models.Model):
     observacoes = models.TextField(blank=True, null=True, verbose_name="Observações do Histórico")
 
     def save(self, *args, **kwargs):
+        from core.utils import normalize_name, clean_digits
         if self.nome_completo:
-            self.nome_completo = self.nome_completo.title()
+            self.nome_completo = normalize_name(self.nome_completo)
+        if self.cpf:
+            self.cpf = clean_digits(self.cpf)
+        # Limpar também telefones para consistência
+        if self.whatsapp:
+            self.whatsapp = clean_digits(self.whatsapp)
+        if self.telefone_principal:
+            self.telefone_principal = clean_digits(self.telefone_principal)
         super().save(*args, **kwargs)
 
     def __str__(self):
@@ -131,6 +139,8 @@ class Aluno(models.Model):
 
     @property
     def cpf_formatado(self):
+        if self.cpf and len(self.cpf) == 11:
+            return f"{self.cpf[:3]}.{self.cpf[3:6]}.{self.cpf[6:9]}-{self.cpf[9:]}"
         return self.cpf
 
 

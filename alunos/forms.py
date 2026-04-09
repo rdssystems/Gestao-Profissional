@@ -36,7 +36,7 @@ class AlunoForm(forms.ModelForm):
             'escola': forms.Select(attrs={'class': 'form-select form-select-premium'}),
             'cursos_interesse': forms.CheckboxSelectMultiple,
             'nome_completo': forms.TextInput(attrs={'class': 'form-control form-control-premium'}),
-            'cpf': forms.TextInput(attrs={'class': 'form-control form-control-premium', 'inputmode': 'numeric', 'pattern': '[0-9]*'}),
+            'cpf': forms.TextInput(attrs={'class': 'form-control form-control-premium', 'inputmode': 'numeric'}),
             'rg': forms.TextInput(attrs={'class': 'form-control form-control-premium'}),
             'orgao_exp': forms.TextInput(attrs={'class': 'form-control form-control-premium'}),
             'data_emissao': forms.DateInput(attrs={'class': 'form-control form-control-premium', 'type': 'date'}, format='%Y-%m-%d'),
@@ -199,6 +199,22 @@ class AlunoForm(forms.ModelForm):
             if idade < 15:
                 raise forms.ValidationError('O aluno deve ter pelo menos 15 anos para realizar o cadastro básico.')
         return data_nascimento
+
+    def clean_whatsapp(self):
+        whatsapp = self.cleaned_data.get('whatsapp')
+        if whatsapp:
+            digits = ''.join(filter(str.isdigit, whatsapp))
+            if len(digits) < 10 or len(digits) > 11:
+                raise forms.ValidationError('O WhatsApp deve conter entre 10 e 11 dígitos (incluindo DDD).')
+        return whatsapp
+
+    def clean_telefone_principal(self):
+        tel = self.cleaned_data.get('telefone_principal')
+        if tel:
+            digits = ''.join(filter(str.isdigit, tel))
+            if len(digits) < 10 or len(digits) > 11:
+                raise forms.ValidationError('O telefone deve conter entre 10 e 11 dígitos (incluindo DDD).')
+        return tel
 
 # Existing AuxiliarAlunoForm
 class AuxiliarAlunoForm(AlunoForm):

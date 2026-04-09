@@ -343,8 +343,15 @@ class AlunoHistoricoView(StaffRequiredMixin, DetailView):
         context = super().get_context_data(**kwargs)
         aluno = self.object
         
-        # Inscrições atuais
-        inscricoes = aluno.inscricao_set.all().select_related('curso__escola')
+        # Inscrições atuais com avaliações e chamadas (Dossiê)
+        from django.db.models import Prefetch
+        from cursos.models import Chamada
+        
+        inscricoes = aluno.inscricao_set.all().select_related('curso__escola').prefetch_related(
+            'avaliacao_professor',
+            'avaliacao_aluno',
+            Prefetch('chamadas', queryset=Chamada.objects.select_related('registro_aula').order_by('registro_aula__data_aula'))
+        )
         context['inscricoes'] = inscricoes
 
         # Logs de mudança de status (Historico de Deferimentos/Desistências)
