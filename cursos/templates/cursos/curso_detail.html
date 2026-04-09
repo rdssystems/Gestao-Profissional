@@ -113,6 +113,9 @@
     <a href="{% url 'cursos:curso_imprimir_lista' pk=curso.pk %}" target="_blank" class="btn btn-action-premium text-dark border"
         style="background-color: #f8fafc;"><i class="bi bi-printer"></i> Imprimir Lista</a>
 
+    <a href="{% url 'cursos:curso_qualitativos' pk=curso.pk %}" class="btn btn-action-premium text-white"
+        style="background-color: #0ea5e9;"><i class="bi bi-person-check"></i> Qualitativos</a>
+
     <button onclick="copiarLinkChamada('{{ request.scheme }}://{{ request.get_host }}{% url 'cursos:chamada_publica' token=curso.token_acesso %}')" 
             class="btn btn-action-premium text-white"
             style="background-color: #6366f1;">

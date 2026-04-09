@@ -83,14 +83,23 @@
         <div class="tab-pane fade show active" id="pills-ativos" role="tabpanel" aria-labelledby="pills-ativos-tab">
             <div class="premium-card mb-4">
                 <div class="table-responsive-premium" style="max-height: 600px; overflow-y: auto;">
-                    <table class="table-premium">
+                    <table class="table-premium" id="table-ativos">
                         <thead>
                             <tr>
                                 <th>Curso</th>
                                 <th>Escola</th>
                                 <th>Tipo</th>
                                 <th>Horário/Turno</th>
-                                <th>Status</th>
+                                <th style="min-width: 140px;">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <span>Status</span>
+                                        <select class="form-select form-select-sm border border-secondary text-secondary" style="width: auto; cursor: pointer; box-shadow: none; font-size: 0.8rem; padding: 0.15rem 1.5rem 0.15rem 0.5rem;" onchange="filterTableByStatus(this, 'table-ativos')">
+                                            <option value="">Todos</option>
+                                            <option value="Aberta">Abertas</option>
+                                            <option value="Em Andamento">Andamento</option>
+                                        </select>
+                                    </div>
+                                </th>
                                 <th>Ações</th>
                             </tr>
                         </thead>
@@ -162,6 +171,11 @@
                                             title="Realizar Chamada">
                                             <i class="bi bi-person-check"></i>
                                         </a>
+                                        <a href="{% url 'cursos:curso_qualitativos' pk=curso.pk %}"
+                                            class="btn btn-action-premium text-white" style="background-color: #0ea5e9;"
+                                            title="Lançar Qualitativos">
+                                            <i class="bi bi-person-badge"></i>
+                                        </a>
                                         <a href="{% url 'cursos:listar_chamadas_curso' curso_pk=curso.pk %}"
                                             class="btn btn-action-premium text-white" style="background-color: #6366f1;"
                                             title="Histórico de Observações">
@@ -201,14 +215,23 @@
         <div class="tab-pane fade" id="pills-concluidos" role="tabpanel" aria-labelledby="pills-concluidos-tab">
             <div class="premium-card mb-4">
                 <div class="table-responsive-premium" style="max-height: 600px; overflow-y: auto;">
-                    <table class="table-premium">
+                    <table class="table-premium" id="table-concluidos">
                         <thead>
                             <tr>
                                 <th>Curso</th>
                                 <th>Escola</th>
                                 <th>Tipo</th>
                                 <th>Data Fim</th>
-                                <th>Status</th>
+                                <th style="min-width: 140px;">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <span>Status</span>
+                                        <select class="form-select form-select-sm border border-secondary text-secondary" style="width: auto; cursor: pointer; box-shadow: none; font-size: 0.8rem; padding: 0.15rem 1.5rem 0.15rem 0.5rem;" onchange="filterTableByStatus(this, 'table-concluidos')">
+                                            <option value="">Todos</option>
+                                            <option value="Concluído">Concluídos</option>
+                                            <option value="Arquivado">Arquivados</option>
+                                        </select>
+                                    </div>
+                                </th>
                                 <th>Ações</th>
                             </tr>
                         </thead>
@@ -270,6 +293,11 @@
                                             style="background-color: #334155;" title="Lista de Concluintes">
                                             <i class="bi bi-person-check"></i>
                                         </a>
+                                        <a href="{% url 'cursos:curso_qualitativos' pk=curso.pk %}"
+                                            class="btn btn-action-premium text-white" style="background-color: #0ea5e9;"
+                                            title="Ver Qualitativos">
+                                            <i class="bi bi-person-badge"></i>
+                                        </a>
                                         <a href="{% url 'cursos:relatorio_frequencia' curso_pk=curso.pk %}"
                                             class="btn btn-action-premium text-white" style="background-color: #f59e0b;"
                                             title="Lista de Presença Completa">
@@ -323,6 +351,33 @@
 
 {% block extra_js %}
 <script>
+    function filterTableByStatus(selectElement, tableId) {
+        const selectedStatus = selectElement.value;
+        const table = document.getElementById(tableId);
+        const rows = table.getElementsByTagName('tbody')[0].getElementsByTagName('tr');
+        
+        for (let i = 0; i < rows.length; i++) {
+            const row = rows[i];
+            if (row.getElementsByTagName('td').length <= 1) continue; 
+            
+            const statusSelect = row.querySelector('.status-select');
+            const statusBadge = row.querySelector('.badge');
+            
+            let currentStatus = '';
+            if (statusSelect) {
+                currentStatus = statusSelect.getAttribute('data-current');
+            } else if (statusBadge) {
+                currentStatus = statusBadge.textContent.trim();
+            }
+            
+            if (selectedStatus === '' || currentStatus === selectedStatus) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        }
+    }
+
     document.addEventListener('DOMContentLoaded', function() {
         const ementaModal = document.getElementById('ementaModal');
         const modalContent = document.getElementById('ementaModalContent');

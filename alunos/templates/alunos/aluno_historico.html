@@ -2,6 +2,19 @@
 
 {% block title %}Histórico de {{ aluno.nome_completo }}{% endblock %}
 
+{% block extra_js %}
+<script>
+    function toggleDetails(id) {
+        const row = document.getElementById('details-' + id);
+        if (row.style.display === 'none') {
+            row.style.display = 'table-row';
+        } else {
+            row.style.display = 'none';
+        }
+    }
+</script>
+{% endblock %}
+
 {% block content %}
 
 <style>
@@ -183,7 +196,9 @@
                             <tr>
                                 <th scope="col" class="px-4">Curso</th>
                                 <th scope="col">Período</th>
+                                <th scope="col" class="text-center">Frequência</th>
                                 <th scope="col" class="text-center">Status Atual</th>
+                                <th scope="col" class="text-center">Ações</th>
                             </tr>
                         </thead>
 
@@ -199,6 +214,10 @@
                                     <div class="small text-muted">{{ inscricao.curso.data_fim|date:"d/m/Y" }}</div>
                                 </td>
                                 <td class="text-center">
+                                    <div class="fw-bold text-primary">{{ inscricao.frequencia_porcentagem|default:"--" }}%</div>
+                                    <small class="text-muted">{{ inscricao.total_presencas }}P / {{ inscricao.total_faltas }}F</small>
+                                </td>
+                                <td class="text-center">
                                     <span class="badge status-badge 
                                         {% if inscricao.status == 'concluido' %}bg-success text-white
                                         {% elif inscricao.status == 'desistente' %}bg-danger text-white
@@ -208,13 +227,109 @@
                                         {{ inscricao.get_status_display }}
                                     </span>
                                 </td>
+                                <td class="text-center">
+                                    <button class="btn btn-sm btn-outline-primary rounded-pill px-3" onclick="toggleDetails('{{ inscricao.id }}')">
+                                        <i class="bi bi-list-ul me-1"></i> Detalhes
+                                    </button>
+                                </td>
+                            </tr>
+                            <!-- Linha de Detalhes (Dossiê) -->
+                            <tr id="details-{{ inscricao.id }}" style="display: none; background-color: #f8fafc;">
+                                <td colspan="5" class="p-4 border-top">
+                                    <div class="row">
+                                        <!-- Bloco de Desempenho Profissional -->
+                                        <div class="col-md-5 border-end">
+                                            <h6 class="fw-bold text-dark mb-3"><i class="bi bi-star-fill text-warning me-2"></i>Desempenho Profissional</h6>
+                                            {% if inscricao.avaliacao_professor %}
+                                                <div class="row g-2">
+                                                    <div class="col-12">
+                                                        <div class="p-2 rounded bg-white shadow-sm border-start border-4 border-primary mb-2">
+                                                            <div class="small text-muted text-uppercase mb-1" style="font-size: 0.7rem;">Conceitual</div>
+                                                            <div class="fw-bold">{{ inscricao.avaliacao_professor.get_conceptual_nota_display }}</div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-12">
+                                                        <div class="p-2 rounded bg-white shadow-sm border-start border-4 border-success mb-2">
+                                                            <div class="small text-muted text-uppercase mb-1" style="font-size: 0.7rem;">Comportamental</div>
+                                                            <div class="fw-bold">{{ inscricao.avaliacao_professor.get_behavioral_nota_display }}</div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-12">
+                                                        <div class="p-2 rounded bg-white shadow-sm border-start border-4 border-info mb-2">
+                                                            <div class="small text-muted text-uppercase mb-1" style="font-size: 0.7rem;">Atitudinal</div>
+                                                            <div class="fw-bold">{{ inscricao.avaliacao_professor.get_attitudinal_nota_display }}</div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            {% else %}
+                                                <div class="alert alert-light border-dashed text-center">
+                                                    <i class="bi bi-info-circle me-1"></i> Avaliação do professor não disponível ou pendente.
+                                                </div>
+                                            {% endif %}
+                                        </div>
+
+                                        <!-- Bloco de Frequência Qualitativa -->
+                                        <div class="col-md-7 ps-md-4">
+                                            <h6 class="fw-bold text-dark mb-3"><i class="bi bi-calendar-x-fill text-danger me-2"></i>Histórico Qualitativo de Faltas</h6>
+                                            <div class="table-responsive">
+                                                <table class="table table-sm table-hover align-middle" style="font-size: 0.85rem;">
+                                                    <thead class="bg-white">
+                                                        <tr>
+                                                            <th>Data</th>
+                                                            <th>Status</th>
+                                                            <th>Motivo da Falta</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        {% for chamada in inscricao.chamadas.all %}
+                                                            {% if chamada.status_presenca != 'P' %}
+                                                            <tr>
+                                                                <td>{{ chamada.registro_aula.data_aula|date:"d/m/Y" }}</td>
+                                                                <td>
+                                                                    <span class="badge {% if chamada.status_presenca == 'A' %}bg-danger{% else %}bg-warning text-dark{% endif %} p-1">
+                                                                        {{ chamada.get_status_presenca_display }}
+                                                                    </span>
+                                                                </td>
+                                                                <td>
+                                                                    {% if chamada.motivo_falta %}
+                                                                        <span class="fw-medium text-dark">
+                                                                            {% if chamada.motivo_falta == 'Outros' %}
+                                                                                <i class="bi bi-chat-dots me-1"></i>{{ chamada.motivo_falta_outro }}
+                                                                            {% else %}
+                                                                                {{ chamada.get_motivo_falta_display }}
+                                                                            {% endif %}
+                                                                        </span>
+                                                                    {% else %}
+                                                                        <span class="text-muted italic">Motivo não registrado</span>
+                                                                    {% endif %}
+                                                                </td>
+                                                            </tr>
+                                                            {% endif %}
+                                                        {% empty %}
+                                                        {% endfor %}
+                                                        
+                                                        {% with total_faltas=inscricao.total_faltas %}
+                                                            {% if total_faltas == 0 %}
+                                                            <tr>
+                                                                <td colspan="3" class="text-center py-4 text-success">
+                                                                    <i class="bi bi-check-all me-1"></i> Este aluno possui 100% de presença neste curso.
+                                                                </td>
+                                                            </tr>
+                                                            {% endif %}
+                                                        {% endwith %}
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </td>
                             </tr>
                             {% empty %}
                             <tr>
-                                <td colspan="3" class="text-center py-5">
+                                <td colspan="5" class="text-center py-5">
                                     <div class="text-muted">
                                         <i class="bi bi-journal-x display-4 d-block mb-3 opacity-25"></i>
-                                        Nenhuma inscrição encontrada.
+                                        Nenhuma inscrição encontrada na base de dados.
                                     </div>
                                 </td>
                             </tr>

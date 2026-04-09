@@ -23,3 +23,25 @@ def audit_context(skip=True):
         yield
     finally:
         set_audit_skip(old_value)
+
+def normalize_name(name):
+    if not name:
+        return ""
+    
+    prepositions = ['de', 'da', 'do', 'das', 'dos', 'e']
+    words = name.lower().split()
+    normalized_words = []
+    
+    for i, word in enumerate(words):
+        if word in prepositions and i > 0:
+            normalized_words.append(word)
+        else:
+            normalized_words.append(word.capitalize())
+            
+    return " ".join(normalized_words)
+
+def clean_digits(value):
+    import re
+    if not value:
+        return ""
+    return re.sub(r'\D', '', value)

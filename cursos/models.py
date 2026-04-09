@@ -135,6 +135,21 @@ class Inscricao(models.Model):
     def __str__(self):
         return f'{self.aluno.nome_completo} - {self.curso.nome}'
 
+    @property
+    def total_presencas(self):
+        return len([c for c in self.chamadas.all() if c.status_presenca == 'P'])
+
+    @property
+    def total_faltas(self):
+        return len([c for c in self.chamadas.all() if c.status_presenca != 'P'])
+
+    @property
+    def frequencia_porcentagem(self):
+        total = len(self.chamadas.all())
+        if total > 0:
+            return int((self.total_presencas / total) * 100)
+        return 100
+
 
 # --- Novos modelos para Frequência ---
 
@@ -161,7 +176,29 @@ class Chamada(models.Model):
         ('A', 'Ausente'),
         ('J', 'Ausência Justificada'),
     )
+
+    STATUS_PRESENCA_CHOICES = (
+        ('P', 'Presente'),
+        ('A', 'Ausente'),
+        ('J', 'Ausência Justificada'),
+    )
+
+    MOTIVO_FALTA_CHOICES = (
+        ('Medico', 'Médico'),
+        ('Doenca', 'Doença'),
+        ('Trabalho', 'Trabalho'),
+        ('Escola', 'Escola'),
+        ('Transporte', 'Transporte'),
+        ('Familia', 'Problemas Familiares'),
+        ('Viagem', 'Viagem'),
+        ('Luto', 'Falecimento'),
+        ('Consulta', 'Consulta Médica'),
+        ('Outros', 'Outros'),
+    )
+
     status_presenca = models.CharField(max_length=1, choices=STATUS_PRESENCA_CHOICES, default='A', verbose_name="Status de Presença")
+    motivo_falta = models.CharField(max_length=20, choices=MOTIVO_FALTA_CHOICES, blank=True, null=True, verbose_name="Motivo da Falta")
+    motivo_falta_outro = models.CharField(max_length=100, blank=True, null=True, verbose_name="Outro Motivo")
 
     class Meta:
         verbose_name = "Chamada"

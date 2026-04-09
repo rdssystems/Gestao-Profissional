@@ -20,8 +20,17 @@ class UserCreationForm(forms.ModelForm):
         ('Auxiliar Administrativo', 'Auxiliar Administrativo'),
     )
     
-    password = forms.CharField(widget=forms.PasswordInput(attrs={'class': 'form-control'}), label="Senha")
-    password_confirm = forms.CharField(widget=forms.PasswordInput(attrs={'class': 'form-control'}), label="Confirmar Senha")
+    password = forms.CharField(
+        widget=forms.PasswordInput(attrs={'class': 'form-control'}), 
+        label="Senha",
+        required=False,
+        help_text="Deixe em branco para manter a senha atual."
+    )
+    password_confirm = forms.CharField(
+        widget=forms.PasswordInput(attrs={'class': 'form-control'}), 
+        label="Confirmar Senha",
+        required=False
+    )
     escola = forms.ModelChoiceField(queryset=Escola.objects.all(), widget=forms.Select(attrs={'class': 'form-select'}), label="Escola")
     role = forms.ChoiceField(choices=ROLE_CHOICES, widget=forms.Select(attrs={'class': 'form-select'}), label="Papel")
     email = forms.EmailField(label="Email", widget=forms.EmailInput(attrs={'class': 'form-control'}))
@@ -41,16 +50,50 @@ class UserCreationForm(forms.ModelForm):
             'email': 'Email',
         }
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Se estiver editando um usuário (instance existe e tem PK)
+        if self.instance and self.instance.pk:
+            # Senhas não são obrigatórias na edição
+            self.fields['password'].required = False
+            self.fields['password_confirm'].required = False
+            
+            # Carregar Escola inicial do Profile
+            if hasattr(self.instance, 'profile') and self.instance.profile.escola:
+                self.initial['escola'] = self.instance.profile.escola
+            
+            # Carregar Papel (Role) inicial do Grupo
+            managed_roles = ['Coordenador', 'Auxiliar Administrativo']
+            current_role = self.instance.groups.filter(name__in=managed_roles).first()
+            if current_role:
+                self.initial['role'] = current_role.name
+        else:
+            # Para novos usuários, senha é obrigatória
+            self.fields['password'].required = True
+            self.fields['password_confirm'].required = True
+
     def clean_password_confirm(self):
         password = self.cleaned_data.get('password')
         password_confirm = self.cleaned_data.get('password_confirm')
-        if password and password_confirm and password != password_confirm:
-            raise forms.ValidationError("As senhas não coincidem.")
+        
+        # Se for um novo usuário e não informou senha
+        if not self.instance.pk and not password:
+            raise forms.ValidationError("A senha é obrigatória para novos usuários.")
+
+        # Se tentou mudar a senha, validar se coincidem
+        if password or password_confirm:
+            if password != password_confirm:
+                raise forms.ValidationError("As senhas não coincidem.")
         return password_confirm
 
     def save(self, commit=True):
         user = super().save(commit=False)
-        user.set_password(self.cleaned_data["password"])
+        
+        # Só define nova senha se o campo for preenchido
+        password = self.cleaned_data.get("password")
+        if password:
+            user.set_password(password)
+            
         if commit:
             user.save()
             # Assign role
@@ -68,7 +111,12 @@ class UserCreationForm(forms.ModelForm):
             # Assign escola to profile
             escola = self.cleaned_data.get('escola')
             if escola:
+                # Verifica se o profile existe (deve existir pelo signal pre_save/post_save do core)
+                if not hasattr(user, 'profile'):
+                    from core.models import Profile
+                    Profile.objects.get_or_create(user=user)
+                
                 user.profile.escola = escola
                 user.profile.save()
 
-        return user
+        return user

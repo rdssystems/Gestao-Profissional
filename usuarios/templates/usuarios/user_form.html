@@ -165,6 +165,9 @@
                         <div class="col-md-6 mb-4">
                             {{ form.password.label_tag }}
                             <div class="custom-input">{{ form.password }}</div>
+                            {% if form.password.help_text %}
+                            <div class="form-text text-muted smaller mt-1" style="font-size: 0.75rem;">{{ form.password.help_text }}</div>
+                            {% endif %}
                             {% if form.password.errors %}
                             <div class="invalid-feedback d-block mt-2">{{ form.password.errors.as_text }}</div>
                             {% endif %}

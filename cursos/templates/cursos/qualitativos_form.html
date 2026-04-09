@@ -1,0 +1,163 @@
+{% extends "base.html" %}
+
+{% block title %}Qualitativos - {{ curso.nome }}{% endblock %}
+
+{% block content %}
+<style>
+    .premium-card {
+        border-radius: 20px;
+        border: none;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+        background: white;
+        overflow: hidden;
+    }
+    .gradient-header {
+        background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+        color: white;
+        padding: 2rem;
+    }
+    .form-select-custom {
+        border-radius: 10px;
+        border: 1px solid #e2e8f0;
+        padding: 0.6rem;
+        transition: all 0.3s;
+    }
+    .form-select-custom:focus {
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+    .aluno-row {
+        transition: background 0.2s;
+    }
+    .aluno-row:hover {
+        background: #f8fafc;
+    }
+    .btn-save {
+        border-radius: 50px;
+        padding: 0.8rem 2.5rem;
+        font-weight: 600;
+        letter-spacing: 0.5px;
+        transition: all 0.3s;
+    }
+    .btn-save:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(59, 130, 246, 0.3);
+    }
+</style>
+
+<div class="container py-4">
+    <div class="premium-card">
+        <div class="gradient-header">
+            <h2 class="mb-1"><i class="bi bi-person-check-fill me-2"></i>Lançamento de Qualitativos</h2>
+            <p class="mb-0 opacity-75">{{ curso.nome }} | {{ curso.escola.nome }}</p>
+        </div>
+        
+        <div class="p-4">
+            <!-- Seletor de Data -->
+            <form method="GET" class="row g-3 mb-5 align-items-end">
+                <div class="col-md-4">
+                    <label class="form-label fw-bold text-muted small text-uppercase">Data para Lançamento</label>
+                    <input type="date" name="data" class="form-control" value="{{ data_selecionada|default:'' }}" required>
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-primary w-100 btn-save">
+                        <i class="bi bi-search me-1"></i> Filtrar
+                    </button>
+                </div>
+                <div class="col-md-6 text-md-end">
+                    <a href="{% url 'cursos:detalhe_curso' pk=curso.pk %}" class="btn btn-outline-secondary rounded-pill">
+                        <i class="bi bi-arrow-left me-1"></i> Voltar ao Curso
+                    </a>
+                </div>
+            </form>
+
+            {% if data_selecionada %}
+                {% if chamadas %}
+                    <form method="POST">
+                        {% csrf_token %}
+                        <input type="hidden" name="data_aula" value="{{ data_selecionada }}">
+                        
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Aluno</th>
+                                        <th>Status Presença</th>
+                                        <th>Motivo da Falta</th>
+                                        <th>Outro Motivo (Se aplicável)</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for chamada in chamadas %}
+                                    <tr class="aluno-row">
+                                        <td class="fw-bold text-dark">
+                                            {{ chamada.inscricao.aluno.nome_completo }}
+                                            {% if chamada.inscricao.aluno.whatsapp_link %}
+                                            <a href="https://wa.me/{{ chamada.inscricao.aluno.whatsapp_link }}" target="_blank" class="text-success ms-1" title="Falar no WhatsApp">
+                                                <i class="bi bi-whatsapp"></i>
+                                            </a>
+                                            {% endif %}
+                                            <input type="hidden" name="chamada_id" value="{{ chamada.id }}">
+                                        </td>
+                                        <td>
+                                            <span class="badge {% if chamada.status_presenca == 'A' %}bg-danger{% else %}bg-warning{% endif %}">
+                                                {{ chamada.get_status_presenca_display }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <select name="motivo_{{ chamada.id }}" class="form-select form-select-custom motivo-select" data-id="{{ chamada.id }}">
+                                                <option value="">-- Selecione o Motivo --</option>
+                                                {% for val, label in motivos %}
+                                                <option value="{{ val }}" {% if chamada.motivo_falta == val %}selected{% endif %}>{{ label }}</option>
+                                                {% endfor %}
+                                            </select>
+                                        </td>
+                                        <td>
+                                            <input type="text" name="outro_{{ chamada.id }}" id="outro_input_{{ chamada.id }}" 
+                                                   class="form-control form-control-sm outro-field {% if chamada.motivo_falta != 'Outros' %}d-none{% endif %}" 
+                                                   placeholder="Especifique o motivo..." 
+                                                   value="{{ chamada.motivo_falta_outro|default:'' }}">
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="mt-4 text-center">
+                            <button type="submit" class="btn btn-primary btn-save">
+                                <i class="bi bi-check-circle me-1"></i> Salvar Qualitativos
+                            </button>
+                        </div>
+                    </form>
+                {% else %}
+                    <div class="alert alert-info text-center py-5 border-0 rounded-4">
+                        <i class="bi bi-info-circle display-4 d-block mb-3 opacity-50"></i>
+                        <p class="mb-0">Nenhum aluno com falta/justificativa encontrado para esta data ou a chamada ainda não foi realizada.</p>
+                    </div>
+                {% endif %}
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const selects = document.querySelectorAll('.motivo-select');
+        selects.forEach(select => {
+            select.addEventListener('change', function() {
+                const id = this.getAttribute('data-id');
+                const outroInput = document.getElementById(`outro_input_${id}`);
+                if (this.value === 'Outros') {
+                    outroInput.classList.remove('d-none');
+                    outroInput.required = true;
+                } else {
+                    outroInput.classList.add('d-none');
+                    outroInput.required = false;
+                    outroInput.value = '';
+                }
+            });
+        });
+    });
+</script>
+{% endblock %}

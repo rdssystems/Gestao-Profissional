@@ -142,6 +142,9 @@
                 </td>
 
                 <td class="text-end">
+                    <a href="{% url 'alunos:historico_aluno' pk=aluno.pk %}" class="btn btn-sm btn-light border shadow-sm text-info py-1 px-2 me-1" title="Histórico do Aluno" style="border-radius: 8px;">
+                        <i class="bi bi-journal-bookmark-fill"></i>
+                    </a>
                     <a href="{% url 'alunos:detalhe_aluno' pk=aluno.pk %}" class="btn-action-premium">
                         Detalhes
                     </a>
