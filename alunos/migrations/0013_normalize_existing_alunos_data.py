@@ -37,7 +37,10 @@ def normalize_existing_data(apps, schema_editor):
             if new_cpf != aluno.cpf:
                 # Prevent unique constraint violations (IntegrityError) by checking first
                 if Aluno.objects.filter(escola=aluno.escola, cpf=new_cpf).exclude(pk=aluno.pk).exists():
-                    new_cpf = f"{new_cpf[:8]}DP{aluno.id}" # Creates a fake unique CPF to avoid crash
+                    # Guaranty string is max 14 characters long
+                    str_id = str(aluno.id)
+                    keep_len = 14 - 2 - len(str_id)
+                    new_cpf = f"{new_cpf[:keep_len]}DP{str_id}" # Creates a fake unique CPF to avoid crash
                 aluno.cpf = new_cpf
                 modified = True
         
