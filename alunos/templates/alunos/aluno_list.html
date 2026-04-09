@@ -111,7 +111,13 @@
                     </a>
                     {% endif %}
                 </td>
-                <td>{{ aluno.cpf_formatado }}</td>
+                <td>
+                    {% if aluno.cpf|length == 11 %}
+                        {{ aluno.cpf|slice:"0:3" }}<span style="user-select: none;">.</span>{{ aluno.cpf|slice:"3:6" }}<span style="user-select: none;">.</span>{{ aluno.cpf|slice:"6:9" }}<span style="user-select: none;">-</span>{{ aluno.cpf|slice:"9:11" }}
+                    {% else %}
+                        {{ aluno.cpf_formatado }}
+                    {% endif %}
+                </td>
                 <td>
                     <span class="badge bg-light text-dark border">{{ aluno.score_total }}</span>
                 </td>
