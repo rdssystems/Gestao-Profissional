@@ -183,7 +183,8 @@ class CursoStatusUpdateView(LoginRequiredMixin, StaffRequiredMixin, View):
                     )
                     return redirect('cursos:detalhe_curso', pk=pk)
 
-                # 2. Validação de Avaliações (Professor e Aluno)
+                # 2. Validação de Avaliações (Professor e Aluno) - COMENTADO PARA FUTURA HABILITAÇÃO
+                """
                 inscricoes_concluidas = curso.inscricao_set.filter(status='concluido')
                 total_concluintes = inscricoes_concluidas.count()
                 
@@ -214,6 +215,7 @@ class CursoStatusUpdateView(LoginRequiredMixin, StaffRequiredMixin, View):
                 elif total_concluintes == 0:
                     # Se não houver concluintes (apenas desistentes), permite concluir mas avisa
                     messages.info(request, "O curso está sendo concluído sem nenhum aluno aprovado (apenas desistentes).")
+                """
 
             old_status = curso.status
             curso.status = novo_status

@@ -156,9 +156,9 @@ def salvar_declaracao_view(request, inscricao_id):
 
     signature_base64 = request.POST.get('assinatura')
     
-    if not signature_base64 or signature_base64 == 'data:,':
-        messages.error(request, "A assinatura é obrigatória.")
-        return redirect('declaracao:gerar_declaracao', inscricao_id=inscricao_id)
+    # Assinatura não é mais obrigatória antes de salvar
+    if signature_base64 == 'data:,':
+        signature_base64 = None
 
     texto_declaracao = generate_declaration_text(status, inscricao)
 

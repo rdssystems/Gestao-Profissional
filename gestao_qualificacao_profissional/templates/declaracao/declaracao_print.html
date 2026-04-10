@@ -124,8 +124,6 @@
         <div class="signature-section">
             {% if declaracao.assinatura_digital %}
                 <img src="{{ declaracao.assinatura_digital }}" alt="Assinatura Digital">
-            {% else %}
-                <p>[Assinatura não disponível]</p>
             {% endif %}
             <p>____________________________________</p>
             <p>{{ declaracao.emitido_por.get_full_name }}</p>

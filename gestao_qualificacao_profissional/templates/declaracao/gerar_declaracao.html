@@ -77,10 +77,7 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     document.getElementById('form-declaracao').addEventListener('submit', function (event) {
-        if (signaturePad.isEmpty()) {
-            alert("Por favor, forneça sua assinatura.");
-            event.preventDefault(); // Impede o envio do formulário
-        } else {
+        if (!signaturePad.isEmpty()) {
             const signatureData = signaturePad.toDataURL('image/png');
             document.getElementById('assinatura-input').value = signatureData;
         }
