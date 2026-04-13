@@ -132,6 +132,27 @@
         transform: translateY(-2px);
     }
 
+    /* Novas animações */
+    .loading-pulse {
+        animation: pulse-blue 1.5s infinite;
+        border-color: #4B5DFF !important;
+    }
+
+    @keyframes pulse-blue {
+        0% { box-shadow: 0 0 0 0 rgba(75,93,255, 0.4); }
+        70% { box-shadow: 0 0 0 10px rgba(75,93,255, 0); }
+        100% { box-shadow: 0 0 0 0 rgba(75,93,255, 0); }
+    }
+
+    .row-flash {
+        animation: row-highlight 1.5s ease-out;
+    }
+
+    @keyframes row-highlight {
+        0% { background-color: rgba(75,93,255, 0.1); }
+        100% { background-color: transparent; }
+    }
+
 </style>
 
 
@@ -160,7 +181,7 @@
 <!-- Card Principal -->
 <div class="app-card">
 
-    <form method="post">
+    <form method="post" id="form-chamada">
         {% csrf_token %}
 
         <h5 class="mb-3">Detalhes da Aula</h5>
@@ -197,7 +218,7 @@
                 <tbody>
                     {% for form_chamada in formset %}
                     {% with inscricao=form_chamada.instance.inscricao|default:form_chamada.initial.inscricao %}
-                    <tr {% if inscricao.status == 'desistente' %}style="background-color: #fff5f5; opacity: 0.85;"{% endif %}>
+                    <tr {% if inscricao.status == 'desistente' %}style="background-color: #fff5f5; opacity: 0.85;"{% endif %} data-inscricao-id="{{ inscricao.pk }}">
                         <td class="py-2">
                             {{ form_chamada.id }}
                             <div class="fw-bold text-dark h6 mb-1">
@@ -254,4 +275,111 @@
 
 </div>
 
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const dataInput = document.getElementById('id_data_aula');
+    const observacoesInput = document.getElementById('id_observacoes');
+    const form = document.getElementById('form-chamada');
+
+    if (!dataInput) return;
+
+    dataInput.addEventListener('change', function() {
+        const selectedDate = dataInput.value;
+        if (!selectedDate) return;
+
+        // Visual feedback
+        dataInput.classList.add('loading-pulse');
+        
+        // Fetch existing data
+        fetch(`{% url 'cursos:obter_dados_chamada_data' curso_pk=curso.pk %}?data=${selectedDate}`)
+            .then(response => response.json())
+            .then(data => {
+                dataInput.classList.remove('loading-pulse');
+                
+                if (data.existe) {
+                    // Update observations
+                    if (observacoesInput) {
+                        observacoesInput.value = data.observacoes || "";
+                    }
+                    
+                    // Update radio buttons
+                    for (const [inscricaoId, status] of Object.entries(data.chamadas)) {
+                        const row = document.querySelector(`tr[data-inscricao-id="${inscricaoId}"]`);
+                        if (row) {
+                            const radio = row.querySelector(`input[type="radio"][value="${status}"]`);
+                            if (radio) {
+                                radio.checked = true;
+                                row.classList.add('row-flash');
+                                setTimeout(() => row.classList.remove('row-flash'), 1500);
+                            }
+                        }
+                    }
+                    
+                    Swal.fire({
+                        title: 'Chamada Recuperada!',
+                        text: `Existem registros para o dia ${selectedDate.split('-').reverse().join('/')}. Os campos foram atualizados.`,
+                        icon: 'info',
+                        timer: 3000,
+                        toast: true,
+                        position: 'top-start',
+                        showConfirmButton: false
+                    });
+                } else {
+                    // Reset observations if it's a new date
+                    if (observacoesInput) {
+                        observacoesInput.value = "";
+                    }
+                    
+                    Swal.fire({
+                        title: 'Nova Chamada',
+                        text: `Não há registros para ${selectedDate.split('-').reverse().join('/')}. Iniciando novo lançamento.`,
+                        icon: 'success',
+                        timer: 2500,
+                        toast: true,
+                        position: 'top-start',
+                        showConfirmButton: false
+                    });
+                }
+            })
+            .catch(error => {
+                dataInput.classList.remove('loading-pulse');
+                console.error('Erro ao buscar dados:', error);
+            });
+    });
+
+    // Confirmation Popup
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const selectedDate = dataInput.value;
+            if (!selectedDate) {
+                Swal.fire('Erro', 'Por favor, selecione uma data.', 'error');
+                return;
+            }
+            
+            const formattedDate = selectedDate.split('-').reverse().join('/');
+
+            Swal.fire({
+                title: 'Confirmar Chamada?',
+                html: `Deseja realmente salvar a chamada para o dia <b>${formattedDate}</b>?`,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#4B5DFF',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Sim, salvar!',
+                cancelButtonText: 'Cancelar',
+                reverseButtons: true
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    form.submit();
+                }
+            });
+        });
+    }
+});
+</script>
 {% endblock %}
