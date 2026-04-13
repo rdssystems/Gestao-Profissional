@@ -116,4 +116,35 @@
     </div>
 
 </div>
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.querySelector('form');
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const hojeStr = "{{ hoje|date:'d/m/Y' }}";
+
+            Swal.fire({
+                title: 'Confirmar Envio?',
+                html: `Deseja realmente enviar o <b>Controle Diário</b> referente a hoje, <b>${hojeStr}</b>?`,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#0d6efd',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Sim, enviar!',
+                cancelButtonText: 'Cancelar',
+                reverseButtons: true
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    form.submit();
+                }
+            });
+        });
+    }
+});
+</script>
+{% endblock %}
 {% endblock %}

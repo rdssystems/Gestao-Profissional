@@ -6,7 +6,7 @@ from channels.layers import get_channel_layer
 import pandas as pd
 from django.db.models import Count, Prefetch, Exists, OuterRef, Q, Case, When, Value, IntegerField, Sum # Import Count
 from datetime import date, time, datetime # Import datetime and time
-from django.http import HttpResponse, Http404
+from django.http import HttpResponse, Http404, JsonResponse
 
 from django.views.generic import ListView, DetailView, View
 from django.views.generic.edit import CreateView, UpdateView, DeleteView
@@ -820,6 +820,34 @@ class FazerChamadaView(LoginRequiredMixin, StaffRequiredMixin, View):
                 'registro_aula': registro_aula,
             }
             return render(request, self.template_name, context)
+
+
+class ObterDadosChamadaDataView(LoginRequiredMixin, StaffRequiredMixin, View):
+    def get(self, request, curso_pk):
+        data_str = request.GET.get('data')
+        if not data_str:
+            return JsonResponse({'error': 'Data não fornecida'}, status=400)
+        
+        try:
+            data_obj = datetime.strptime(data_str, '%Y-%m-%d').date()
+        except ValueError:
+            return JsonResponse({'error': 'Formato de data inválido'}, status=400)
+            
+        curso = get_object_or_404(Curso, pk=curso_pk)
+        registro_aula = RegistroAula.objects.filter(curso=curso, data_aula=data_obj).first()
+        
+        if not registro_aula:
+            return JsonResponse({'existe': False})
+            
+        chamadas = Chamada.objects.filter(registro_aula=registro_aula).values('inscricao_id', 'status_presenca')
+        dados_chamada = {str(c['inscricao_id']): c['status_presenca'] for c in chamadas}
+        
+        return JsonResponse({
+            'existe': True,
+            'registro_aula_pk': registro_aula.pk,
+            'observacoes': registro_aula.observacoes,
+            'chamadas': dados_chamada
+        })
 
 class HistoricoChamadasCursoView(LoginRequiredMixin, StaffRequiredMixin, ListView):
     model = RegistroAula

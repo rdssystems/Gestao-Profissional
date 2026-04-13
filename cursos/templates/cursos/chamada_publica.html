@@ -313,5 +313,37 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const forms = document.querySelectorAll('form');
+    forms.forEach(form => {
+        const actionInput = form.querySelector('input[name="action"]');
+        if (actionInput && actionInput.value === 'salvar_chamada') {
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const hojeStr = "{{ hoje|date:'d/m/Y' }}";
+
+                Swal.fire({
+                    title: 'Finalizar Chamada?',
+                    html: `Deseja realmente salvar a lista de presença para hoje, <b>${hojeStr}</b>?`,
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonColor: '#4361ee',
+                    cancelButtonColor: '#64748b',
+                    confirmButtonText: 'Sim, salvar!',
+                    cancelButtonText: 'Cancelar',
+                    reverseButtons: true
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        form.submit();
+                    }
+                });
+            });
+        }
+    });
+});
+</script>
 </body>
 </html>
