@@ -52,6 +52,14 @@
     <div class="info-grid">
         <div class="info-item"><strong>Curso:</strong> {{ curso.nome }}</div>
         <div class="info-item"><strong>Unidade:</strong> {{ curso.escola.nome }}</div>
+        <div class="info-item">
+            <strong>Coordenador:</strong> 
+            {% if curso.escola.coordenador_user %}
+                {{ curso.escola.coordenador_user.get_full_name|default:curso.escola.coordenador_user.username }}
+            {% else %}
+                Não informado
+            {% endif %}
+        </div>
         <div class="info-item"><strong>Período:</strong> {{ curso.data_inicio|date:"d/m/Y" }} a {{ curso.data_fim|date:"d/m/Y" }}</div>
         <div class="info-item"><strong>Professor:</strong> {{ curso.nome_professor|default:"Não informado" }}</div>
         <div class="info-item"><strong>Total de Concluintes:</strong> {{ concluintes.count }}</div>

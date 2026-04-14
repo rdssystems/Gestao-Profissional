@@ -63,6 +63,7 @@ INSTALLED_APPS = [
     'declaracao.apps.DeclaracaoConfig',
     'controle_diario', # Novo app
     'whatsapp',
+    'treinamento',
 
     # Apps de terceiros
     'dbbackup',

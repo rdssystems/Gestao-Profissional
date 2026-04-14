@@ -1,7 +1,17 @@
 from django import forms
 from .models import Escola
 
+from django.contrib.auth.models import User
+
 class EscolaForm(forms.ModelForm):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Filtra apenas usuários que pertencem ao grupo 'Coordenador'
+        qs = User.objects.filter(groups__name='Coordenador').order_by('first_name', 'last_name')
+        self.fields['coordenador_user'].queryset = qs
+        # Define como o nome deve aparecer no dropdown (Nome + Sobrenome)
+        self.fields['coordenador_user'].label_from_instance = lambda obj: f"{obj.get_full_name()}" if obj.get_full_name() else obj.username
+
     class Meta:
         model = Escola
         fields = ['nome', 'endereco', 'email', 'telefone', 'whatsapp', 'coordenador_user']

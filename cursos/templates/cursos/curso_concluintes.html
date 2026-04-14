@@ -1,16 +1,26 @@
 {% extends "base.html" %}
+{% load static %}
 {% block title %}Lista de Concluintes: {{ curso.nome }}{% endblock %}
 
 {% block content %}
 <style>
     @media print {
-        .no-print { display: none !important; }
-        .container { max-width: 100% !important; width: 100% !important; margin: 0 !important; padding: 0 !important; }
-        body { background: white !important; font-size: 12pt; }
-        .card { border: none !important; box-shadow: none !important; }
-        table { width: 100% !important; border-collapse: collapse; }
-        th, td { border: 1px solid #ddd !important; padding: 8px !important; }
+        .no-print, .navbar, footer, .btn, .breadcrumb { display: none !important; }
+        .container, .container-fluid { max-width: 100% !important; width: 100% !important; margin: 0 !important; padding: 0 !important; }
+        body { background: white !important; font-size: 11pt; padding: 1cm !important; }
+        .card, .premium-card { border: none !important; box-shadow: none !important; }
+        .header-info { 
+            background: #fff !important; 
+            border: 1px solid #ccc !important;
+            border-radius: 0 !important;
+            padding: 15px !important;
+            margin-bottom: 20px !important;
+        }
+        table { width: 100% !important; border-collapse: collapse; margin-top: 10px !important; }
+        th, td { border: 1px solid #dee2e6 !important; padding: 8px !important; }
+        .print-only { display: block !important; }
     }
+    .print-only { display: none; }
     .header-info {
         background-color: #f8fafc;
         border-radius: 8px;
@@ -32,12 +42,30 @@
     </div>
 </div>
 
+<!-- Cabeçalho de Documento para Impressão -->
+<div class="print-only text-center mb-4">
+    <div class="mb-3">
+        <img src="{% static 'core/logopmu.png' %}" alt="Logo PMU" style="height: 70px;">
+    </div>
+    <h2 class="fw-bold mb-1">LISTA DE CONCLUINTES - {{ curso.escola.nome|upper }}</h2>
+    <p class="mb-0">Diretoria de Qualificação Profissional</p>
+    <hr style="border-top: 2px solid #000; opacity: 0.2; margin: 15px 0;">
+</div>
+
 <div class="header-info">
     <div class="row">
         <div class="col-md-8">
             <h2 class="fw-bold text-dark mb-2">{{ curso.nome }}</h2>
             <p class="text-muted mb-1"><strong>Escola:</strong> {{ curso.escola.nome }}</p>
-            <p class="text-muted mb-0"><strong>Tipo:</strong> {{ curso.tipo_curso.nome }}</p>
+            <p class="text-muted mb-1">
+                <strong>Coordenador:</strong> 
+                {% if curso.escola.coordenador_user %}
+                    {{ curso.escola.coordenador_user.get_full_name|default:curso.escola.coordenador_user.username }}
+                {% else %}
+                    Não informado
+                {% endif %}
+            </p>
+            <p class="text-muted mb-0"><strong>Professor(a):</strong> {{ curso.nome_professor|default:"Não informado" }}</p>
         </div>
         <div class="col-md-4 text-md-end">
             <p class="text-muted mb-1"><strong>Período:</strong> {{ curso.data_inicio|date:"d/m/Y" }} - {{ curso.data_fim|date:"d/m/Y" }}</p>

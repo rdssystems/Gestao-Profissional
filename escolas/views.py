@@ -90,7 +90,7 @@ class DashboardView(LoginRequiredMixin, TemplateView):
             context['total_alunos'] = aluno_scope.count()
             context['alunos_cursando'] = inscricao_scope.filter(status='cursando').count()
             context['alunos_concluintes'] = inscricao_scope.filter(status='concluido').count()
-            context['alunos_desistentes'] = inscricao_scope.filter(status='desistente').count()
+            context['alunos_desistentes'] = inscricao_scope.filter(status='desistente', chamadas__status_presenca='P').distinct().count()
             context['cursos_ativos'] = curso_scope.filter(status__in=['Aberta', 'Em Andamento']).count()
             context['cursos_concluidos'] = curso_scope.filter(status='Concluído').count()
             # Hoje (Inscrições do dia = Alunos novos cadastrados hoje)

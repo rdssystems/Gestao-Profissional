@@ -1,0 +1,268 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ video.titulo }} - Centro de Treinamento{% endblock %}
+
+{% block content %}
+
+<div class="container-fluid py-4">
+
+    <!-- Navegação de Voltar -->
+    <div class="mb-4 d-flex align-items-center justify-content-between animate-up">
+        <a href="{% url 'treinamento:lista' %}" class="btn btn-premium-outline">
+            <i class="bi bi-arrow-left me-2"></i> Voltar à Listagem
+        </a>
+        <div class="d-none d-md-block">
+            <span class="badge bg-light text-primary border border-primary-subtle px-3 py-2 rounded-pill">
+                {% if concluido %}
+                    <i class="bi bi-check-circle-fill me-1 text-success"></i> Aula Concluída
+                {% else %}
+                    <i class="bi bi-circle me-1"></i> Aula Pendente
+                {% endif %}
+            </span>
+        </div>
+    </div>
+
+    <div class="row g-4 animate-up" style="animation-delay: 0.1s;">
+        <!-- Player Central -->
+        <div class="col-lg-8">
+            <div class="premium-card p-0 overflow-hidden border-0 shadow-lg bg-dark">
+                <div class="ratio ratio-16x9">
+                    <!-- O player será carregado aqui pela API do YouTube -->
+                    <div id="player"></div>
+                </div>
+            </div>
+
+            <div class="mt-4 animate-up" style="animation-delay: 0.2s;">
+                <h3 class="fw-bold text-dark">{{ video.titulo }}</h3>
+                <div class="d-flex align-items-center mb-3 text-muted">
+                    <span class="small"><i class="bi bi-clock me-1"></i> Publicado em {{ video.data_criacao|date:"d/m/Y" }}</span>
+                    <span class="mx-2 fs-4">•</span>
+                    <span class="small"><i class="bi bi-collection-play me-1"></i> Módulo {{ video.ordem }}</span>
+                </div>
+                <hr>
+                <div class="mt-3">
+                    <h5 class="fw-bold text-muted small text-uppercase">O que você aprenderá:</h5>
+                    <p class="text-dark fs-5" style="line-height: 1.6;">{{ video.descricao|default:"Nenhuma instrução adicional informada." }}</p>
+                </div>
+                
+                <!-- Botão de Ação -->
+                <div class="mt-5 text-center text-md-start">
+                    <!-- Mensagem de Bloqueio -->
+                    <div id="msg-bloqueio" class="alert alert-info py-3 px-4 border-0 rounded-4 d-inline-flex align-items-center shadow-sm" 
+                         style="{% if concluido %}display: none !important;{% endif %}">
+                        <div class="spinner-grow spinner-grow-sm text-primary me-3" role="status"></div>
+                        <div>
+                            <span class="fw-bold d-block">Aula em andamento...</span>
+                            <span class="small text-muted">O botão de conclusão aparecerá automaticamente assim que você terminar de assistir.</span>
+                        </div>
+                    </div>
+
+                    <button id="btn-concluir" onclick="toggleConcluido({{ video.pk }})" 
+                            class="btn btn-lg {% if concluido %}btn-success{% else %}btn-premium{% endif %} px-5 shadow-sm rounded-pill py-3 fw-bold"
+                            style="{% if not concluido %}display: none;{% endif %}"
+                            {% if concluido %}disabled{% endif %}>
+                        {% if concluido %}
+                            <i class="bi bi-check-circle-fill me-2"></i> CONCLUÍDO
+                        {% else %}
+                            <i class="bi bi-patch-check me-2"></i> MARCAR COMO ASSISTIDO
+                        {% endif %}
+                    </button>
+                    <p id="sub-msg" class="mt-2 text-muted small" style="{% if not concluido %}display: none;{% endif %}">* Clique no botão acima para registrar seu progresso no sistema.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar / Playlist -->
+        <div class="col-lg-4">
+            <div class="premium-card h-100 border-0 shadow-sm">
+                <h5 class="fw-bold mb-4 d-flex align-items-center">
+                    <i class="bi bi-list-nested me-2 text-primary"></i> Sequência de Aulas
+                </h5>
+                <div class="playlist-container">
+                    {% for item in playlists %}
+                    <a href="{% url 'treinamento:detalhe' item.pk %}" class="playlist-item d-flex align-items-center {% if item.pk == video.pk %}active{% endif %}">
+                        <div class="playlist-num me-3">{{ forloop.counter }}</div>
+                        <div class="flex-grow-1">
+                            <h6 class="mb-0 fw-bold">{{ item.titulo }}</h6>
+                            <span class="smaller 
+                                {% if item.id in concluidos_ids %}text-success{% else %}text-muted{% endif %}">
+                                {% if item.id in concluidos_ids %}
+                                    <i class="bi bi-check-circle-fill"></i> Concluído
+                                {% else %}
+                                    <i class="bi bi-play-circle"></i> Assistir Agora
+                                {% endif %}
+                            </span>
+                        </div>
+                        <div class="ms-2">
+                             {% if item.pk == video.pk %}
+                                <div class="playing-bars">
+                                    <span class="bar bar1"></span>
+                                    <span class="bar bar2"></span>
+                                    <span class="bar bar3"></span>
+                                </div>
+                             {% endif %}
+                        </div>
+                    </a>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<style>
+    .playlist-item {
+        padding: 15px;
+        border-radius: 12px;
+        text-decoration: none;
+        color: inherit;
+        transition: 0.2s;
+        border: 1px solid transparent;
+        margin-bottom: 8px;
+    }
+    .playlist-item:hover {
+        background: #f8faff;
+        border-color: #e5e8f1;
+        color: #4C7DF0;
+    }
+    .playlist-item.active {
+        background: #f0f4ff;
+        border-color: #4C7DF0;
+        color: #4C7DF0;
+    }
+    .playlist-num {
+        width: 32px;
+        height: 32px;
+        background: #eee;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        font-size: 0.8rem;
+        color: #777;
+    }
+    .playlist-item.active .playlist-num {
+        background: #4C7DF0;
+        color: white;
+    }
+    
+    .playlist-container {
+        max-height: 600px;
+        overflow-y: auto;
+        padding-right: 5px;
+    }
+    
+    /* Playing animation */
+    .playing-bars {
+        display: flex;
+        align-items: flex-end;
+        gap: 2px;
+        height: 15px;
+    }
+    .bar {
+        width: 3px;
+        background: #4C7DF0;
+        animation: dance 1s infinite alternate;
+    }
+    .bar1 { height: 10px; animation-delay: 0.2s; }
+    .bar2 { height: 15px; animation-delay: 0.4s; }
+    .bar3 { height: 8px; animation-delay: 0s; }
+    @keyframes dance {
+        from { height: 5px; }
+        to { height: 15px; }
+    }
+    
+    .smaller { font-size: 0.75rem; }
+</style>
+
+<script>
+    // 1. Carregar a API do YouTube de forma assíncrona
+    var tag = document.createElement('script');
+    tag.src = "https://www.youtube.com/iframe_api";
+    var firstScriptTag = document.getElementsByTagName('script')[0];
+    firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+
+    var player;
+    function onYouTubeIframeAPIReady() {
+        player = new YT.Player('player', {
+            height: '100%',
+            width: '100%',
+            videoId: '{{ video.youtube_id }}',
+            playerVars: {
+                'playsinline': 1,
+                'rel': 0,
+                'modestbranding': 1,
+                'autoplay': 1
+            },
+            events: {
+                'onStateChange': onPlayerStateChange,
+                'onError': onPlayerError
+            }
+        });
+    }
+
+    // 2. Monitorar mudanças de estado do player
+    function onPlayerStateChange(event) {
+        // YT.PlayerState.ENDED = 0
+        if (event.data == YT.PlayerState.ENDED) {
+            liberarBotaoConclusao();
+        }
+    }
+
+    function onPlayerError(event) {
+        console.error("Erro no player do YouTube:", event.data);
+        // Em caso de erro crítico que impeça o vídeo, opcionalmente liberamos o botão 
+        // ou avisamos o suporte. Aqui vamos liberar após 10 segundos caso dê erro 
+        // para não travar o usuário totalmente.
+        setTimeout(liberarBotaoConclusao, 10000);
+    }
+
+    function liberarBotaoConclusao() {
+        const btn = document.getElementById('btn-concluir');
+        const msg = document.getElementById('msg-bloqueio');
+        const subMsg = document.getElementById('sub-msg');
+
+        if (btn) btn.style.display = 'inline-block';
+        if (msg) msg.style.display = 'none';
+        if (subMsg) subMsg.style.display = 'block';
+    }
+
+    function toggleConcluido(videoPk) {
+        const btn = document.getElementById('btn-concluir');
+        btn.disabled = true;
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span> PROCESSANDO...';
+
+        fetch(`/treinamento/marcar-concluido/${videoPk}/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}',
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                // Em caso de sucesso, o botão vira "CONCLUÍDO" e fica desabilitado permanentemente
+                btn.classList.remove('btn-premium');
+                btn.classList.add('btn-success');
+                btn.innerHTML = '<i class="bi bi-check-circle-fill me-2"></i> CONCLUÍDO';
+                btn.disabled = true; // Garante que fica desabilitado
+            } else {
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+            }
+        })
+        .catch(error => {
+            console.error('Erro:', error);
+            btn.disabled = false;
+            btn.innerHTML = originalText;
+            alert('Erro ao atualizar progresso. Tente novamente.');
+        });
+    }
+</script>
+
+{% endblock %}

@@ -9,8 +9,8 @@
             <h2 class="mb-0">Cursos de {{ aluno.nome_completo }}</h2>
             <p class="text-muted">Selecione um curso para gerar a declaração.</p>
         </div>
-        <a href="{% url 'declaracao:buscar_aluno' %}" class="btn btn-outline-secondary">
-            <i class="bi bi-arrow-left me-2"></i>Voltar à busca
+        <a href="{% url 'alunos:detalhe_aluno' pk=aluno.id %}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-2"></i>Voltar
         </a>
     </div>
 

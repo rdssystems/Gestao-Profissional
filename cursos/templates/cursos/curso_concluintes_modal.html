@@ -18,6 +18,14 @@
             <div class="col-sm-6 text-sm-end">
                 <i class="bi bi-calendar3 me-1"></i> {{ curso.data_inicio|date:"d/m/Y" }} - {{ curso.data_fim|date:"d/m/Y" }}
             </div>
+            <div class="col-12 mt-1">
+                <i class="bi bi-person-badge me-1"></i> <strong>Coordenador:</strong> 
+                {% if curso.escola.coordenador_user %}
+                    {{ curso.escola.coordenador_user.get_full_name|default:curso.escola.coordenador_user.username }}
+                {% else %}
+                    Não informado
+                {% endif %}
+            </div>
         </div>
     </div>
 
