@@ -274,7 +274,7 @@
                     <li class="nav-item">
                         {% url 'treinamento:lista' as treinamento_url %}
                         <a class="nav-link {% if request.path == treinamento_url or request.path|startswith:treinamento_url %}active-nav-link{% endif %}"
-                            href="{{ treinamento_url }}">Tutoriais</a>
+                            href="{{ treinamento_url }}">Tutoriais <i class="bi bi-lock-fill ms-1" style="font-size: 0.8rem; opacity: 0.7;"></i></a>
                     </li>
                     {% endif %}
 
