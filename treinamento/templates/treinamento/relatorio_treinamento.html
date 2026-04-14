@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+{% load static %}
+{% load my_filters %}
+
+{% block title %}Relatório de Treinamento - Sistema de Gestão{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4 animate-up">
+    
+    <!-- Cabeçalho -->
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+        <div>
+            <h1 class="page-header-premium mb-1">Acompanhamento de Capacitação</h1>
+            <p class="text-muted mb-0">Monitore o progresso de treinamento de todos os usuários da plataforma.</p>
+        </div>
+        <a href="{% url 'treinamento:lista' %}" class="btn btn-premium-outline">
+            <i class="bi bi-play-btn me-2"></i> Ver Vídeos
+        </a>
+    </div>
+
+    <!-- Tabela de Progresso -->
+    <div class="premium-card p-0 shadow-sm border-0 overflow-hidden">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="bg-light">
+                    <tr>
+                        <th class="ps-4">USUÁRIO</th>
+                        <th>UNIDADE</th>
+                        <th class="text-center">AULAS CONCLUÍDAS</th>
+                        <th class="text-center" style="width: 300px;">PERCENTUAL</th>
+                        <th class="text-end pe-4">STATUS GERAL</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for usuario in usuarios %}
+                    {% with concluidos=usuario.progressos_treinamento.count %}
+                    <tr>
+                        <td class="ps-4">
+                            <div class="d-flex align-items-center">
+                                <div class="user-avatar bg-blue-soft text-primary me-3">
+                                    {{ usuario.username|first|upper }}
+                                </div>
+                                <div>
+                                    <div class="fw-bold text-dark">{{ usuario.get_full_name|default:usuario.username }}</div>
+                                    <div class="smaller text-muted">{{ usuario.email|default:"Sem e-mail" }}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            <span class="badge bg-light text-muted border px-2 py-1 small">
+                                {{ usuario.profile.escola.nome|default:"Administração" }}
+                            </span>
+                        </td>
+                        <td class="text-center">
+                            <span class="fw-bold text-dark">{{ concluidos }}</span> / <span class="text-muted">{{ total_videos }}</span>
+                        </td>
+                        <td>
+                            {% if total_videos > 0 %}
+                            {% with percent=concluidos|multiply:100|divide:total_videos %}
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="progress flex-grow-1" style="height: 8px; border-radius: 4px;">
+                                    <div class="progress-bar {% if percent == 100 %}bg-success{% else %}bg-primary{% endif %}" 
+                                         role="progressbar" style="width: {{ percent }}%;"
+                                         aria-valuenow="{{ percent }}" aria-valuemin="0" aria-valuemax="100"></div>
+                                </div>
+                                <span class="small fw-bold text-muted">{{ percent }}%</span>
+                            </div>
+                            {% endwith %}
+                            {% else %}
+                            -
+                            {% endif %}
+                        </td>
+                        <td class="text-end pe-4">
+                            {% if total_videos > 0 and concluidos == total_videos %}
+                                <span class="badge bg-success-soft text-success px-3 py-2 rounded-pill fw-bold">
+                                    <i class="bi bi-patch-check-fill me-1"></i> TREINADO
+                                </span>
+                            {% elif concluidos > 0 %}
+                                <span class="badge bg-warning-soft text-warning px-3 py-2 rounded-pill fw-bold">
+                                    <i class="bi bi-hourglass-split me-1"></i> EM CURSO
+                                </span>
+                            {% else %}
+                                <span class="badge bg-danger-soft text-danger px-3 py-2 rounded-pill fw-bold">
+                                    <i class="bi bi-x-circle-fill me-1"></i> NÃO INICIOU
+                                </span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endwith %}
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="text-center py-5">
+                            <i class="bi bi-people text-muted display-4"></i>
+                            <p class="text-muted mt-2">Nenhum usuário ativo para exibir.</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+
+<style>
+    .user-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        font-size: 1.1rem;
+    }
+    .bg-blue-soft {
+        background-color: rgba(76, 125, 240, 0.1);
+    }
+    .bg-success-soft {
+        background-color: rgba(16, 185, 129, 0.1);
+    }
+    .bg-warning-soft {
+        background-color: rgba(245, 158, 11, 0.1);
+    }
+    .bg-danger-soft {
+        background-color: rgba(220, 38, 38, 0.1);
+    }
+    .smaller {
+        font-size: 0.75rem;
+    }
+</style>
+{% endblock %}

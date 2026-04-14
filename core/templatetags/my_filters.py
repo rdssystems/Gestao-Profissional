@@ -40,3 +40,16 @@ def apenas_numeros(valor):
     if not valor:
         return ""
     return "".join(filter(str.isdigit, str(valor)))
+@register.filter
+def multiply(value, arg):
+    try:
+        return int(value) * int(arg)
+    except (ValueError, TypeError):
+        return 0
+
+@register.filter
+def divide(value, arg):
+    try:
+        return int(int(value) / int(arg)) if int(arg) != 0 else 0
+    except (ValueError, TypeError):
+        return 0

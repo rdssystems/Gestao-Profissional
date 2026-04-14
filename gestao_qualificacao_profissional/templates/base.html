@@ -233,27 +233,24 @@
                 <ul class="navbar-nav">
                     {% if user.is_authenticated %}
                     {% if not user.is_superuser %}
-                    {% if user.profile %}
-                    {% if user.profile.escola %}
+                    {% if user.profile and user.profile.escola %}
                     <li class="nav-item">
-                        <span class="nav-link disabled school-name-highlight"
+                        {% url 'escolas:dashboard' as dashboard_url %}
+                        <a class="nav-link school-name-highlight {% if request.path == dashboard_url %}active-nav-link{% endif %}"
                             title="{{ user.profile.escola.nome }}"
-                            style="font-weight: 600; color: #4C5B7A;">{{ user.profile.escola.nome }}</span>
+                            style="font-weight: 600; color: #4C5B7A;"
+                            href="{{ dashboard_url }}">{{ user.profile.escola.nome }}</a>
                     </li>
                     {% endif %}
                     {% endif %}
                     {% endif %}
-                    {% endif %}
+                    {% if user.is_superuser %}
                     <li class="nav-item">
                         {% url 'escolas:dashboard' as dashboard_url %}
                         <a class="nav-link {% if request.path == dashboard_url %}active-nav-link{% endif %}"
                             href="{{ dashboard_url }}">Dashboard</a>
                     </li>
-                    <li class="nav-item">
-                        {% url 'core:agenda' as agenda_url %}
-                        <a class="nav-link {% if request.path == agenda_url %}active-nav-link{% endif %}"
-                            href="{{ agenda_url }}">Agenda</a>
-                    </li>
+                    {% endif %}
 
                     <li class="nav-item">
                         {% url 'cursos:lista_cursos' as cursos_url %}
@@ -265,11 +262,6 @@
                         <a class="nav-link {% if request.path == alunos_url or request.path|startswith:alunos_url %}active-nav-link{% endif %}"
                             href="{{ alunos_url }}">Alunos</a>
                     </li>
-                    <li class="nav-item">
-                        {% url 'declaracao:buscar_aluno' as declaracoes_url %}
-                        <a class="nav-link {% if request.path == declaracoes_url or request.path|startswith:declaracoes_url %}active-nav-link{% endif %}"
-                            href="{{ declaracoes_url }}">Declarações</a>
-                    </li>
                     {% if user.is_superuser or user|has_group:'Coordenador' or user|has_group:'Auxiliar Administrativo' %}
                     <li class="nav-item">
                         {% url 'cursos:matricula' as matriculas_url %}
@@ -280,17 +272,12 @@
 
                     {% if user.is_authenticated %}
                     <li class="nav-item">
-                        {% url 'documentos:lista_documentos' as documentos_url %}
-                        <a class="nav-link {% if request.path == documentos_url or request.path|startswith:documentos_url %}active-nav-link{% endif %}"
-                            href="{{ documentos_url }}">Drive</a>
+                        {% url 'treinamento:lista' as treinamento_url %}
+                        <a class="nav-link {% if request.path == treinamento_url or request.path|startswith:treinamento_url %}active-nav-link{% endif %}"
+                            href="{{ treinamento_url }}">Tutoriais</a>
                     </li>
                     {% endif %}
 
-                    <li class="nav-item">
-                        {% url 'escolas:lista_escolas' as escolas_url %}
-                        <a class="nav-link {% if request.path == escolas_url or request.path|startswith:escolas_url %}active-nav-link{% endif %}"
-                            href="{{ escolas_url }}">Escolas</a>
-                    </li>
 
                     {% if user.is_authenticated and user|can_access_controle_diario %}
                     <li class="nav-item">
@@ -370,7 +357,7 @@
 
                         <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarUserDropdown">
 
-                            <li><a class="dropdown-item" href="{% url 'core:sobre' %}">Sobre</a></li>
+                             <li><a class="dropdown-item" href="{% url 'core:sobre' %}"><i class="bi bi-info-circle me-2 text-primary"></i> Sobre</a></li>
                             {% if user.is_superuser or user|has_group:'Coordenador' %}
                             <li>
                                 <a class="dropdown-item d-flex align-items-center gap-2" href="{% url 'whatsapp:config' %}">
@@ -378,15 +365,29 @@
                                 </a>
                             </li>
                             {% endif %}
+
+                            <li>
+                                <hr class="dropdown-divider">
+                            </li>
+                            
+                            <!-- Opções Adicionais Movidas -->
+                            <li><a class="dropdown-item" href="{% url 'core:agenda' %}"><i class="bi bi-calendar3 me-2 text-primary"></i> Agenda</a></li>
+                            <li><a class="dropdown-item" href="{% url 'documentos:lista_documentos' %}"><i class="bi bi-cloud-check me-2 text-primary"></i> Drive</a></li>
+                            <li><a class="dropdown-item" href="{% url 'escolas:lista_escolas' %}"><i class="bi bi-building me-2 text-primary"></i> Escolas</a></li>
+
+                            <li>
+                                <hr class="dropdown-divider">
+                            </li>
+
                             {% if user.is_superuser %}
-                            <li><a class="dropdown-item" href="{% url 'score_config:configurar' %}">Configuração de
-                                    Score</a></li>
-                            <li><a class="dropdown-item" href="{% url 'usuarios:lista_usuarios' %}">Usuários</a></li>
-                            <li><a class="dropdown-item" href="{% url 'core:lista_auditoria' %}">Auditoria</a></li>
-                            <li><a class="dropdown-item" href="{% url 'admin:index' %}">Admin Django</a></li>
+                            <li><h6 class="dropdown-header text-uppercase smaller fw-bold text-muted">Administração</h6></li>
+                             <li><a class="dropdown-item" href="{% url 'score_config:configurar' %}"><i class="bi bi-sliders me-2"></i> Configuração de Score</a></li>
+                            <li><a class="dropdown-item" href="{% url 'usuarios:lista_usuarios' %}"><i class="bi bi-people me-2"></i> Usuários</a></li>
+                            <li><a class="dropdown-item" href="{% url 'core:lista_auditoria' %}"><i class="bi bi-journal-text me-2"></i> Auditoria</a></li>
+                            <li><a class="dropdown-item" href="{% url 'admin:index' %}"><i class="bi bi-database-gear me-2"></i> Admin Django</a></li>
                             
                             {% if user.profile.is_developer %}
-                            <li><a class="dropdown-item text-primary" href="{% url 'core:gerenciar_avisos' %}"><i class="bi bi-plus-circle-fill me-1"></i> Postar Atualização</a></li>
+                            <li><a class="dropdown-item text-primary fw-bold" href="{% url 'core:gerenciar_avisos' %}"><i class="bi bi-plus-circle-fill me-1"></i> Postar Atualização</a></li>
                             {% endif %}
 
                             <li>
@@ -397,7 +398,9 @@
                             <li>
                                 <form method="post" action="{% url 'logout' %}" class="d-inline">
                                     {% csrf_token %}
-                                    <button type="submit" class="dropdown-item">Logout</button>
+                                    <button type="submit" class="dropdown-item text-danger">
+                                        <i class="bi bi-box-arrow-right me-2"></i> Sair
+                                    </button>
                                 </form>
                             </li>
 
