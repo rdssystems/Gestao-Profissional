@@ -54,11 +54,7 @@ def broadcast_audit_log(sender, instance, created, **kwargs):
             group_name = f"school_notifications_{escola_id}"
             
         # Formata a mensagem
-        user_name = instance.usuario.username if instance.usuario else "Sistema"
-        action_display = instance.get_acao_display()
-        obj_repr = str(instance.content_object) if instance.content_object else "Objeto desconhecido"
-        
-        msg_text = f"<strong>{user_name}</strong> realizou <strong>{action_display}</strong> em {obj_repr}"
+        msg_text = instance.notification_text
 
         async_to_sync(channel_layer.group_send)(
             group_name,

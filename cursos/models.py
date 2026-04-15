@@ -120,6 +120,14 @@ class Curso(models.Model):
             return min(100, int((self.total_inscritos / self.vagas) * 100))
         return 0
 
+    @property
+    def check_avaliacao_50_percent(self):
+        total_alunos_ativos = self.inscricao_set.exclude(status='desistente').count()
+        if total_alunos_ativos == 0:
+            return False
+        total_avaliacoes = self.inscricao_set.filter(avaliacao_professor__isnull=False).count()
+        return (total_avaliacoes / total_alunos_ativos) >= 0.5
+
 class Inscricao(models.Model):
     aluno = models.ForeignKey('alunos.Aluno', on_delete=models.CASCADE)
     curso = models.ForeignKey(Curso, on_delete=models.CASCADE)
