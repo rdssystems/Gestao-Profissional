@@ -7,7 +7,11 @@
 
 <style>
     body {
+        {% if is_modal %}
+        background: #ffffff !important;
+        {% else %}
         background: #eef1f5 !important;
+        {% endif %}
         font-family: "Inter", sans-serif;
         color: #424a57;
     }
@@ -234,9 +238,15 @@
         <button onclick="window.print()" class="btn btn-outline-primary btn-app">
             <i class="bi bi-printer me-2"></i>Imprimir
         </button>
+        {% if is_modal %}
+        <button onclick="if(window.parent) { window.parent.postMessage('close-modal', '*'); } else { window.close(); }" class="btn btn-outline-secondary btn-app">
+            Fechar
+        </button>
+        {% else %}
         <a href="{% url 'cursos:lista_cursos' %}" class="btn btn-outline-secondary btn-app">
             Voltar
         </a>
+        {% endif %}
     </div>
 </div>
 

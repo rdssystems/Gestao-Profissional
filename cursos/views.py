@@ -82,6 +82,29 @@ class CursoListView(LoginRequiredMixin, ListView):
                 Q(tipo_curso__nome__icontains=search_query)
             )
 
+        # Anotações para indicadores Real-Time
+        hoje = date.today()
+        
+        # Subquery para verificar se houve aula hoje
+        sub_chamada = RegistroAula.objects.filter(
+            curso=OuterRef('pk'), 
+            data_aula=hoje
+        )
+        
+        # Subquery para verificar se há alunos ausentes sem motivo (Qualitativo Pendente)
+        sub_qualitativo = Chamada.objects.filter(
+            registro_aula__curso=OuterRef('pk'),
+            registro_aula__data_aula=hoje,
+            status_presenca__in=['A', 'J']
+        ).filter(
+            Q(motivo_falta__isnull=True) | Q(motivo_falta='')
+        )
+
+        qs = qs.annotate(
+            has_chamada_hoje=Exists(sub_chamada),
+            has_pendencia_qualitativa=Exists(sub_qualitativo)
+        )
+
         return qs.order_by('-data_inicio')
 
     def get_context_data(self, **kwargs):
@@ -969,6 +992,12 @@ class RelatorioFrequenciaView(LoginRequiredMixin, StaffRequiredMixin, DetailView
         context['totais_colunas'] = totais_colunas
         context['total_presentes'] = total_presentes
         context['total_ausentes'] = total_ausentes
+        
+        # Verificar se está endo aberto no Modal
+        if self.request.GET.get('modal') == '1':
+            context['hide_navbar'] = True
+            context['is_modal'] = True
+            
         return context
 
 class ExcluirRegistroAulaView(LoginRequiredMixin, StaffRequiredMixin, View):

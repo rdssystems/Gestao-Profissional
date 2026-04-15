@@ -78,6 +78,30 @@
         </div>
     </div>
 
+    <style>
+        @keyframes blink-red {
+            0% { opacity: 1; color: #dc3545; transform: scale(1); }
+            50% { opacity: 0.4; color: #ff0000; transform: scale(1.1); }
+            100% { opacity: 1; color: #dc3545; transform: scale(1); }
+        }
+        @keyframes blink-green {
+            0% { opacity: 1; color: #198754; }
+            50% { opacity: 0.5; color: #10b981; }
+            100% { opacity: 1; color: #198754; }
+        }
+        .blink-red {
+            animation: blink-red 1s infinite;
+            filter: drop-shadow(0 0 2px rgba(220, 53, 69, 0.4));
+        }
+        .blink-green {
+            animation: blink-green 1.5s infinite;
+        }
+        .indicator-icon {
+            font-size: 1.25rem;
+            transition: all 0.3s ease;
+        }
+    </style>
+
     <div class="tab-content" id="pills-tabContent">
         <!-- Aba de Cursos Ativos -->
         <div class="tab-pane fade show active" id="pills-ativos" role="tabpanel" aria-labelledby="pills-ativos-tab">
@@ -89,6 +113,7 @@
                                 <th>Curso</th>
                                 <th>Escola</th>
                                 <th>Tipo</th>
+                                <th class="text-center" style="min-width: 150px;">Monitoramento Diário</th>
                                 <th>Horário/Turno</th>
                                 <th style="min-width: 140px;">
                                     <div class="d-flex align-items-center gap-2">
@@ -105,7 +130,7 @@
                         </thead>
                         <tbody>
                             {% for curso in cursos_ativos %}
-                            <tr>
+                            <tr id="curso-row-{{ curso.id }}">
                                 <td>
                                     <strong>{{ curso.nome }}</strong>
                                     <div class="small text-muted">
@@ -133,6 +158,36 @@
                                 </td>
                                 <td>{{ curso.escola.nome }}</td>
                                 <td>{{ curso.tipo_curso.nome }}</td>
+                                <td class="text-center align-middle">
+                                    <div class="d-flex justify-content-center align-items-center gap-3">
+                                        <!-- Chamada Indicator -->
+                                        <div id="chamada-indicator-{{ curso.id }}" class="text-center">
+                                            {% if curso.has_chamada_hoje %}
+                                                <i class="bi bi-check-circle-fill text-success blink-green indicator-icon"></i>
+                                                <div class="small text-muted" style="font-size: 0.65rem;">Chamada OK</div>
+                                            {% else %}
+                                                <i class="bi bi-calendar-event text-warning indicator-icon" title="Chamada Pendente"></i>
+                                                <div class="small text-warning fw-bold" style="font-size: 0.65rem;">Pendente</div>
+                                            {% endif %}
+                                        </div>
+
+                                        <!-- Qualitativo Indicator -->
+                                        <div id="qualitativo-indicator-{{ curso.id }}" class="text-center">
+                                            {% if curso.has_chamada_hoje %}
+                                                {% if curso.has_pendencia_qualitativa %}
+                                                    <i class="bi bi-exclamation-triangle-fill blink-red indicator-icon" title="Qualitativo Pendente"></i>
+                                                    <div class="d-flex flex-column align-items-center">
+                                                        <a href="{% url 'cursos:curso_qualitativos' pk=curso.id %}?data={% now 'Y-m-d' %}" class="btn btn-xs btn-danger fw-bold mt-1" style="font-size: 0.6rem; padding: 1px 4px;">RESOLVER</a>
+                                                    </div>
+                                                    <div class="small text-danger fw-bold" style="font-size: 0.65rem;">Qualitativo</div>
+                                                {% else %}
+                                                    <i class="bi bi-shield-check text-success indicator-icon" style="opacity: 0.8;"></i>
+                                                    <div class="small text-muted" style="font-size: 0.65rem;">Qualitativo OK</div>
+                                                {% endif %}
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </td>
                                 <td>{{ curso.get_turno_display }} • {{ curso.horario|date:"H:i" }}</td>
                                 <td>
                                     {% if perms.cursos.change_curso or user.is_staff or user|has_group:"Coordenador" or user|has_group:"Auxiliar Administrativo" %}
@@ -181,11 +236,14 @@
                                             title="Histórico de Observações">
                                             <i class="bi bi-journal-text"></i>
                                         </a>
-                                        <a href="{% url 'cursos:relatorio_frequencia' curso_pk=curso.pk %}"
-                                            class="btn btn-action-premium text-white" style="background-color: #f59e0b;"
+                                        <button type="button" 
+                                            class="btn btn-action-premium text-white btn-ver-frequencia" style="background-color: #f59e0b;"
+                                            data-bs-toggle="modal"
+                                            data-bs-target="#frequenciaModal"
+                                            data-url="{% url 'cursos:relatorio_frequencia' curso_pk=curso.pk %}?modal=1"
                                             title="Lista de Presença Completa">
                                             <i class="bi bi-table"></i>
-                                        </a>
+                                        </button>
                                         {% if curso.tipo_curso.ementa %}
                                         <button type="button" 
                                             class="btn btn-action-premium text-white btn-ver-ementa" 
@@ -298,11 +356,14 @@
                                             title="Ver Qualitativos">
                                             <i class="bi bi-person-badge"></i>
                                         </a>
-                                        <a href="{% url 'cursos:relatorio_frequencia' curso_pk=curso.pk %}"
-                                            class="btn btn-action-premium text-white" style="background-color: #f59e0b;"
+                                        <button type="button" 
+                                            class="btn btn-action-premium text-white btn-ver-frequencia" style="background-color: #f59e0b;"
+                                            data-bs-toggle="modal"
+                                            data-bs-target="#frequenciaModal"
+                                            data-url="{% url 'cursos:relatorio_frequencia' curso_pk=curso.pk %}?modal=1"
                                             title="Lista de Presença Completa">
                                             <i class="bi bi-table"></i>
-                                        </a>
+                                        </button>
                                         {% if curso.tipo_curso.ementa %}
                                         <button type="button" 
                                             class="btn btn-action-premium text-white btn-ver-ementa" 
@@ -342,6 +403,25 @@
             <div class="p-5 text-center">
                 <div class="spinner-border text-primary" role="status">
                     <span class="visually-hidden">Carregando...</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Frequência -->
+<div class="modal fade" id="frequenciaModal" tabindex="-1" aria-labelledby="frequenciaModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-light">
+                <h5 class="modal-title fw-bold" id="frequenciaModalLabel">Lista de Presença Completa</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-0" id="frequenciaModalContent">
+                <div class="p-5 text-center">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Carregando...</span>
+                    </div>
                 </div>
             </div>
         </div>
@@ -417,6 +497,128 @@
                     });
             });
         });
+
+        // Capturar cliques nos botões de frequência
+        document.querySelectorAll('.btn-ver-frequencia').forEach(button => {
+            button.addEventListener('click', function() {
+                const url = this.getAttribute('data-url');
+                const modalContent = document.getElementById('frequenciaModalContent');
+                
+                modalContent.innerHTML = `
+                    <div class="w-100 placeholder-glow" style="height: 75vh;">
+                        <iframe src="${url}" style="width: 100%; height: 100%; border: none; border-bottom-left-radius: 0.3rem; border-bottom-right-radius: 0.3rem;" onload="this.style.opacity=1; this.previousElementSibling.style.display='none';"></iframe>
+                    </div>
+                `;
+            });
+        });
+
+        // Limpar iframe ao fechar o modal para evitar memory leak ou persistência errada
+        const frequenciaModal = document.getElementById('frequenciaModal');
+        if(frequenciaModal) {
+            frequenciaModal.addEventListener('hidden.bs.modal', function () {
+                document.getElementById('frequenciaModalContent').innerHTML = `
+                    <div class="p-5 text-center">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Aguardando...</span>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        // Escutar mensagens vindas do iframe (postMessage) para fechar o modal
+        window.addEventListener('message', function(event) {
+            if (event.data === 'close-modal') {
+                const frequenciaModalEl = document.getElementById('frequenciaModal');
+                if (frequenciaModalEl) {
+                    const modalInstance = bootstrap.Modal.getInstance(frequenciaModalEl);
+                    if (modalInstance) {
+                        modalInstance.hide();
+                    } else {
+                        // Instanciando e escondendo via bootstrap api se nao estiver instanciado
+                        const md = new bootstrap.Modal(frequenciaModalEl);
+                        md.hide();
+                    }
+                    // Tentar fechar falback com JS plain
+                    const closeBtn = frequenciaModalEl.querySelector('.btn-close');
+                    if (closeBtn) closeBtn.click();
+                }
+            }
+        });
+
+        // ==========================================
+        //         REAL-TIME UPDATES (WebSocket)
+        // ==========================================
+        const protocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
+        let cursosSocket;
+
+        function connect() {
+            cursosSocket = new WebSocket(protocol + window.location.host + '/ws/cursos/');
+
+            cursosSocket.onmessage = function(e) {
+                const data = JSON.parse(e.data);
+                if (data.type === 'status_update') {
+                    const cursoId = data.curso_id;
+                    
+                    // Atualizar Indicador de Chamada
+                    const chamadaContainer = document.getElementById(`chamada-indicator-${cursoId}`);
+                    if (chamadaContainer) {
+                        if (data.has_chamada_hoje) {
+                            chamadaContainer.innerHTML = `
+                                <i class="bi bi-check-circle-fill text-success blink-green indicator-icon"></i>
+                                <div class="small text-muted" style="font-size: 0.65rem;">Chamada OK</div>
+                            `;
+                        } else {
+                            chamadaContainer.innerHTML = `
+                                <i class="bi bi-calendar-event text-warning indicator-icon" title="Chamada Pendente"></i>
+                                <div class="small text-warning fw-bold" style="font-size: 0.65rem;">Pendente</div>
+                            `;
+                        }
+                    }
+
+                    // Atualizar Indicador Qualitativo
+                    const qualitativoContainer = document.getElementById(`qualitativo-indicator-${cursoId}`);
+                    if (qualitativoContainer) {
+                        if (data.has_chamada_hoje) {
+                            if (data.has_pendencia_qualitativa) {
+                                // Precisa resolver (RESOLVER)
+                                const resolveUrl = `/cursos/${cursoId}/qualitativos/?data=` + new Date().toISOString().split('T')[0];
+                                qualitativoContainer.innerHTML = `
+                                    <i class="bi bi-exclamation-triangle-fill blink-red indicator-icon" title="Qualitativo Pendente"></i>
+                                    <div class="d-flex flex-column align-items-center">
+                                        <a href="${resolveUrl}" class="btn btn-xs btn-danger fw-bold mt-1" style="font-size: 0.6rem; padding: 1px 4px;">RESOLVER</a>
+                                    </div>
+                                    <div class="small text-danger fw-bold" style="font-size: 0.65rem;">Qualitativo</div>
+                                `;
+                            } else {
+                                // Tudo certo (Qualitativo OK)
+                                qualitativoContainer.innerHTML = `
+                                    <i class="bi bi-shield-check text-success indicator-icon" style="opacity: 0.8;"></i>
+                                    <div class="small text-muted" style="font-size: 0.65rem;">Qualitativo OK</div>
+                                `;
+                            }
+                        } else {
+                            // Se não houve chamada hoje, o container qualitativo fica vazio
+                            qualitativoContainer.innerHTML = '';
+                        }
+                    }
+                }
+            };
+
+            cursosSocket.onclose = function(e) {
+                console.log('Socket closed. Reconnecting in 5s...');
+                setTimeout(function() {
+                    connect();
+                }, 5000);
+            };
+
+            cursosSocket.onerror = function(err) {
+                console.error('Socket encountered error: ', err.message, 'Closing socket');
+                cursosSocket.close();
+            };
+        }
+
+        connect();
     });
 </script>
 {% endblock %}
