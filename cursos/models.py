@@ -157,6 +157,7 @@ class RegistroAula(models.Model):
     curso = models.ForeignKey(Curso, on_delete=models.CASCADE, related_name='registros_aula', verbose_name="Curso")
     data_aula = models.DateField(verbose_name="Data da Aula", default=date.today)
     observacoes = models.TextField(blank=True, null=True, verbose_name="Observações")
+    nao_houve_aula = models.BooleanField(default=False, verbose_name="Não houve aula (Feriado/Recesso)")
 
     class Meta:
         verbose_name = "Registro de Aula"
