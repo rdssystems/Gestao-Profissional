@@ -1,3 +1,4 @@
+import json
 from django.shortcuts import render, get_object_or_404
 from django.views.generic import ListView, DetailView, TemplateView
 from django.views.generic.edit import CreateView, UpdateView, DeleteView
@@ -9,7 +10,7 @@ from django.db.models import Count, Q # Adicionados Count e Q
 from core.mixins import AuditLogMixin
 
 from escolas.models import Escola
-from cursos.models import Curso, Inscricao
+from cursos.models import Curso, Inscricao, Chamada, AvaliacaoAlunoCurso
 from alunos.models import Aluno
 from core.models import Profile, AuditLog
 from cursos.views import CursoListView as CursosViewBase
@@ -32,7 +33,7 @@ class DashboardView(LoginRequiredMixin, TemplateView):
         if not escola_id_filter or escola_id_filter == 'None':
             escola_id_filter = 'all'
         
-        period_filter = self.request.GET.get('period', 'all')
+        period_filter = self.request.GET.get('period', 'current_month')
 
         # Escopos iniciais
         aluno_scope = Aluno.objects.all()
@@ -120,6 +121,91 @@ class DashboardView(LoginRequiredMixin, TemplateView):
         context['historico_recente'] = audit_scope[:15]
         
         # Filtros para o Template
+        # Preparação do Gráfico
+        escolas_chart = Escola.objects.all().order_by('nome')
+        if not user.is_superuser:
+             if user_escola_id:
+                 escolas_chart = escolas_chart.filter(id=user_escola_id)
+             else:
+                 escolas_chart = escolas_chart.none()
+        elif escola_id_filter != 'all':
+             try:
+                 escolas_chart = escolas_chart.filter(id=int(escola_id_filter))
+             except:
+                 pass
+             
+        radar_fields = [
+            'c3_1', 'c3_2', 'c3_3', 'c3_4'
+        ]
+        valor_map = {'Otimo': 3, 'Bom': 2, 'Regular': 1}
+        escolas_dados = []
+        
+        for esc in escolas_chart:
+            # 1. Dados de Ocupação (Rosca)
+            esc_cursos_ativos = curso_scope.filter(escola=esc, status__in=['Aberta', 'Em Andamento'])
+            vagas = esc_cursos_ativos.aggregate(total=models.Sum('vagas'))['total'] or 0
+            cursando = inscricao_scope.filter(curso__escola=esc, status='cursando', curso__status__in=['Aberta', 'Em Andamento']).count()
+            vagas_ociosas = max(0, vagas - cursando)
+            
+            # 2. Dados de Assiduidade (Barra Horizontal)
+            assiduidade_labels = []
+            assiduidade_series = []
+            
+            for curs in esc_cursos_ativos:
+                tot_p = Chamada.objects.filter(registro_aula__curso=curs, status_presenca='P').count()
+                tot_c = Chamada.objects.filter(registro_aula__curso=curs).count()
+                if tot_c > 0:
+                    pct = int((tot_p / tot_c) * 100)
+                    assiduidade_labels.append(curs.nome) # limit length in JS or python?
+                    assiduidade_series.append(pct)
+            
+            # Odenar e limitar aos 10 cursos para não explodir o card
+            if assiduidade_series:
+                assid_paired = list(zip(assiduidade_labels, assiduidade_series))
+                assid_paired.sort(key=lambda x: x[1], reverse=True)
+                assid_paired = assid_paired[:10]
+                assiduidade_labels, assiduidade_series = zip(*assid_paired)
+                assiduidade_labels = list(assiduidade_labels)
+                assiduidade_series = list(assiduidade_series)
+            
+            # 3. Termômetro de Qualidade Institucional (Radar)
+            avaliacoes = AvaliacaoAlunoCurso.objects.filter(inscricao__curso__escola=esc)
+            if start_date:
+                avaliacoes = avaliacoes.filter(data_preenchimento__date__range=[start_date, today])
+
+            radar_series = []
+            tot_av = avaliacoes.count()
+            if tot_av > 0:
+                for field in radar_fields:
+                    soma = sum(valor_map.get(getattr(av, field), 0) for av in avaliacoes)
+                    media = int((soma / (tot_av * 3)) * 100) # De 0 a 100%
+                    radar_series.append(media)
+            else:
+                radar_series = [0, 0, 0, 0]
+            
+            # Só exibir escolas que tem ao menos um aluno ou curso rodando
+            if vagas > 0 or cursando > 0 or len(assiduidade_series) > 0 or escolas_chart.count() == 1:
+                escolas_dados.append({
+                    'id': str(esc.id),
+                    'nome': esc.nome,
+                    'ocupacao': {
+                        'vagas_total': vagas,
+                        'labels': ['Cursando', 'Ociosas'],
+                        'series': [cursando, vagas_ociosas]
+                    },
+                    'assiduidade': {
+                        'labels': assiduidade_labels,
+                        'series': assiduidade_series
+                    },
+                    'qualidade': {
+                        'labels': ['Espaço Físico', 'Agilidade Inscrição', 'Atendimento', 'Carga Horária'],
+                        'series': radar_series
+                    }
+                })
+
+        context['escolas_dados'] = escolas_dados
+        context['escolas_dados_json'] = json.dumps(escolas_dados)
+
         context['todas_escolas'] = Escola.objects.all().order_by('nome')
         context['period_options'] = {
             'all': 'Todo o Período',

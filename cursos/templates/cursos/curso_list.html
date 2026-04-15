@@ -177,7 +177,7 @@
                                                 {% if curso.has_pendencia_qualitativa %}
                                                     <i class="bi bi-exclamation-triangle-fill blink-red indicator-icon" title="Qualitativo Pendente"></i>
                                                     <div class="d-flex flex-column align-items-center">
-                                                        <a href="{% url 'cursos:curso_qualitativos' pk=curso.id %}?data={% now 'Y-m-d' %}" class="btn btn-xs btn-danger fw-bold mt-1" style="font-size: 0.6rem; padding: 1px 4px;">RESOLVER</a>
+                                                        <button type="button" class="btn btn-xs btn-danger fw-bold mt-1 btn-ver-modal" style="font-size: 0.6rem; padding: 1px 4px;" data-bs-toggle="modal" data-bs-target="#iframeModal" data-url="{% url 'cursos:curso_qualitativos' pk=curso.id %}?data={% now 'Y-m-d' %}&modal=1" data-title="Resolver Qualitativo">RESOLVER</button>
                                                     </div>
                                                     <div class="small text-danger fw-bold" style="font-size: 0.65rem;">Qualitativo</div>
                                                 {% else %}
@@ -186,6 +186,14 @@
                                                 {% endif %}
                                             {% endif %}
                                         </div>
+
+                                        <!-- Avaliação Indicator (>= 50%) -->
+                                        {% if curso.check_avaliacao_50_percent %}
+                                        <div class="text-center" title="Avaliações cadastradas em mais de 50% da turma">
+                                            <i class="bi bi-award text-primary fs-5"></i>
+                                            <div class="small text-primary fw-bold" style="font-size: 0.65rem;">Avaliação</div>
+                                        </div>
+                                        {% endif %}
                                     </div>
                                 </td>
                                 <td>{{ curso.get_turno_display }} • {{ curso.horario|date:"H:i" }}</td>
@@ -226,21 +234,26 @@
                                             title="Realizar Chamada">
                                             <i class="bi bi-person-check"></i>
                                         </a>
-                                        <a href="{% url 'cursos:curso_qualitativos' pk=curso.pk %}"
-                                            class="btn btn-action-premium text-white" style="background-color: #0ea5e9;"
+                                        <button type="button" 
+                                            class="btn btn-action-premium text-white btn-ver-modal" style="background-color: #0ea5e9;"
+                                            data-bs-toggle="modal"
+                                            data-bs-target="#iframeModal"
+                                            data-url="{% url 'cursos:curso_qualitativos' pk=curso.pk %}?modal=1"
+                                            data-title="Lançar Qualitativos"
                                             title="Lançar Qualitativos">
                                             <i class="bi bi-person-badge"></i>
-                                        </a>
+                                        </button>
                                         <a href="{% url 'cursos:listar_chamadas_curso' curso_pk=curso.pk %}"
                                             class="btn btn-action-premium text-white" style="background-color: #6366f1;"
                                             title="Histórico de Observações">
                                             <i class="bi bi-journal-text"></i>
                                         </a>
                                         <button type="button" 
-                                            class="btn btn-action-premium text-white btn-ver-frequencia" style="background-color: #f59e0b;"
+                                            class="btn btn-action-premium text-white btn-ver-modal" style="background-color: #f59e0b;"
                                             data-bs-toggle="modal"
-                                            data-bs-target="#frequenciaModal"
+                                            data-bs-target="#iframeModal"
                                             data-url="{% url 'cursos:relatorio_frequencia' curso_pk=curso.pk %}?modal=1"
+                                            data-title="Lista de Presença Completa"
                                             title="Lista de Presença Completa">
                                             <i class="bi bi-table"></i>
                                         </button>
@@ -297,8 +310,16 @@
                             {% for curso in cursos_concluidos %}
                             <tr>
                                 <td>
-                                    <strong>{{ curso.nome }}</strong>
-                                    <div class="small text-muted">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <strong>{{ curso.nome }}</strong>
+                                        {% if curso.check_avaliacao_50_percent %}
+                                        <div class="d-inline-flex align-items-center bg-primary-subtle border border-primary-subtle border-opacity-50 text-primary rounded px-2" title="Avaliações cadastradas em mais de 50% da turma" style="height: 20px;">
+                                            <i class="bi bi-award-fill" style="font-size: 0.75rem;"></i>
+                                            <span class="ms-1 fw-bold" style="font-size: 0.65rem;">Avaliado</span>
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                    <div class="small text-muted mt-1">
                                         <i class="bi bi-calendar3 me-1"></i>Início: {{ curso.data_inicio|date:"d/m/Y" }}
                                     </div>
 
@@ -351,16 +372,21 @@
                                             style="background-color: #334155;" title="Lista de Concluintes">
                                             <i class="bi bi-person-check"></i>
                                         </a>
-                                        <a href="{% url 'cursos:curso_qualitativos' pk=curso.pk %}"
-                                            class="btn btn-action-premium text-white" style="background-color: #0ea5e9;"
+                                        <button type="button" 
+                                            class="btn btn-action-premium text-white btn-ver-modal" style="background-color: #0ea5e9;"
+                                            data-bs-toggle="modal"
+                                            data-bs-target="#iframeModal"
+                                            data-url="{% url 'cursos:curso_qualitativos' pk=curso.pk %}?modal=1"
+                                            data-title="Ver Qualitativos"
                                             title="Ver Qualitativos">
                                             <i class="bi bi-person-badge"></i>
-                                        </a>
+                                        </button>
                                         <button type="button" 
-                                            class="btn btn-action-premium text-white btn-ver-frequencia" style="background-color: #f59e0b;"
+                                            class="btn btn-action-premium text-white btn-ver-modal" style="background-color: #f59e0b;"
                                             data-bs-toggle="modal"
-                                            data-bs-target="#frequenciaModal"
+                                            data-bs-target="#iframeModal"
                                             data-url="{% url 'cursos:relatorio_frequencia' curso_pk=curso.pk %}?modal=1"
+                                            data-title="Lista de Presença Completa"
                                             title="Lista de Presença Completa">
                                             <i class="bi bi-table"></i>
                                         </button>
@@ -409,15 +435,15 @@
     </div>
 </div>
 
-<!-- Modal de Frequência -->
-<div class="modal fade" id="frequenciaModal" tabindex="-1" aria-labelledby="frequenciaModalLabel" aria-hidden="true">
+<!-- Modal Genérico de Iframe -->
+<div class="modal fade" id="iframeModal" tabindex="-1" aria-labelledby="iframeModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-xl modal-dialog-centered">
         <div class="modal-content border-0 shadow-lg">
             <div class="modal-header bg-light">
-                <h5 class="modal-title fw-bold" id="frequenciaModalLabel">Lista de Presença Completa</h5>
+                <h5 class="modal-title fw-bold" id="iframeModalLabel">Visualização</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="modal-body p-0" id="frequenciaModalContent">
+            <div class="modal-body p-0" id="iframeModalContent">
                 <div class="p-5 text-center">
                     <div class="spinner-border text-primary" role="status">
                         <span class="visually-hidden">Carregando...</span>
@@ -498,25 +524,30 @@
             });
         });
 
-        // Capturar cliques nos botões de frequência
-        document.querySelectorAll('.btn-ver-frequencia').forEach(button => {
-            button.addEventListener('click', function() {
-                const url = this.getAttribute('data-url');
-                const modalContent = document.getElementById('frequenciaModalContent');
+        // Capturar cliques nos botões para abrir modal Iframe
+        // O event delegation facilita para capturar botões que foram injetados via AJAX/WebSocket depois
+        document.body.addEventListener('click', function(e) {
+            const btn = e.target.closest('.btn-ver-modal');
+            if (btn) {
+                const url = btn.getAttribute('data-url');
+                const title = btn.getAttribute('data-title');
+                
+                document.getElementById('iframeModalLabel').textContent = title || "Visualização";
+                const modalContent = document.getElementById('iframeModalContent');
                 
                 modalContent.innerHTML = `
                     <div class="w-100 placeholder-glow" style="height: 75vh;">
                         <iframe src="${url}" style="width: 100%; height: 100%; border: none; border-bottom-left-radius: 0.3rem; border-bottom-right-radius: 0.3rem;" onload="this.style.opacity=1; this.previousElementSibling.style.display='none';"></iframe>
                     </div>
                 `;
-            });
+            }
         });
 
         // Limpar iframe ao fechar o modal para evitar memory leak ou persistência errada
-        const frequenciaModal = document.getElementById('frequenciaModal');
-        if(frequenciaModal) {
-            frequenciaModal.addEventListener('hidden.bs.modal', function () {
-                document.getElementById('frequenciaModalContent').innerHTML = `
+        const iframeModal = document.getElementById('iframeModal');
+        if(iframeModal) {
+            iframeModal.addEventListener('hidden.bs.modal', function () {
+                document.getElementById('iframeModalContent').innerHTML = `
                     <div class="p-5 text-center">
                         <div class="spinner-border text-primary" role="status">
                             <span class="visually-hidden">Aguardando...</span>
@@ -529,18 +560,18 @@
         // Escutar mensagens vindas do iframe (postMessage) para fechar o modal
         window.addEventListener('message', function(event) {
             if (event.data === 'close-modal') {
-                const frequenciaModalEl = document.getElementById('frequenciaModal');
-                if (frequenciaModalEl) {
-                    const modalInstance = bootstrap.Modal.getInstance(frequenciaModalEl);
+                const iframeModalEl = document.getElementById('iframeModal');
+                if (iframeModalEl) {
+                    const modalInstance = bootstrap.Modal.getInstance(iframeModalEl);
                     if (modalInstance) {
                         modalInstance.hide();
                     } else {
                         // Instanciando e escondendo via bootstrap api se nao estiver instanciado
-                        const md = new bootstrap.Modal(frequenciaModalEl);
+                        const md = new bootstrap.Modal(iframeModalEl);
                         md.hide();
                     }
                     // Tentar fechar falback com JS plain
-                    const closeBtn = frequenciaModalEl.querySelector('.btn-close');
+                    const closeBtn = iframeModalEl.querySelector('.btn-close');
                     if (closeBtn) closeBtn.click();
                 }
             }
@@ -582,11 +613,11 @@
                         if (data.has_chamada_hoje) {
                             if (data.has_pendencia_qualitativa) {
                                 // Precisa resolver (RESOLVER)
-                                const resolveUrl = `/cursos/${cursoId}/qualitativos/?data=` + new Date().toISOString().split('T')[0];
+                                const resolveUrl = `/cursos/${cursoId}/qualitativos/?data=` + new Date().toISOString().split('T')[0] + '&modal=1';
                                 qualitativoContainer.innerHTML = `
                                     <i class="bi bi-exclamation-triangle-fill blink-red indicator-icon" title="Qualitativo Pendente"></i>
                                     <div class="d-flex flex-column align-items-center">
-                                        <a href="${resolveUrl}" class="btn btn-xs btn-danger fw-bold mt-1" style="font-size: 0.6rem; padding: 1px 4px;">RESOLVER</a>
+                                        <button type="button" class="btn btn-xs btn-danger fw-bold mt-1 btn-ver-modal" style="font-size: 0.6rem; padding: 1px 4px;" data-bs-toggle="modal" data-bs-target="#iframeModal" data-url="${resolveUrl}" data-title="Resolver Qualitativo">RESOLVER</button>
                                     </div>
                                     <div class="small text-danger fw-bold" style="font-size: 0.65rem;">Qualitativo</div>
                                 `;

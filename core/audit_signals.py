@@ -6,8 +6,8 @@ from django.contrib.contenttypes.models import ContentType
 
 # Importar os modelos específicos a serem auditados
 from escolas.models import Escola
-from cursos.models import Curso, Inscricao
-from alunos.models import Aluno
+from cursos.models import Curso, Inscricao, RegistroAula, AvaliacaoProfessorAluno, AvaliacaoAlunoCurso
+from alunos.models import Aluno, ArquivoAluno
 from declaracao.models import Declaracao # Import do modelo Declaracao
 from controle_diario.models import ControleDiario # Import do modelo ControleDiario
 
@@ -78,6 +78,26 @@ def log_controle_diario_save(sender, instance, created, **kwargs):
     action = 'CREATE' if created else 'UPDATE'
     create_audit_log(sender, instance, action, **kwargs)
 
+@receiver(post_save, sender=RegistroAula)
+def log_registro_aula_save(sender, instance, created, **kwargs):
+    action = 'CREATE' if created else 'UPDATE'
+    create_audit_log(sender, instance, action, **kwargs)
+
+@receiver(post_save, sender=AvaliacaoProfessorAluno)
+def log_avaliacao_professor_save(sender, instance, created, **kwargs):
+    action = 'CREATE' if created else 'UPDATE'
+    create_audit_log(sender, instance, action, **kwargs)
+
+@receiver(post_save, sender=AvaliacaoAlunoCurso)
+def log_avaliacao_aluno_save(sender, instance, created, **kwargs):
+    action = 'CREATE' if created else 'UPDATE'
+    create_audit_log(sender, instance, action, **kwargs)
+
+@receiver(post_save, sender=ArquivoAluno)
+def log_arquivo_aluno_save(sender, instance, created, **kwargs):
+    action = 'CREATE' if created else 'UPDATE'
+    create_audit_log(sender, instance, action, **kwargs)
+
 
 # --- Sinais para post_delete (Exclusão) ---
 
@@ -103,4 +123,20 @@ def log_declaracao_delete(sender, instance, **kwargs):
 
 @receiver(post_delete, sender=ControleDiario)
 def log_controle_diario_delete(sender, instance, **kwargs):
+    create_audit_log(sender, instance, 'DELETE', **kwargs)
+
+@receiver(post_delete, sender=RegistroAula)
+def log_registro_aula_delete(sender, instance, **kwargs):
+    create_audit_log(sender, instance, 'DELETE', **kwargs)
+
+@receiver(post_delete, sender=AvaliacaoProfessorAluno)
+def log_avaliacao_professor_delete(sender, instance, **kwargs):
+    create_audit_log(sender, instance, 'DELETE', **kwargs)
+
+@receiver(post_delete, sender=AvaliacaoAlunoCurso)
+def log_avaliacao_aluno_delete(sender, instance, **kwargs):
+    create_audit_log(sender, instance, 'DELETE', **kwargs)
+
+@receiver(post_delete, sender=ArquivoAluno)
+def log_arquivo_aluno_delete(sender, instance, **kwargs):
     create_audit_log(sender, instance, 'DELETE', **kwargs)

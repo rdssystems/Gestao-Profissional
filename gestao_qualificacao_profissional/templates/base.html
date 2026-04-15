@@ -124,7 +124,8 @@
             margin-right: auto !important;
         }
 
-        /* Container Fluído especial para tabelas largas */
+        /* Container Fluído especial para tabelas largas e NavBar */
+        .navbar-custom .container-fluid,
         main.container-fluid {
             max-width: 98% !important;
             width: 98% !important;
@@ -213,7 +214,7 @@
     <!--             NAVBAR               -->
     <!-- ================================ -->
     <nav class="navbar navbar-expand-lg navbar-custom mb-4">
-        <div class="container">
+        <div class="container-fluid px-3 px-lg-4">
 
             <a class="navbar-brand navbar-brand-custom d-flex align-items-center" href="{% url 'escolas:dashboard' %}">
                 <img src="{% static 'core/logopmu.png' %}" alt="Logo PMU">
@@ -424,7 +425,7 @@
     <!-- ================================ -->
     <!--              MAIN                -->
     <!-- ================================ -->
-    <main class="{% block main_class %}container{% endblock %} mb-4" {% if hide_navbar %}style="padding-top: 2rem !important;"{% endif %}>
+    <main class="{% block main_class %}container-fluid{% endblock %} mb-4" {% if hide_navbar %}style="padding-top: 2rem !important;"{% endif %}>
 
         {% if messages %}
         {% for message in messages %}

@@ -236,23 +236,27 @@
                                 {{ hidden }}
                             {% endfor %}
                         </td>
-                    {% endwith %}
-
                         <td class="text-center py-2">
-                            <div class="d-flex justify-content-center radio-attendance-group">
-                                {% for choice in form_chamada.status_presenca %}
-                                    <input type="radio" 
-                                           name="{{ form_chamada.status_presenca.html_name }}" 
-                                           value="{{ choice.data.value }}" 
-                                           class="btn-check" 
-                                           id="{{ choice.id_for_label }}" 
-                                           {% if choice.data.selected %}checked{% endif %}>
-                                    <label class="btn btn-attendance btn-outline-{% if choice.data.value == 'P' %}success{% elif choice.data.value == 'A' %}danger{% else %}warning{% endif %}" 
-                                           for="{{ choice.id_for_label }}" title="{{ choice.choice_label }}">
-                                        {{ choice.data.value }}
-                                    </label>
-                                {% endfor %}
-                            </div>
+                            {% if inscricao.status == 'desistente' %}
+                                <span class="badge bg-secondary p-2">Não aplicável</span>
+                                <input type="hidden" name="{{ form_chamada.status_presenca.html_name }}" value="A">
+                            {% else %}
+                                <div class="d-flex justify-content-center radio-attendance-group">
+                                    {% for choice in form_chamada.status_presenca %}
+                                        <input type="radio" 
+                                               name="{{ form_chamada.status_presenca.html_name }}" 
+                                               value="{{ choice.data.value }}" 
+                                               class="btn-check" 
+                                               id="{{ choice.id_for_label }}" 
+                                               tabindex="0"
+                                               {% if choice.data.selected %}checked{% endif %}>
+                                        <label class="btn btn-attendance btn-outline-{% if choice.data.value == 'P' %}success{% elif choice.data.value == 'A' %}danger{% else %}warning{% endif %}" 
+                                               for="{{ choice.id_for_label }}" title="{{ choice.choice_label }}">
+                                            {{ choice.data.value }}
+                                        </label>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
                             {% if form_chamada.status_presenca.errors %}
                             <span class="text-danger x-small d-block fw-bold mt-1">
                                 {{ form_chamada.status_presenca.errors|join:", " }}
@@ -260,6 +264,7 @@
                             {% endif %}
                         </td>
                     </tr>
+                    {% endwith %}
                     {% endfor %}
                 </tbody>
 

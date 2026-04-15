@@ -91,14 +91,13 @@ class CursoListView(LoginRequiredMixin, ListView):
             data_aula=hoje
         )
         
-        # Subquery para verificar se há alunos ausentes sem motivo (Qualitativo Pendente)
         sub_qualitativo = Chamada.objects.filter(
             registro_aula__curso=OuterRef('pk'),
             registro_aula__data_aula=hoje,
             status_presenca__in=['A', 'J']
         ).filter(
             Q(motivo_falta__isnull=True) | Q(motivo_falta='')
-        )
+        ).exclude(inscricao__status='desistente')
 
         qs = qs.annotate(
             has_chamada_hoje=Exists(sub_chamada),
@@ -651,7 +650,14 @@ class FazerChamadaView(LoginRequiredMixin, StaffRequiredMixin, View):
                 form = RegistroAulaForm(initial={'curso': curso, 'data_aula': date.today()}, curso=curso)
 
         # Definir as inscrições que PODEM estar na chamada (ativos e desistentes)
-        inscricoes_elegiveis = Inscricao.objects.filter(curso=curso, status__in=['cursando', 'desistente']).order_by('aluno__nome_completo')
+        from django.db.models import Case, When, Value, IntegerField
+        inscricoes_elegiveis = Inscricao.objects.filter(curso=curso, status__in=['cursando', 'desistente']).annotate(
+            is_desistente=Case(
+                When(status='desistente', then=Value(1)),
+                default=Value(0),
+                output_field=IntegerField(),
+            )
+        ).order_by('is_desistente', 'aluno__nome_completo').select_related('aluno')
         
         # 1. Obter inscrições que JÁ têm registro nesta aula
         inscricoes_com_registro = []
@@ -680,6 +686,14 @@ class FazerChamadaView(LoginRequiredMixin, StaffRequiredMixin, View):
         
         if registro_aula:
             formset = ChamadaDynamicFormSet(instance=registro_aula, initial=initial_faltantes, prefix='chamada')
+            from django.db.models import Case, When, Value, IntegerField
+            formset.queryset = formset.queryset.annotate(
+                is_desistente=Case(
+                    When(inscricao__status='desistente', then=Value(1)),
+                    default=Value(0),
+                    output_field=IntegerField(),
+                )
+            ).order_by('is_desistente', 'inscricao__aluno__nome_completo')
         else:
             formset = ChamadaDynamicFormSet(instance=None, initial=initial_faltantes, prefix='chamada')
 
@@ -1631,15 +1645,21 @@ class CursoQualitativosView(LoginRequiredMixin, StaffRequiredMixin, View):
             # Encontrar registro de aula para esta data
             registro = RegistroAula.objects.filter(curso=curso, data_aula=data_selecionada).first()
             if registro:
-                chamadas = Chamada.objects.filter(registro_aula=registro, status_presenca__in=['A', 'J'])
+                chamadas = Chamada.objects.filter(
+                    registro_aula=registro, 
+                    status_presenca__in=['A', 'J']
+                ).exclude(inscricao__status='desistente')
             else:
                 messages.warning(request, f"Nenhum registro de aula encontrado para a data {data_selecionada}.")
 
+        is_modal = request.GET.get('modal') == '1'
         return render(request, self.template_name, {
             'curso': curso,
             'chamadas': chamadas,
             'data_selecionada': data_selecionada,
-            'motivos': Chamada.MOTIVO_FALTA_CHOICES
+            'motivos': Chamada.MOTIVO_FALTA_CHOICES,
+            'is_modal': is_modal,
+            'hide_navbar': is_modal,
         })
 
     def post(self, request, pk):
@@ -1647,20 +1667,42 @@ class CursoQualitativosView(LoginRequiredMixin, StaffRequiredMixin, View):
         chamadas_ids = request.POST.getlist('chamada_id')
         data_aula = request.POST.get('data_aula')
         
-        for cid in chamadas_ids:
-            try:
-                chamada = Chamada.objects.get(id=cid)
-                motivo = request.POST.get(f'motivo_{cid}')
-                outro = request.POST.get(f'outro_{cid}')
-                
-                chamada.motivo_falta = motivo
-                if motivo == 'Outros':
-                    chamada.motivo_falta_outro = outro
-                else:
-                    chamada.motivo_falta_outro = None
-                chamada.save()
-            except Chamada.DoesNotExist:
-                continue
+        from core.utils import audit_context
+        with audit_context(skip=True):
+            for cid in chamadas_ids:
+                try:
+                    chamada = Chamada.objects.get(id=cid)
+                    motivo = request.POST.get(f'motivo_{cid}')
+                    outro = request.POST.get(f'outro_{cid}')
+                    
+                    chamada.motivo_falta = motivo
+                    if motivo == 'Outros':
+                        chamada.motivo_falta_outro = outro
+                    else:
+                        chamada.motivo_falta_outro = None
+                    chamada.save()
+                except Chamada.DoesNotExist:
+                    continue
+
+        try:
+            from core.models import AuditLog
+            from django.contrib.contenttypes.models import ContentType
+            AuditLog.objects.create(
+                usuario=request.user,
+                acao='UPDATE',
+                content_type=ContentType.objects.get_for_model(curso),
+                object_id=str(curso.pk),
+                detalhes="Qualitativo enviado para a Turma",
+                ip_address=request.META.get('REMOTE_ADDR')
+            )
+        except Exception as e:
+            print(f"Erro log qualitativo: {e}")
 
         messages.success(request, "Motivos de falta atualizados com sucesso.")
-        return redirect(reverse('cursos:curso_qualitativos', kwargs={'pk': pk}) + f"?data={data_aula}")
+        
+        is_modal = request.POST.get('modal') == '1'
+        redirect_url = reverse('cursos:curso_qualitativos', kwargs={'pk': pk}) + f"?data={data_aula}"
+        if is_modal:
+            redirect_url += "&modal=1"
+            
+        return redirect(redirect_url)
