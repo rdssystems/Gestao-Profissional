@@ -10,9 +10,8 @@
 
     <!-- Cabeçalho de Boas-vindas -->
     <div class="welcome-section d-xl-flex align-items-center justify-content-between animate-up mb-4 pb-3 border-bottom">
-        <div class="mb-3 mb-xl-0">
-            <h1 class="dashboard-title mb-1">{{ dashboard_title }}</h1>
-            <p class="dashboard-subtitle mb-0">
+        <div class="mb-3 mb-xl-0 mt-3">
+            <p class="dashboard-subtitle mb-0 text-muted fw-bold" style="font-size: 0.95rem;">
                 <i class="bi bi-calendar3 me-1"></i> {% now "D, j \d\e F \d\e Y" %}
             </p>
         </div>
@@ -63,88 +62,13 @@
         </div>
     </div>
 
-    <!-- Grid de Métricas -->
-    <div class="row g-4 mb-5 animate-up" style="animation-delay: 0.2s;">
-        <!-- Inscrições do Dia -->
-        <div class="col-6 col-md-4 col-xl">
-            <div class="premium-card">
-                <div class="icon-wrapper bg-purple-soft">
-                    <i class="bi bi-calendar-check-fill"></i>
-                </div>
-                <div class="metric-label">Hoje</div>
-                <div class="metric-value">{{ inscricoes_hoje }}</div>
-            </div>
-        </div>
-
-        <!-- Alunos Cadastrados -->
-        <div class="col-6 col-md-4 col-xl">
-            <div class="premium-card">
-                <div class="icon-wrapper bg-blue-soft">
-                    <i class="bi bi-people-fill"></i>
-                </div>
-                <div class="metric-label">Alunos</div>
-                <div class="metric-value">{{ total_alunos }}</div>
-            </div>
-        </div>
-
-        <!-- Alunos Cursando -->
-        <div class="col-6 col-md-4 col-xl">
-            <div class="premium-card">
-                <div class="icon-wrapper bg-indigo-soft">
-                    <i class="bi bi-person-workspace"></i>
-                </div>
-                <div class="metric-label">Cursando</div>
-                <div class="metric-value">{{ alunos_cursando }}</div>
-            </div>
-        </div>
-
-        <!-- Alunos Concluintes -->
-        <div class="col-6 col-md-4 col-xl">
-            <div class="premium-card">
-                <div class="icon-wrapper bg-green-soft">
-                    <i class="bi bi-mortarboard-fill"></i>
-                </div>
-                <div class="metric-label">Formados</div>
-                <div class="metric-value">{{ alunos_concluintes }}</div>
-            </div>
-        </div>
-
-        <!-- Alunos Desistentes -->
-        <div class="col-6 col-md-4 col-xl">
-            <div class="premium-card">
-                <div class="icon-wrapper bg-red-soft">
-                    <i class="bi bi-person-dash-fill"></i>
-                </div>
-                <div class="metric-label">Evasão</div>
-                <div class="metric-value">{{ alunos_desistentes }}</div>
-            </div>
-        </div>
-
-        <!-- Cursos Ativos -->
-        <div class="col-6 col-md-4 col-xl">
-            <div class="premium-card">
-                <div class="icon-wrapper bg-amber-soft">
-                    <i class="bi bi-book-half"></i>
-                </div>
-                <div class="metric-label">Ativos</div>
-                <div class="metric-value">{{ cursos_ativos }}</div>
-            </div>
-        </div>
-
-        <!-- Cursos Concluídos -->
-        <div class="col-6 col-md-4 col-xl">
-            <div class="premium-card">
-                <div class="icon-wrapper bg-slate-soft">
-                    <i class="bi bi-archive-fill"></i>
-                </div>
-                <div class="metric-label">Finalizados</div>
-                <div class="metric-value">{{ cursos_concluidos }}</div>
-            </div>
-        </div>
+    <!-- Barra de Progresso Autoplay -->
+    <div class="progress mb-3 animate-up" style="height: 5px; border-radius: 2px;">
+        <div id="carouselProgressBar" class="progress-bar bg-primary progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%;"></div>
     </div>
 
     <!-- Main Content Row: Carousel de Multiplos Graficos -->
-    <div id="escolasCarousel" class="carousel slide carousel-fade animate-up" data-bs-ride="carousel" data-bs-interval="5000" style="animation-delay: 0.3s; padding-bottom: 40px;">
+    <div id="escolasCarousel" class="carousel slide carousel-fade animate-up" style="animation-delay: 0.3s; padding-bottom: 40px;" data-bs-ride="false">
         <div class="carousel-indicators" style="bottom: -25px;">
             {% for escola in escolas_dados %}
             <button type="button" data-bs-target="#escolasCarousel" data-bs-slide-to="{{ forloop.counter0 }}" class="{% if forloop.first %}active bg-primary{% else %}bg-secondary{% endif %}" aria-current="true" style="width: 12px; height: 12px; border-radius: 50%;"></button>
@@ -155,6 +79,87 @@
             {% for escola in escolas_dados %}
             <div class="carousel-item {% if forloop.first %}active{% endif %}">
                 <h5 class="text-center text-primary fw-bold mb-4" style="letter-spacing: 0.5px;">{{ escola.nome }}</h5>
+
+                <!-- Grid de Métricas da Escola -->
+                <div class="row g-4 mb-4">
+                    <!-- Inscrições do Dia -->
+                    <div class="col-6 col-md-4 col-xl">
+                        <div class="premium-card h-100">
+                            <div class="icon-wrapper bg-purple-soft">
+                                <i class="bi bi-calendar-check-fill"></i>
+                            </div>
+                            <div class="metric-label">Hoje</div>
+                            <div class="metric-value">{{ escola.kpis.inscricoes_hoje }}</div>
+                        </div>
+                    </div>
+
+                    <!-- Alunos Cadastrados -->
+                    <div class="col-6 col-md-4 col-xl">
+                        <div class="premium-card h-100">
+                            <div class="icon-wrapper bg-blue-soft">
+                                <i class="bi bi-people-fill"></i>
+                            </div>
+                            <div class="metric-label">Alunos</div>
+                            <div class="metric-value">{{ escola.kpis.total_alunos }}</div>
+                        </div>
+                    </div>
+
+                    <!-- Alunos Cursando -->
+                    <div class="col-6 col-md-4 col-xl">
+                        <div class="premium-card h-100">
+                            <div class="icon-wrapper bg-indigo-soft">
+                                <i class="bi bi-person-workspace"></i>
+                            </div>
+                            <div class="metric-label">Cursando</div>
+                            <div class="metric-value">{{ escola.kpis.alunos_cursando }}</div>
+                        </div>
+                    </div>
+
+                    <!-- Alunos Concluintes -->
+                    <div class="col-6 col-md-4 col-xl">
+                        <div class="premium-card h-100">
+                            <div class="icon-wrapper bg-green-soft">
+                                <i class="bi bi-mortarboard-fill"></i>
+                            </div>
+                            <div class="metric-label">Formados</div>
+                            <div class="metric-value">{{ escola.kpis.alunos_concluintes }}</div>
+                        </div>
+                    </div>
+
+                    <!-- Alunos Desistentes -->
+                    <div class="col-6 col-md-4 col-xl">
+                        <div class="premium-card h-100">
+                            <div class="icon-wrapper bg-red-soft">
+                                <i class="bi bi-person-dash-fill"></i>
+                            </div>
+                            <div class="metric-label">Evasão</div>
+                            <div class="metric-value">{{ escola.kpis.alunos_desistentes }}</div>
+                        </div>
+                    </div>
+
+                    <!-- Cursos Ativos -->
+                    <div class="col-6 col-md-4 col-xl">
+                        <div class="premium-card h-100">
+                            <div class="icon-wrapper bg-amber-soft">
+                                <i class="bi bi-book-half"></i>
+                            </div>
+                            <div class="metric-label">Ativos</div>
+                            <div class="metric-value">{{ escola.kpis.cursos_ativos }}</div>
+                        </div>
+                    </div>
+
+                    <!-- Cursos Concluídos -->
+                    <div class="col-6 col-md-4 col-xl">
+                        <div class="premium-card h-100">
+                            <div class="icon-wrapper bg-slate-soft">
+                                <i class="bi bi-archive-fill"></i>
+                            </div>
+                            <div class="metric-label">Finalizados</div>
+                            <div class="metric-value">{{ escola.kpis.cursos_concluidos }}</div>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="row">
                     <!-- Ocupacao -->
                     <div class="col-lg-4 mb-4">
@@ -200,6 +205,11 @@
         <button class="carousel-control-next" type="button" data-bs-target="#escolasCarousel" data-bs-slide="next" style="width: 50px; justify-content: end; right: -25px;">
             <span class="carousel-control-next-icon shadow rounded-circle bg-primary" aria-hidden="true" style="padding: 1.2rem; opacity: 0.8;"></span>
             <span class="visually-hidden">Próximo</span>
+        </button>
+
+        <!-- Botão Play/Pause Flutuante -->
+        <button id="btnPauseCarousel" class="btn btn-primary rounded-circle shadow position-absolute" style="bottom: -32px; right: 40px; z-index: 1000; width: 45px; height: 45px;" title="Pausar Apresentação">
+            <i class="bi bi-pause-fill fs-5"></i>
         </button>
     </div>
 
@@ -385,6 +395,62 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
     });
+
+    // Controle de Pause/Play do Carrossel com Barra de Progresso
+    var btnPause = document.getElementById('btnPauseCarousel');
+    var isPaused = false;
+    var progressBar = document.getElementById('carouselProgressBar');
+    var progressInterval;
+    var progressPercent = 0;
+    var duration = 8000; // 8 segundos
+    var tick = 50; 
+    var step = (tick / duration) * 100;
+    
+    var myCarouselEl = document.getElementById('escolasCarousel');
+    var bsCarousel = new bootstrap.Carousel(myCarouselEl, { interval: false, ride: false });
+
+    function startProgress() {
+        if(progressInterval) clearInterval(progressInterval);
+        progressInterval = setInterval(function() {
+            if(!isPaused) {
+                progressPercent += step;
+                if(progressBar) progressBar.style.width = progressPercent + '%';
+                
+                if(progressPercent >= 100) {
+                    progressPercent = 0;
+                    if(progressBar) progressBar.style.width = '0%';
+                    bsCarousel.next();
+                }
+            }
+        }, tick);
+    }
+    
+    // Zera a barra quando muda manualmente
+    myCarouselEl.addEventListener('slide.bs.carousel', function () {
+        progressPercent = 0;
+        if(progressBar) {
+            progressBar.style.transition = 'none';
+            progressBar.style.width = '0%';
+            setTimeout(() => { progressBar.style.transition = 'width 50ms linear'; }, 50);
+        }
+    });
+
+    startProgress();
+
+    if(btnPause) {
+        btnPause.addEventListener('click', function() {
+            if(isPaused) { // Retomar
+                btnPause.innerHTML = '<i class="bi bi-pause-fill fs-5"></i>';
+                btnPause.classList.replace('btn-secondary', 'btn-primary');
+                btnPause.title = "Pausar Apresentação";
+            } else { // Pausar
+                btnPause.innerHTML = '<i class="bi bi-play-fill fs-5"></i>';
+                btnPause.classList.replace('btn-primary', 'btn-secondary');
+                btnPause.title = "Retomar Apresentação";
+            }
+            isPaused = !isPaused;
+        });
+    }
 });
 </script>
 {% endblock %}

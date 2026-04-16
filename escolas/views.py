@@ -147,6 +147,77 @@ class DashboardView(LoginRequiredMixin, TemplateView):
         valor_map = {'Otimo': 3, 'Bom': 2, 'Regular': 1}
         escolas_dados = []
         
+        def calcular_media_idade(query):
+            idades = []
+            hoje = date.today()
+            for al in query:
+                if al.data_nascimento:
+                    idades.append(hoje.year - al.data_nascimento.year - ((hoje.month, hoje.day) < (al.data_nascimento.month, al.data_nascimento.day)))
+            return int(sum(idades) / len(idades)) if idades else 0
+
+        # ---- DADOS GLOBAIS DA REDE ----
+        if user.is_superuser and (escola_id_filter == 'all' or not escola_id_filter) and escolas_chart.count() > 1:
+            kpi_inscricoes_hoje_g = aluno_scope.filter(data_criacao__date=date.today()).count()
+            kpi_total_alunos_g = aluno_scope.count()
+            kpi_alunos_cursando_g = inscricao_scope.filter(status='cursando').distinct().count()
+            kpi_alunos_concluintes_g = inscricao_scope.filter(status='concluido').distinct().count()
+            kpi_alunos_desistentes_g = inscricao_scope.filter(status='desistente', chamadas__status_presenca='P').distinct().count()
+            kpi_cursos_ativos_g = curso_scope.filter(status__in=['Aberta', 'Em Andamento']).count()
+            kpi_cursos_concluidos_g = curso_scope.filter(status='Concluído').count()
+
+            cursos_ativos_g = curso_scope.filter(status__in=['Aberta', 'Em Andamento'])
+            vagas_g = cursos_ativos_g.aggregate(total=models.Sum('vagas'))['total'] or 0
+            vagas_ociosas_g = max(0, vagas_g - kpi_alunos_cursando_g)
+
+            # Assiduidade Geral - Agrega por Escolas em vez de curso para o Global caber
+            assiduidade_labels_g = []
+            assiduidade_series_g = []
+            for sc in escolas_chart:
+                sc_cursos = cursos_ativos_g.filter(escola=sc)
+                tot_p = Chamada.objects.filter(registro_aula__curso__in=sc_cursos, status_presenca='P').count()
+                tot_c = Chamada.objects.filter(registro_aula__curso__in=sc_cursos).count()
+                if tot_c > 0:
+                    pct = int((tot_p / tot_c) * 100)
+                    assiduidade_labels_g.append(f"{sc.nome}")
+                    assiduidade_series_g.append(pct)
+            if assiduidade_series_g:
+                a_paired_g = sorted(zip(assiduidade_labels_g, assiduidade_series_g), key=lambda x: x[1], reverse=True)[:10]
+                assiduidade_labels_g, assiduidade_series_g = zip(*a_paired_g)
+                assiduidade_labels_g = list(assiduidade_labels_g)
+                assiduidade_series_g = list(assiduidade_series_g)
+
+            alunos_ativos_g = aluno_scope.filter(inscricao__status='cursando', inscricao__curso__status__in=['Aberta', 'Em Andamento']).distinct()
+            masc_query_g = alunos_ativos_g.filter(sexo='M')
+            fem_query_g = alunos_ativos_g.filter(sexo='F')
+            
+            escolas_dados.append({
+                'id': 'global',
+                'nome': '🌐 Visão Geral da Rede',
+                'kpis': {
+                    'inscricoes_hoje': kpi_inscricoes_hoje_g,
+                    'total_alunos': kpi_total_alunos_g,
+                    'alunos_cursando': kpi_alunos_cursando_g,
+                    'alunos_concluintes': kpi_alunos_concluintes_g,
+                    'alunos_desistentes': kpi_alunos_desistentes_g,
+                    'cursos_ativos': kpi_cursos_ativos_g,
+                    'cursos_concluidos': kpi_cursos_concluidos_g,
+                },
+                'ocupacao': {
+                    'vagas_total': vagas_g,
+                    'labels': ['Cursando', 'Ociosas'],
+                    'series': [kpi_alunos_cursando_g, vagas_ociosas_g]
+                },
+                'assiduidade': {
+                    'labels': assiduidade_labels_g,
+                    'series': assiduidade_series_g
+                },
+                'perfil': {
+                    'series': [masc_query_g.count(), fem_query_g.count()],
+                    'labels': ['Masculino', 'Feminino'],
+                    'idade_media': [calcular_media_idade(masc_query_g), calcular_media_idade(fem_query_g)]
+                }
+            })
+        
         for esc in escolas_chart:
             # 1. Dados de Ocupação (Rosca)
             esc_cursos_ativos = curso_scope.filter(escola=esc, status__in=['Aberta', 'Em Andamento'])
@@ -188,22 +259,32 @@ class DashboardView(LoginRequiredMixin, TemplateView):
             tot_masc = masc_query.count()
             tot_fem = fem_query.count()
             
-            def calcular_media_idade(query):
-                idades = []
-                hoje = date.today()
-                for al in query:
-                    if al.data_nascimento:
-                        idades.append(hoje.year - al.data_nascimento.year - ((hoje.month, hoje.day) < (al.data_nascimento.month, al.data_nascimento.day)))
-                return int(sum(idades) / len(idades)) if idades else 0
-                
             media_idade_m = calcular_media_idade(masc_query)
             media_idade_f = calcular_media_idade(fem_query)
             
+            # Métricas em Grid (Cards) para a Escola Atual
+            kpi_inscricoes_hoje = aluno_scope.filter(escola=esc, data_criacao__date=date.today()).count()
+            kpi_total_alunos = aluno_scope.filter(escola=esc).count()
+            kpi_alunos_cursando = inscricao_scope.filter(curso__escola=esc, status='cursando').distinct().count()
+            kpi_alunos_concluintes = inscricao_scope.filter(curso__escola=esc, status='concluido').distinct().count()
+            kpi_alunos_desistentes = inscricao_scope.filter(curso__escola=esc, status='desistente', chamadas__status_presenca='P').distinct().count()
+            kpi_cursos_ativos = curso_scope.filter(escola=esc, status__in=['Aberta', 'Em Andamento']).count()
+            kpi_cursos_concluidos = curso_scope.filter(escola=esc, status='Concluído').count()
+
             # Só exibir escolas que tem ao menos um aluno ou curso rodando
             if vagas > 0 or cursando > 0 or len(assiduidade_series) > 0 or escolas_chart.count() == 1:
                 escolas_dados.append({
                     'id': str(esc.id),
                     'nome': esc.nome,
+                    'kpis': {
+                        'inscricoes_hoje': kpi_inscricoes_hoje,
+                        'total_alunos': kpi_total_alunos,
+                        'alunos_cursando': kpi_alunos_cursando,
+                        'alunos_concluintes': kpi_alunos_concluintes,
+                        'alunos_desistentes': kpi_alunos_desistentes,
+                        'cursos_ativos': kpi_cursos_ativos,
+                        'cursos_concluidos': kpi_cursos_concluidos,
+                    },
                     'ocupacao': {
                         'vagas_total': vagas,
                         'labels': ['Cursando', 'Ociosas'],
