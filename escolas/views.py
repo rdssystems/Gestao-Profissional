@@ -38,6 +38,13 @@ class DashboardView(LoginRequiredMixin, TemplateView):
         # Escopos iniciais
         aluno_scope = Aluno.objects.all()
         curso_scope = Curso.objects.all()
+
+        # Automatização de Status do Curso: Aberta -> Em Andamento na data de início
+        from datetime import date
+        cursos_para_iniciar = curso_scope.filter(status='Aberta', data_inicio__lte=date.today())
+        if cursos_para_iniciar.exists():
+            cursos_para_iniciar.update(status='Em Andamento')
+
         inscricao_scope = Inscricao.objects.all()
         context['dashboard_title'] = "Visão Geral do Sistema"
 
@@ -168,20 +175,29 @@ class DashboardView(LoginRequiredMixin, TemplateView):
                 assiduidade_labels = list(assiduidade_labels)
                 assiduidade_series = list(assiduidade_series)
             
-            # 3. Termômetro de Qualidade Institucional (Radar)
-            avaliacoes = AvaliacaoAlunoCurso.objects.filter(inscricao__curso__escola=esc)
-            if start_date:
-                avaliacoes = avaliacoes.filter(data_preenchimento__date__range=[start_date, today])
-
-            radar_series = []
-            tot_av = avaliacoes.count()
-            if tot_av > 0:
-                for field in radar_fields:
-                    soma = sum(valor_map.get(getattr(av, field), 0) for av in avaliacoes)
-                    media = int((soma / (tot_av * 3)) * 100) # De 0 a 100%
-                    radar_series.append(media)
-            else:
-                radar_series = [0, 0, 0, 0]
+            # 3. Perfil Demográfico (Gráfico Donut - Sexo e Idade)
+            alunos_ativos = aluno_scope.filter(
+                inscricao__curso__escola=esc,
+                inscricao__status='cursando',
+                inscricao__curso__status__in=['Aberta', 'Em Andamento']
+            ).distinct()
+            
+            masc_query = alunos_ativos.filter(sexo='M')
+            fem_query = alunos_ativos.filter(sexo='F')
+            
+            tot_masc = masc_query.count()
+            tot_fem = fem_query.count()
+            
+            def calcular_media_idade(query):
+                idades = []
+                hoje = date.today()
+                for al in query:
+                    if al.data_nascimento:
+                        idades.append(hoje.year - al.data_nascimento.year - ((hoje.month, hoje.day) < (al.data_nascimento.month, al.data_nascimento.day)))
+                return int(sum(idades) / len(idades)) if idades else 0
+                
+            media_idade_m = calcular_media_idade(masc_query)
+            media_idade_f = calcular_media_idade(fem_query)
             
             # Só exibir escolas que tem ao menos um aluno ou curso rodando
             if vagas > 0 or cursando > 0 or len(assiduidade_series) > 0 or escolas_chart.count() == 1:
@@ -197,9 +213,10 @@ class DashboardView(LoginRequiredMixin, TemplateView):
                         'labels': assiduidade_labels,
                         'series': assiduidade_series
                     },
-                    'qualidade': {
-                        'labels': ['Espaço Físico', 'Agilidade Inscrição', 'Atendimento', 'Carga Horária'],
-                        'series': radar_series
+                    'perfil': {
+                        'series': [tot_masc, tot_fem],
+                        'labels': ['Masculino', 'Feminino'],
+                        'idade_media': [media_idade_m, media_idade_f]
                     }
                 })
 

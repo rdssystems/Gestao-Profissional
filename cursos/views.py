@@ -61,6 +61,12 @@ class CursoListView(LoginRequiredMixin, ListView):
     def get_queryset(self):
         user = self.request.user
         base_queryset = super().get_queryset()
+
+        # Automatização de Status: Curso 'Aberta' na data de início vira 'Em Andamento'
+        from datetime import date
+        cursos_para_iniciar = base_queryset.filter(status='Aberta', data_inicio__lte=date.today())
+        if cursos_para_iniciar.exists():
+            cursos_para_iniciar.update(status='Em Andamento')
         
         if user.is_superuser:
             qs = base_queryset
