@@ -34,6 +34,10 @@ def create_audit_log(sender, instance, action, user=None, **kwargs):
         elif current_user:
             user = current_user
             
+    # Garantir que não tentamos salvar um AnonymousUser (usuário não logado, acessando links públicos)
+    if user and not user.is_authenticated:
+        user = None
+
     # Garantir que object_id é uma string para GenericForeignKey
     object_id_str = str(instance.pk) if instance.pk else None
 
