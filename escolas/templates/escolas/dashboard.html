@@ -174,13 +174,13 @@
                             <div id="chart-assiduidade-{{ escola.id }}" class="flex-grow-1 d-flex justify-content-center align-items-center" style="min-height: 280px; width: 100%;"></div>
                         </div>
                     </div>
-                    <!-- Radar Qualidade -->
+                    <!-- Perfil Demografico Donut -->
                     <div class="col-lg-4 mb-4">
                         <div class="premium-card h-100 shadow-sm d-flex flex-column">
                             <div class="feed-header mb-2 border-bottom pb-2">
-                                <h6 class="mb-0 fw-bold" style="color: #6f42c1;"><i class="bi bi-radar me-2"></i>Termômetro de Qualidade</h6>
+                                <h6 class="mb-0 fw-bold" style="color: #db2777;"><i class="bi bi-people-fill me-2"></i>Perfil Alunos Cursando</h6>
                             </div>
-                            <div id="chart-qualidade-{{ escola.id }}" class="flex-grow-1 d-flex justify-content-center align-items-center" style="min-height: 280px; width: 100%;"></div>
+                            <div id="chart-perfil-{{ escola.id }}" class="flex-grow-1 d-flex justify-content-center align-items-center" style="min-height: 280px; width: 100%;"></div>
                         </div>
                     </div>
                 </div>
@@ -280,7 +280,14 @@ document.addEventListener('DOMContentLoaded', function() {
                         }
                     }
                 },
-                dataLabels: { enabled: false }, // Fica visual longo 280px, legenda embaixo ajuda
+                dataLabels: { 
+                    enabled: true,
+                    formatter: function (val, opts) {
+                        return opts.w.globals.seriesTotals[opts.seriesIndex];
+                    },
+                    style: { fontSize: '12px', fontWeight: 'bold' },
+                    dropShadow: { enabled: true, top: 1, left: 1, blur: 2, opacity: 0.6 }
+                },
                 legend: { position: 'bottom', markers: { radius: 12 } },
                 tooltip: { theme: 'light' }
             };
@@ -318,30 +325,63 @@ document.addEventListener('DOMContentLoaded', function() {
             document.querySelector("#chart-assiduidade-" + escola.id).innerHTML = "<p class='text-muted small'>Sem registros de frequência.</p>";
         }
 
-        // 3. Gráfico Radar Termômetro de Qualidade
-        var sumRadar = escola.qualidade.series.reduce((a, b) => a + b, 0);
-        if(sumRadar > 0) {
-            var optionsRadar = {
-                series: [{ name: 'Desempenho Geral', data: escola.qualidade.series }],
-                chart: { type: 'radar', height: 300, fontFamily: 'Inter, sans-serif', toolbar: {show: false} },
-                labels: escola.qualidade.labels,
-                stroke: { width: 2, colors: ['#6f42c1'] },
-                fill: { opacity: 0.2, colors: ['#6f42c1'] },
-                markers: { size: 4, colors: ['#fff'], strokeColors: '#6f42c1', strokeWidth: 2 },
-                yaxis: { show: false, min: 0, max: 100 },
-                xaxis: { 
-                    labels: {
-                        style: {
-                            colors: ['#8898aa', '#8898aa', '#8898aa', '#8898aa'],
-                            fontSize: '11px', fontFamily: 'Inter, sans-serif'
+        // 3. Gráfico Donut - Perfil Demográfico
+        var sumPerfil = escola.perfil.series.reduce((a, b) => a + b, 0);
+        if(sumPerfil > 0) {
+            var optionsPerfil = {
+                series: escola.perfil.series,
+                chart: { type: 'donut', height: 280, fontFamily: 'Inter, sans-serif' },
+                labels: escola.perfil.labels,
+                colors: ['#3b82f6', '#ec4899'], // Azul para M, Rosa para F
+                plotOptions: {
+                    pie: {
+                        donut: {
+                            size: '65%',
+                            labels: {
+                                show: true,
+                                name: { show: true, offsetY: -10 },
+                                value: { show: true, offsetY: 5, fontSize: '24px', fontWeight: 600, color: '#1e293b' },
+                                total: { 
+                                    show: true, showAlways: false, label: 'Média de Idade', 
+                                    formatter: function (w) { 
+                                        var m_idade = escola.perfil.idade_media[0];
+                                        var f_idade = escola.perfil.idade_media[1];
+                                        if (m_idade && f_idade) return Math.round((m_idade + f_idade)/2) + ' Anos';
+                                        return (m_idade || f_idade) + ' Anos';
+                                    } 
+                                }
+                            }
                         }
                     }
                 },
-                tooltip: { theme: 'light', y: { formatter: function(val) { return val + "%" } } }
+                tooltip: { 
+                    theme: 'light', 
+                    custom: function({series, seriesIndex, dataPointIndex, w}) {
+                        var label = w.globals.labels[seriesIndex];
+                        var students = series[seriesIndex];
+                        var age = escola.perfil.idade_media[seriesIndex];
+                        var color = w.globals.colors[seriesIndex];
+                        return '<div style="padding: 10px; font-family: Inter;">' +
+                               '<span style="color:' + color + '">●</span> <strong>' + label + '</strong><br/>' +
+                               '<span style="font-size: 11px;">Alunos: <b>' + students + '</b></span><br/>' +
+                               '<span style="font-size: 11px;">Idade Média: <b>' + age + ' anos</b></span>' +
+                               '</div>';
+                    }
+                },
+                dataLabels: { 
+                    enabled: true,
+                    formatter: function (val, opts) {
+                        var amount = opts.w.globals.seriesTotals[opts.seriesIndex];
+                        return amount + " (" + val.toFixed(1) + "%)";
+                    },
+                    style: { fontSize: '11px', fontWeight: 'bold' },
+                    dropShadow: { enabled: true, top: 1, left: 1, blur: 2, opacity: 0.6 }
+                },
+                legend: { position: 'bottom', markers: { radius: 12 } }
             };
-            new ApexCharts(document.querySelector("#chart-qualidade-" + escola.id), optionsRadar).render();
+            new ApexCharts(document.querySelector("#chart-perfil-" + escola.id), optionsPerfil).render();
         } else {
-            document.querySelector("#chart-qualidade-" + escola.id).innerHTML = "<p class='text-muted small'>Sem avaliações até o momento.</p>";
+            document.querySelector("#chart-perfil-" + escola.id).innerHTML = "<p class='text-muted small'>Sem dados de alunos.</p>";
         }
 
     });
