@@ -187,13 +187,11 @@
                                             {% endif %}
                                         </div>
 
-                                        <!-- Avaliação Indicator (>= 50%) -->
-                                        {% if curso.check_avaliacao_50_percent %}
-                                        <div class="text-center" title="Avaliações cadastradas em mais de 50% da turma">
-                                            <i class="bi bi-award text-primary fs-5"></i>
-                                            <div class="small text-primary fw-bold" style="font-size: 0.65rem;">Avaliação</div>
+                                        <!-- Avaliação Indicator -->
+                                        <div class="text-center" title="{% if curso.check_avaliacao_50_percent %}Avaliações cadastradas (>50%){% else %}Avaliação Pendente{% endif %}">
+                                            <i class="bi bi-award-fill indicator-icon {% if curso.check_avaliacao_50_percent %}text-success blink-green{% else %}text-muted opacity-50{% endif %} fs-5"></i>
+                                            <div class="small fw-bold {% if curso.check_avaliacao_50_percent %}text-success{% else %}text-muted{% endif %}" style="font-size: 0.65rem;">Avaliação</div>
                                         </div>
-                                        {% endif %}
                                     </div>
                                 </td>
                                 <td>{{ curso.get_turno_display }} • {{ curso.horario|date:"H:i" }}</td>
@@ -312,12 +310,10 @@
                                 <td>
                                     <div class="d-flex align-items-center gap-2">
                                         <strong>{{ curso.nome }}</strong>
-                                        {% if curso.check_avaliacao_50_percent %}
-                                        <div class="d-inline-flex align-items-center bg-primary-subtle border border-primary-subtle border-opacity-50 text-primary rounded px-2" title="Avaliações cadastradas em mais de 50% da turma" style="height: 20px;">
+                                        <div class="d-inline-flex align-items-center rounded px-2 {% if curso.check_avaliacao_50_percent %}bg-success-subtle border border-success-subtle border-opacity-50 text-success{% else %}bg-secondary-subtle border border-secondary-subtle border-opacity-50 text-secondary{% endif %}" title="{% if curso.check_avaliacao_50_percent %}Avaliações cadastradas (>50%){% else %}Abaixo de 50% de avaliações{% endif %}" style="height: 20px;">
                                             <i class="bi bi-award-fill" style="font-size: 0.75rem;"></i>
-                                            <span class="ms-1 fw-bold" style="font-size: 0.65rem;">Avaliado</span>
+                                            <span class="ms-1 fw-bold" style="font-size: 0.65rem;">{% if curso.check_avaliacao_50_percent %}Avaliado{% else %}Avaliação{% endif %}</span>
                                         </div>
-                                        {% endif %}
                                     </div>
                                     <div class="small text-muted mt-1">
                                         <i class="bi bi-calendar3 me-1"></i>Início: {{ curso.data_inicio|date:"d/m/Y" }}
