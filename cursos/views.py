@@ -1535,34 +1535,55 @@ class AvaliarCursoPublicView(View):
         cpf = request.GET.get('cpf')
         if not cpf:
             return render(request, 'cursos/avaliacao_aluno_identificacao.html', {'curso': curso, 'hide_navbar': True})
+        
         import re
         cpf_limpo = re.sub(r'\D', '', cpf)
         from .models import Inscricao
-        inscricao = Inscricao.objects.filter(curso=curso, status='concluido', aluno__cpf__icontains=cpf_limpo).first()
+        
+        # Busca mais robusta: 
+        # 1. Permite 'concluido' OU 'cursando' (para evitar que o aluno seja bloqueado se a escola ainda não mudou o status no dia da formatura/final)
+        # 2. Busca exata pelo CPF limpo
+        inscricao = Inscricao.objects.filter(
+            curso=curso, 
+            aluno__cpf__icontains=cpf_limpo
+        ).filter(status__in=['concluido', 'cursando']).first()
+
         if not inscricao:
             from django.contrib import messages
-            messages.error(request, 'CPF nao encontrado entre os alunos concluintes deste curso.')
+            messages.error(request, 'CPF não encontrado ou aluno não está apto a avaliar este curso ainda.')
             return redirect(reverse('cursos:avaliar_curso_publico', kwargs={'token': token}))
+        
+        # Verificar se já existe avaliação
         if hasattr(inscricao, 'avaliacao_aluno'):
             return render(request, 'cursos/avaliacao_aluno_concluida.html', {'curso': curso, 'aluno': inscricao.aluno, 'hide_navbar': True})
+            
         from .forms import AvaliacaoAlunoCursoForm
         form = AvaliacaoAlunoCursoForm()
         return render(request, self.template_name, {'curso': curso, 'aluno': inscricao.aluno, 'form': form, 'cpf': cpf, 'hide_navbar': True})
+
     def post(self, request, token):
         curso = get_object_or_404(Curso, token_acesso=token)
         cpf = request.POST.get('cpf')
         import re
         cpf_limpo = re.sub(r'\D', '', cpf)
-        from .models import Inscricao
-        inscricao = get_object_or_404(Inscricao, curso=curso, status='concluido', aluno__cpf__icontains=cpf_limpo)
+        from .models import Inscricao, AvaliacaoAlunoCurso
+        
+        inscricao = get_object_or_404(Inscricao, curso=curso, aluno__cpf__icontains=cpf_limpo, status__in=['concluido', 'cursando'])
+        
         from .forms import AvaliacaoAlunoCursoForm
         form = AvaliacaoAlunoCursoForm(request.POST)
+        
         if form.is_valid():
-            avaliacao = form.save(commit=False)
-            avaliacao.inscricao = inscricao
-            avaliacao.save()
+            # Usar update_or_create para evitar IntegrityError em caso de duplo clique ou resubmissão
+            data = form.cleaned_data
+            avaliacao, created = AvaliacaoAlunoCurso.objects.update_or_create(
+                inscricao=inscricao,
+                defaults=data
+            )
             return render(request, 'cursos/avaliacao_aluno_concluida.html', {'curso': curso, 'aluno': inscricao.aluno, 'sucesso': True, 'hide_navbar': True})
+            
         return render(request, self.template_name, {'curso': curso, 'aluno': inscricao.aluno, 'form': form, 'cpf': cpf, 'hide_navbar': True})
+
 
 class ObterDadosGraficosAvaliacaoView(LoginRequiredMixin, StaffRequiredMixin, View):
     def get(self, request, pk):

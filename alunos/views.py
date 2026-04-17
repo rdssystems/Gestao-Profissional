@@ -4,7 +4,9 @@ import os
 import json
 import openpyxl
 from datetime import datetime
+from django.utils import timezone
 from urllib.parse import quote
+
 
 from django.db.models import Q, Count, OuterRef
 from django.views.generic import ListView, DetailView, View
@@ -16,7 +18,7 @@ from django.contrib import messages
 from django.core.exceptions import ValidationError
 from django.http import HttpResponse, JsonResponse
 
-from .models import Aluno, ArquivoAluno
+from .models import Aluno, ArquivoAluno, WebSocialMember
 from .forms import AlunoForm, AuxiliarAlunoForm, AlunoCSVUploadForm, VerificarCPFForm
 from core.mixins import StaffRequiredMixin, AuditLogMixin
 from escolas.models import Escola
@@ -707,3 +709,133 @@ class AlunoArquivoActionView(LoginRequiredMixin, StaffRequiredMixin, View):
                 'is_image': a.is_image
             })
         return JsonResponse({'sucesso': True, 'arquivos': data})
+
+
+class WebSocialListView(LoginRequiredMixin, SuperuserRequiredMixin, ListView):
+    model = WebSocialMember
+    template_name = 'alunos/web_social_list.html'
+    context_object_name = 'membros'
+    paginate_by = 50
+
+    def get_queryset(self):
+        queryset = WebSocialMember.objects.select_related('aluno', 'aluno__escola').all()
+        
+        # Filtro de Ano
+        self.ano_atual = timezone.now().year
+        self.ano_selecionado = self.request.GET.get('ano', str(self.ano_atual))
+        
+        try:
+            queryset = queryset.filter(ano_inclusao=int(self.ano_selecionado))
+        except (ValueError, TypeError):
+            queryset = queryset.filter(ano_inclusao=self.ano_atual)
+            self.ano_selecionado = str(self.ano_atual)
+            
+        # Busca por Nome ou CPF
+        search_query = self.request.GET.get('search')
+        if search_query:
+            queryset = queryset.filter(
+                Q(aluno__nome_completo__icontains=search_query) | 
+                Q(aluno__cpf__icontains=search_query)
+            )
+            
+        return queryset
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['ano_selecionado'] = int(self.ano_selecionado)
+        
+        # Lista de anos disponíveis para o filtro
+        anos = WebSocialMember.objects.values_list('ano_inclusao', flat=True).distinct().order_by('-ano_inclusao')
+        anos_list = list(anos)
+        if self.ano_atual not in anos_list:
+            anos_list.insert(0, self.ano_atual)
+        context['anos_disponiveis'] = sorted(list(set(anos_list)), reverse=True)
+        
+        return context
+
+
+class WebSocialExportExcelView(LoginRequiredMixin, SuperuserRequiredMixin, View):
+    def get(self, request):
+        # Aplicar os mesmos filtros da AlunoListView
+        queryset = WebSocialMember.objects.select_related('aluno', 'aluno__escola').all()
+        
+        ano_selecionado = request.GET.get('ano')
+        if ano_selecionado:
+            try:
+                queryset = queryset.filter(ano_inclusao=int(ano_selecionado))
+            except (ValueError, TypeError):
+                pass
+                
+        search_query = request.GET.get('search')
+        if search_query:
+            queryset = queryset.filter(
+                Q(aluno__nome_completo__icontains=search_query) | 
+                Q(aluno__cpf__icontains=search_query)
+            )
+
+        # Criar o workbook
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = f"Web Social {ano_selecionado or ''}"
+
+        # Cabeçalhos
+        columns = [
+            'Ano Inclusão', 'Data Inclusão', 'Escola', 'Nome Completo', 'CPF', 'RG', 'Órgão Exp', 
+            'Data Emissão', 'Data Nascimento', 'Sexo', 'Estado Civil', 'Cor/Raça', 
+            'Nome da Mãe', 'Naturalidade', 'UF Naturalidade', 'Escolaridade', 
+            'Possui Deficiência', 'Tipo de Deficiência'
+        ]
+        ws.append(columns)
+
+        # Estilizar cabeçalho
+        from openpyxl.styles import Font, PatternFill
+        header_font = Font(bold=True, color="FFFFFF")
+        header_fill = PatternFill(start_color="4472C4", end_color="4472C4", fill_type="solid")
+        for cell in ws[1]:
+            cell.font = header_font
+            cell.fill = header_fill
+
+        # Adicionar dados
+        for membro in queryset:
+            aluno = membro.aluno
+            ws.append([
+                membro.ano_inclusao,
+                membro.data_inclusao.strftime('%d/%m/%Y %H:%M') if membro.data_inclusao else '',
+                aluno.escola.nome if aluno.escola else '',
+                aluno.nome_completo,
+                aluno.cpf,
+                aluno.rg or '',
+                aluno.orgao_exp or '',
+                aluno.data_emissao.strftime('%d/%m/%Y') if aluno.data_emissao else '',
+                aluno.data_nascimento.strftime('%d/%m/%Y') if aluno.data_nascimento else '',
+                aluno.sexo,
+                aluno.estado_civil,
+                aluno.cor_raca or '',
+                aluno.nome_mae or '',
+                aluno.naturalidade or '',
+                aluno.uf_naturalidade or '',
+                aluno.escolaridade or '',
+                'Sim' if aluno.deficiencia else 'Não',
+                aluno.tipo_deficiencia or ''
+            ])
+
+        # Ajustar largura das colunas
+        for col in ws.columns:
+            max_length = 0
+            column = col[0].column_letter
+            for cell in col:
+                try:
+                    if len(str(cell.value)) > max_length:
+                        max_length = len(str(cell.value))
+                except:
+                    pass
+            adjusted_width = (max_length + 2)
+            ws.column_dimensions[column].width = adjusted_width
+
+        # Preparar resposta
+        filename = f"web_social_{ano_selecionado or 'geral'}_{datetime.now().strftime('%d%m%Y_%H%M')}.xlsx"
+        response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        response['Content-Disposition'] = f'attachment; filename="{filename}"'
+        wb.save(response)
+        return response
+

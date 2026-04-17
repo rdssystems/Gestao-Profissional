@@ -298,6 +298,11 @@
                         <a class="nav-link {% if request.path == concluintes_url %}active-nav-link{% endif %}"
                             href="{{ concluintes_url }}">Concluintes</a>
                     </li>
+                    <li class="nav-item">
+                        {% url 'alunos:web_social' as web_social_url %}
+                        <a class="nav-link {% if request.path == web_social_url %}active-nav-link{% endif %}"
+                            href="{{ web_social_url }}">Web Social</a>
+                    </li>
                     {% endif %}
                 </ul>
 
