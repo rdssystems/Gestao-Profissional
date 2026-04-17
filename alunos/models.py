@@ -172,3 +172,17 @@ class ArquivoAluno(models.Model):
     @property
     def is_pdf(self):
         return self.extensao == '.pdf'
+
+
+class WebSocialMember(models.Model):
+    aluno = models.OneToOneField(Aluno, on_delete=models.CASCADE, related_name='web_social_record', verbose_name="Aluno")
+    ano_inclusao = models.PositiveIntegerField(verbose_name="Ano de Inclusão")
+    data_inclusao = models.DateTimeField(auto_now_add=True, verbose_name="Data de Inclusão")
+    
+    class Meta:
+        verbose_name = "Membro Web Social"
+        verbose_name_plural = "Membros Web Social"
+        ordering = ['-data_inclusao']
+
+    def __str__(self):
+        return f"{self.aluno.nome_completo} ({self.ano_inclusao})"

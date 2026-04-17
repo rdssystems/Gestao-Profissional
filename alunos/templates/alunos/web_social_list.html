@@ -1,0 +1,206 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Web Social - Sistema de Gestão{% endblock %}
+
+{% block extra_css %}
+<style>
+    .web-social-card {
+        border: none;
+        border-radius: 15px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+        background: #fff;
+    }
+    .table-premium thead th {
+        background-color: #f8faff;
+        color: #4C5B7A;
+        font-weight: 700;
+        text-transform: uppercase;
+        font-size: 0.75rem;
+        letter-spacing: 0.5px;
+        border-top: none;
+        padding: 1.2rem 1rem;
+    }
+    .table-premium tbody td {
+        padding: 1.1rem 1rem;
+        vertical-align: middle;
+        color: #5c6873;
+        font-size: 0.88rem;
+        border-color: #f1f4f9;
+    }
+    .badge-social {
+        padding: 0.5em 0.8em;
+        border-radius: 6px;
+        font-weight: 600;
+    }
+    .filter-section {
+        background: #fdfdfd;
+        border-radius: 12px;
+        padding: 20px;
+        margin-bottom: 25px;
+        border: 1px solid #edf2f9;
+    }
+    .student-name {
+        color: #2d3748;
+        font-weight: 600;
+        font-size: 0.95rem;
+    }
+    .meta-info {
+        font-size: 0.75rem;
+        color: #a0aec0;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h3 class="fw-bold text-dark mb-1"><i class="bi bi-globe-americas text-primary me-2"></i>Web Social</h3>
+            <p class="text-muted mb-0">Registro consolidado de concluintes por ano</p>
+        </div>
+        <div class="d-flex gap-2">
+             <a href="{% url 'alunos:web_social_export' %}?ano={{ ano_selecionado }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}" class="btn btn-success shadow-sm">
+                <i class="bi bi-file-earmark-excel me-1"></i> Exportar Excel
+            </a>
+             <button onclick="window.print()" class="btn btn-outline-secondary shadow-sm">
+                <i class="bi bi-printer me-1"></i> Imprimir
+            </button>
+        </div>
+    </div>
+
+    <!-- Filtros -->
+    <div class="filter-section shadow-sm animate-up">
+        <form method="GET" class="row g-3">
+            <div class="col-md-3">
+                <label class="form-label small fw-bold text-muted">Filtrar por Ano</label>
+                <div class="input-group shadow-sm">
+                    <span class="input-group-text bg-white border-end-0 text-primary"><i class="bi bi-calendar-event"></i></span>
+                    <select name="ano" class="form-select border-start-0" onchange="this.form.submit()">
+                        {% for ano in anos_disponiveis %}
+                            <option value="{{ ano }}" {% if ano == ano_selecionado %}selected{% endif %}>{{ ano }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label small fw-bold text-muted">Buscar Aluno</label>
+                <div class="input-group shadow-sm">
+                    <span class="input-group-text bg-white border-end-0 text-primary"><i class="bi bi-search"></i></span>
+                    <input type="text" name="search" class="form-control border-start-0" placeholder="Nome completo ou CPF..." value="{{ request.GET.search }}">
+                    <button class="btn btn-primary px-4" type="submit">Buscar</button>
+                </div>
+            </div>
+            {% if request.GET.search or request.GET.ano %}
+            <div class="col-md-3 d-flex align-items-end">
+                <a href="{% url 'alunos:web_social' %}" class="btn btn-light text-muted w-100">
+                    <i class="bi bi-x-circle me-1"></i> Limpar Filtros
+                </a>
+            </div>
+            {% endif %}
+        </form>
+    </div>
+
+    <!-- Tabela -->
+    <div class="card web-social-card shadow-sm animate-up" style="animation-delay: 0.1s;">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-premium table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th>Identificação</th>
+                            <th>Documentos</th>
+                            <th>Nascimento / Sexo</th>
+                            <th>Social / Familiar</th>
+                            <th>Naturalidade</th>
+                            <th>Escolaridade</th>
+                            <th>Deficiência</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for membro in membros %}
+                        <tr>
+                            <td>
+                                <div class="student-name">{{ membro.aluno.nome_completo }}</div>
+                                <div class="meta-info"><i class="bi bi-building me-1"></i>{{ membro.aluno.escola.nome }}</div>
+                            </td>
+                            <td>
+                                <div class="fw-bold text-dark" style="font-size: 0.85rem;">CPF: {{ membro.aluno.cpf_formatado }}</div>
+                                <div class="smaller text-muted">RG: {{ membro.aluno.rg|default:"-" }} ({{ membro.aluno.orgao_exp|default:"-" }})</div>
+                                <div class="smaller text-muted">Emissão: {{ membro.aluno.data_emissao|date:"d/m/Y"|default:"-" }}</div>
+                            </td>
+                            <td>
+                                <div>{{ membro.aluno.data_nascimento|date:"d/m/Y" }}</div>
+                                <div class="badge bg-light text-primary border rounded-pill smaller">
+                                    {% if membro.aluno.sexo == 'M' %}Masculino{% elif membro.aluno.sexo == 'F' %}Feminino{% else %}{{ membro.aluno.sexo }}{% endif %}
+                                </div>
+                                <div class="smaller text-muted mt-1">{{ membro.aluno.estado_civil }}</div>
+                            </td>
+                            <td>
+                                <div class="smaller"><b>Cor:</b> {{ membro.aluno.cor_raca|default:"-" }}</div>
+                                <div class="smaller"><b>Mãe:</b> {{ membro.aluno.nome_mae|default:"-" }}</div>
+                            </td>
+                            <td>
+                                <div>{{ membro.aluno.naturalidade|default:"-" }}</div>
+                                <div class="smaller text-muted">UF: {{ membro.aluno.uf_naturalidade|default:"-" }}</div>
+                            </td>
+                            <td>
+                                <span class="badge bg-soft-info text-info border border-info-subtle">{{ membro.aluno.escolaridade|default:"Não informado" }}</span>
+                            </td>
+                            <td>
+                                {% if membro.aluno.deficiencia %}
+                                    <span class="badge bg-danger-subtle text-danger border border-danger-subtle d-block mb-1">Sim</span>
+                                    <small class="text-muted d-block" style="font-size: 0.7rem; line-height: 1.1;">{{ membro.aluno.tipo_deficiencia }}</small>
+                                {% else %}
+                                    <span class="badge bg-light text-muted border border-light-subtle">Não</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="7" class="text-center py-5 text-muted">
+                                <i class="bi bi-inbox display-4 d-block mb-3"></i>
+                                <p>Nenhum concluinte registrado para este ano/busca.</p>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        {% if is_paginated %}
+        <div class="card-footer bg-white border-0 py-3">
+            <nav aria-label="Navegação de página">
+                <ul class="pagination pagination-sm justify-content-center mb-0">
+                    {% if page_obj.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.ano %}&ano={{ request.GET.ano }}{% endif %}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}">Anterior</a>
+                    </li>
+                    {% endif %}
+                    
+                    <li class="page-item active">
+                        <span class="page-link">Página {{ page_obj.number }} de {{ paginator.num_pages }}</span>
+                    </li>
+
+                    {% if page_obj.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.ano %}&ano={{ request.GET.ano }}{% endif %}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}">Próxima</a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<style>
+    .bg-soft-info { background-color: #e0f2fe; }
+    .animate-up { animation: fadeInUp 0.5s ease-out; }
+    @keyframes fadeInUp {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+</style>
+{% endblock %}
