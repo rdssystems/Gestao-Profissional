@@ -15,6 +15,7 @@ urlpatterns = [
     path('<int:pk>/historico/', views.AlunoHistoricoView.as_view(), name='historico_aluno'),
     path('historico/atualizar-observacoes/<int:pk>/', views.AlunoUpdateObservacoesView.as_view(), name='atualizar_observacoes'),
     path('historico/atualizar-interesses/<int:pk>/', views.AlunoUpdateCursosInteresseView.as_view(), name='atualizar_interesses'),
+    path('<int:pk>/cursos-interesse/', views.AlunoUpdateCursosInteresseView.as_view(), name='atualizar_interesses_legacy'),
     
     # Web Social
     path('web-social/', views.WebSocialListView.as_view(), name='web_social'),

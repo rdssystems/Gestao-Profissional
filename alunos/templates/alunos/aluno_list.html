@@ -384,7 +384,7 @@
             const selectedIds = JSON.parse(btn.getAttribute('data-selected-ids') || '[]');
             
             modalAlunoNome.innerText = alunoNome;
-            formCursosInteresse.action = `/alunos/${alunoId}/cursos-interesse/`;
+            formCursosInteresse.action = `/alunos/historico/atualizar-interesses/${alunoId}/`;
             
             checkboxes.forEach(cb => {
                 cb.checked = selectedIds.includes(parseInt(cb.value));
