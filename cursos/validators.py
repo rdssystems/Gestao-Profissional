@@ -45,19 +45,39 @@ def validar_conflito_matricula(aluno, novo_curso):
             )
 
         # Regra 2: Conflito de Horário e Data
-        conflito_turno = (
-            novo_curso.turno and curso_existente.turno and novo_curso.turno == curso_existente.turno
-        )
-        
         conflito_data = (
             (novo_curso.data_inicio <= curso_existente.data_fim) and
             (novo_curso.data_fim >= curso_existente.data_inicio)
         )
 
-        if conflito_turno and conflito_data:
-            raise ValidationError(
-                f'Conflito de horário/data: O aluno já está inscrito no curso "{curso_existente.nome}" '
-                f'({curso_existente.get_turno_display()} - {curso_existente.data_inicio} a {curso_existente.data_fim}), '
-                f'que coincide com o período deste novo curso.'
-            )
+        if conflito_data:
+            conflito_horario = False
+            msg_conflito = ""
+
+            # Verificação Precisa por Horários (se ambos tiverem início e fim)
+            if novo_curso.horario and novo_curso.horario_fim and curso_existente.horario and curso_existente.horario_fim:
+                # Há sobreposição se:
+                # (Novo_Início < Existente_Fim) AND (Novo_Fim > Existente_Início)
+                # Usamos < e > estritos para permitir cursos sequenciais (ex: termina 14:30 e começa 14:30)
+                if novo_curso.horario < curso_existente.horario_fim and novo_curso.horario_fim > curso_existente.horario:
+                    conflito_horario = True
+                    msg_conflito = (
+                        f'Sobreposição de horário: O curso existente "{curso_existente.nome}" ocorre das '
+                        f'{curso_existente.horario.strftime("%H:%M")} às {curso_existente.horario_fim.strftime("%H:%M")}, '
+                        f'o que conflita com o horário deste novo curso ({novo_curso.horario.strftime("%H:%M")} às {novo_curso.horario_fim.strftime("%H:%M")}).'
+                    )
+            else:
+                # Fallback: Se não houver horário exato em algum curso, usamos o Turno (Bloqueio mais amplo para segurança)
+                if novo_curso.turno and curso_existente.turno and novo_curso.turno == curso_existente.turno:
+                    conflito_horario = True
+                    msg_conflito = (
+                        f'Conflito de Turno: Ambos os cursos ocorrem no turno da {curso_existente.get_turno_display()}. '
+                        'Como não há horários exatos definidos para ambos, o sistema bloqueia para evitar choque de horários.'
+                    )
+
+            if conflito_horario:
+                raise ValidationError(
+                    f'Não foi possível matricular: {msg_conflito} Ambas as turmas ocorrem no período de '
+                    f'{curso_existente.data_inicio.strftime("%d/%m/%Y")} a {curso_existente.data_fim.strftime("%d/%m/%Y")}.'
+                )
     return True

@@ -112,6 +112,14 @@ class Aluno(models.Model):
     # Inscrição
     COMO_SOUBE_CHOICES = (('Redes Sociais', 'Redes Sociais'), ('Site Prefeitura', 'Site Prefeitura'), ('Amigo', 'Amigo'), ('Panfleto', 'Panfleto'), ('Outros', 'Outros'))
     como_soube = models.CharField(max_length=50, choices=COMO_SOUBE_CHOICES, blank=True, null=True, verbose_name="Como soube do curso?")
+    
+    TURNO_CHOICES = (
+        ('Manhã', 'Manhã'),
+        ('Tarde', 'Tarde'),
+        ('Noite', 'Noite'),
+    )
+    turno_interesse = models.CharField(max_length=100, blank=True, null=True, verbose_name="Turno de Interesse")
+    
     receber_notificacoes = models.BooleanField(default=True, verbose_name="Deseja receber atualizações de cursos?")
     
     # Campos de controle

@@ -11,13 +11,20 @@ class CourseMultipleChoiceField(forms.ModelMultipleChoiceField):
     def label_from_instance(self, obj):
         return obj.nome
 
-# Existing AlunoForm
 class AlunoForm(forms.ModelForm):
     cursos_interesse = CourseMultipleChoiceField(
         queryset=TipoCurso.objects.none(), # Populated in __init__
         widget=forms.CheckboxSelectMultiple,
         label=_("Cursos de Interesse"),
         required=False
+    )
+    
+    turno_interesse = forms.MultipleChoiceField(
+        choices=Aluno.TURNO_CHOICES,
+        widget=forms.CheckboxSelectMultiple,
+        label=_("Turno de Interesse"),
+        required=True,
+        error_messages={'required': _("Selecione pelo menos um turno de interesse.")}
     )
 
     class Meta:
@@ -30,7 +37,7 @@ class AlunoForm(forms.ModelForm):
             'telefone_principal', 'endereco_cep', 'endereco_rua', 'endereco_numero', 'endereco_bairro',
             'endereco_cidade', 'endereco_estado', 'tempo_moradia', 'tipo_moradia', 'valor_moradia',
             'situacao_profissional', 'renda_individual', 'num_moradores', 'quantos_trabalham',
-            'renda_moradores', 'como_soube', 'receber_notificacoes'
+            'renda_moradores', 'como_soube', 'turno_interesse', 'receber_notificacoes'
         ]
         widgets = {
             'escola': forms.Select(attrs={'class': 'form-select form-select-premium'}),
@@ -106,6 +113,7 @@ class AlunoForm(forms.ModelForm):
             'quantos_trabalham': _("Quantos Trabalham na Casa"),
             'renda_moradores': _("Renda de Outros Moradores (R$)"),
             'como_soube': _("Como Soube do Programa"),
+            'turno_interesse': _("Turno de Interesse"),
             'receber_notificacoes': _("Deseja receber atualizações de cursos?"),
         }
         error_messages = {
@@ -130,6 +138,7 @@ class AlunoForm(forms.ModelForm):
             'quantos_trabalham': {'required': _("Este Campo é Obrigatório")},
             'renda_moradores': {'required': _("Este Campo é Obrigatório")},
             'como_soube': {'required': _("Este Campo é Obrigatório")},
+            'turno_interesse': {'required': _("Este Campo é Obrigatório")},
         }
 
     def __init__(self, *args, user=None, **kwargs):
@@ -163,9 +172,14 @@ class AlunoForm(forms.ModelForm):
                 if 'cursos_interesse' in self.fields:
                     self.fields['cursos_interesse'].queryset = TipoCurso.objects.none()
 
+        # Preencher o turno_interesse inicial se for edição (está salvo como string separada por vírgula)
+        if self.instance and self.instance.pk and self.instance.turno_interesse:
+            self.initial['turno_interesse'] = self.instance.turno_interesse.split(',')
+
         required_fields = [
             'whatsapp', 'renda_individual', 'num_moradores', 
-            'quantos_trabalham', 'renda_moradores', 'tempo_moradia', 'tipo_moradia'
+            'quantos_trabalham', 'renda_moradores', 'tempo_moradia', 
+            'tipo_moradia', 'como_soube', 'turno_interesse'
         ]
         for field_name in required_fields:
             if field_name in self.fields:
@@ -218,6 +232,21 @@ class AlunoForm(forms.ModelForm):
         
         return cleaned_data
 
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        
+        # Tratar o turno_interesse selecionado (lista) para salvar como string no DB
+        turnos = self.cleaned_data.get('turno_interesse')
+        if turnos:
+            instance.turno_interesse = ",".join(turnos)
+        else:
+            instance.turno_interesse = ""
+            
+        if commit:
+            instance.save()
+            self.save_m2m() # Importante salvar os relacionamentos (cursos_interesse)
+        return instance
+
     def clean_telefone_principal(self):
         tel = self.cleaned_data.get('telefone_principal')
         if tel:
@@ -245,7 +274,7 @@ class AuxiliarAlunoForm(AlunoForm):
             'tempo_moradia', 'tipo_moradia', 'valor_moradia',
             'situacao_profissional', 'renda_individual', 
             'num_moradores', 'quantos_trabalham', 'renda_moradores',
-            'como_soube', 'receber_notificacoes'
+            'como_soube', 'turno_interesse', 'receber_notificacoes'
         ]
         # Widgets e Labels são herdados de AlunoForm.Meta
 
