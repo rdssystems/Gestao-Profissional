@@ -6,7 +6,7 @@ import openpyxl
 from datetime import datetime
 from urllib.parse import quote
 
-from django.db.models import Q
+from django.db.models import Q, Count, OuterRef
 from django.views.generic import ListView, DetailView, View
 from django.views.generic.edit import CreateView, UpdateView, DeleteView
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
@@ -16,7 +16,7 @@ from django.contrib import messages
 from django.core.exceptions import ValidationError
 from django.http import HttpResponse, JsonResponse
 
-from .models import Aluno
+from .models import Aluno, ArquivoAluno
 from .forms import AlunoForm, AuxiliarAlunoForm, AlunoCSVUploadForm, VerificarCPFForm
 from core.mixins import StaffRequiredMixin, AuditLogMixin
 from escolas.models import Escola
@@ -216,6 +216,11 @@ class AlunoListView(LoginRequiredMixin, ListView):
                 Q(nome_completo__icontains=search_query) | 
                 Q(cpf__icontains=search_query)
             )
+        
+        # Anotar o total de arquivos que o aluno tem
+        queryset = queryset.annotate(
+            total_arquivos=Count('arquivos')
+        )
         
         # Implement dynamic pagination
         page_size = self.request.GET.get('page_size', self.paginate_by)
