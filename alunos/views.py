@@ -219,6 +219,11 @@ class AlunoListView(LoginRequiredMixin, ListView):
                 Q(cpf__icontains=search_query)
             )
         
+        # Filtro por Tipo de Curso (Cursos de Interesse)
+        tipo_curso_id = self.request.GET.get('tipo_curso')
+        if tipo_curso_id:
+            queryset = queryset.filter(cursos_interesse__id=tipo_curso_id)
+        
         # Anotar o total de arquivos que o aluno tem
         queryset = queryset.annotate(
             total_arquivos=Count('arquivos')
@@ -243,6 +248,8 @@ class AlunoListView(LoginRequiredMixin, ListView):
             context['todos_cursos_interesse'] = TipoCurso.objects.all().order_by('nome')
         elif hasattr(user, 'profile') and user.profile.escola:
             context['todos_cursos_interesse'] = TipoCurso.objects.filter(escola=user.profile.escola).order_by('nome')
+        
+        context['tipo_curso_selecionado'] = self.request.GET.get('tipo_curso', '')
         
         return context
 

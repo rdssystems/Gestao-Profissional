@@ -72,6 +72,15 @@
                 {% endfor %}
             </select>
             {% endif %}
+            
+            <select name="tipo_curso" class="form-select form-select-sm-premium" style="max-width: 180px;" onchange="this.form.submit()">
+                <option value="">Tipos de Curso</option>
+                {% for curso in todos_cursos_interesse %}
+                <option value="{{ curso.id }}" {% if tipo_curso_selecionado|stringformat:"s" == curso.id|stringformat:"s" %}selected{% endif %}>
+                    {{ curso.nome }}
+                </option>
+                {% endfor %}
+            </select>
 
             <div class="input-group input-group-sm" style="max-width: 250px;">
                 <input type="text" name="search" class="form-control form-control-sm-premium"
@@ -80,7 +89,7 @@
                     style="border-radius: 0 0.5rem 0.5rem 0; border-color: var(--nav-border);">
                     <i class="bi bi-search"></i>
                 </button>
-                {% if request.GET.search or request.GET.escola %}
+                {% if request.GET.search or request.GET.escola or request.GET.tipo_curso %}
                 <a href="{% url 'alunos:lista_alunos' %}" class="btn btn-outline-danger ms-1"
                     style="border-radius: 0.5rem;" title="Limpar filtros">
                     <i class="bi bi-x-lg"></i>
