@@ -208,6 +208,16 @@ class AlunoForm(forms.ModelForm):
                 raise forms.ValidationError('O WhatsApp deve conter entre 10 e 11 dígitos (incluindo DDD).')
         return whatsapp
 
+    def clean(self):
+        cleaned_data = super().clean()
+        deficiencia = cleaned_data.get('deficiencia')
+        tipo_deficiencia = cleaned_data.get('tipo_deficiencia')
+
+        if deficiencia and not tipo_deficiencia:
+            self.add_error('tipo_deficiencia', _("Este campo é obrigatório quando o aluno possui deficiência."))
+        
+        return cleaned_data
+
     def clean_telefone_principal(self):
         tel = self.cleaned_data.get('telefone_principal')
         if tel:

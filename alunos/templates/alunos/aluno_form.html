@@ -377,8 +377,12 @@
 <script>
     function toggleDeficiencia(checked) {
         const div = document.getElementById('div_tipo_deficiencia');
+        const input = document.getElementById('{{ form.tipo_deficiencia.id_for_label }}');
         if (div) {
             div.style.display = checked ? 'block' : 'none';
+        }
+        if (input) {
+            input.required = checked;
         }
     }
 
