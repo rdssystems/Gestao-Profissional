@@ -477,12 +477,19 @@ class MatriculaView(LoginRequiredMixin, StaffRequiredMixin, ListView):
         
         ids_alunos_ja_inscritos = Inscricao.objects.filter(curso=curso).values_list('aluno_id', flat=True)
         
-        qs = alunos_interessados.exclude(id__in=ids_alunos_ja_inscritos).order_by('-score_total')
+        # Priorizar alunos cujo turno_interesse corresponde ao turno do curso (usando icontains pois agora pode ter vários)
+        qs = alunos_interessados.exclude(id__in=ids_alunos_ja_inscritos).annotate(
+            turno_match=Case(
+                When(turno_interesse__icontains=curso.turno, then=Value(1)),
+                default=Value(0),
+                output_field=IntegerField(),
+            )
+        ).order_by('-turno_match', '-score_total')
         
         # Filtra por escola, se o usuário não for superuser
         user = self.request.user
         if not user.is_superuser and hasattr(user, 'profile') and user.profile.escola:
-            return qs.filter(escola=user.profile.escola)
+            qs = qs.filter(escola=user.profile.escola)
             
         return qs
 

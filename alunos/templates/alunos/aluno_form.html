@@ -324,14 +324,21 @@
                 <div>
 
                     <div class="row">
-                        <div class="col-md-6 mb-4">
+                        <div class="col-md-4 mb-4">
                             {{ form.como_soube.label_tag }}
                             <div class="custom-input">{{ form.como_soube }}</div>
                             {% if form.como_soube.errors %}
                                 <div class="invalid-feedback d-block">{{ form.como_soube.errors }}</div>
                             {% endif %}
                         </div>
-                        <div class="col-md-6 mb-4 mt-auto">
+                        <div class="col-md-4 mb-4">
+                            {{ form.turno_interesse.label_tag }}
+                            <div class="scroll-box" style="height: auto; min-height: 100px;">{{ form.turno_interesse }}</div>
+                            {% if form.turno_interesse.errors %}
+                                <div class="invalid-feedback d-block">{{ form.turno_interesse.errors }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-4 mb-4 mt-auto">
                             <div class="form-check pb-2">
                                 {{ form.receber_notificacoes }}
                                 {{ form.receber_notificacoes.label_tag }}
