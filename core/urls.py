@@ -16,4 +16,7 @@ urlpatterns = [
     path('avisos/lido/<int:aviso_pk>/', views.marcar_aviso_lido, name='marcar_aviso_lido'),
     path('admin/avisos/', views.gerenciar_avisos, name='gerenciar_avisos'),
     path('admin/ativar-dev/', views.ativar_dev_view, name='ativar_dev'),
+    
+    # Login Redirect
+    path('login-success/', views.LoginSuccessRedirectView.as_view(), name='login_success'),
 ]

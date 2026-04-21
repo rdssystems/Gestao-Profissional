@@ -68,14 +68,18 @@ class CursoListView(LoginRequiredMixin, ListView):
         if cursos_para_iniciar.exists():
             cursos_para_iniciar.update(status='Em Andamento')
         
+        active_escola = getattr(self.request, 'active_escola', None)
+
         if user.is_superuser:
             qs = base_queryset
             # Filtro por Escola (Unidade) para Admin
             escola_id = self.request.GET.get('escola')
             if escola_id:
                 qs = qs.filter(escola_id=escola_id)
-        elif hasattr(user, 'profile') and user.profile.escola:
-            qs = base_queryset.filter(escola=user.profile.escola)
+            elif active_escola:
+                qs = qs.filter(escola=active_escola)
+        elif active_escola:
+            qs = base_queryset.filter(escola=active_escola)
         else:
             qs = base_queryset.none()
 
@@ -132,8 +136,10 @@ class CursoListView(LoginRequiredMixin, ListView):
             context['tipos_curso'] = TipoCurso.objects.none()
         
         # Adiciona escolas para o filtro de admin
+        active_escola = getattr(self.request, 'active_escola', None)
         if user.is_superuser:
             context['escolas'] = Escola.objects.all().order_by('nome')
+            context['escola_selecionada'] = self.request.GET.get('escola', str(active_escola.id) if active_escola else '')
             
         return context
 
@@ -144,11 +150,14 @@ class CursoDetailView(LoginRequiredMixin, DetailView):
 
     def get_queryset(self):
         user = self.request.user
+        active_escola = getattr(self.request, 'active_escola', None)
         if user.is_superuser:
+            if active_escola:
+                return Curso.objects.filter(escola=active_escola)
             return Curso.objects.all()
         
-        if hasattr(user, 'profile') and user.profile.escola:
-            return Curso.objects.filter(escola=user.profile.escola)
+        if active_escola:
+            return Curso.objects.filter(escola=active_escola)
             
         return Curso.objects.none()
 
@@ -337,14 +346,16 @@ class TipoCursoListView(LoginRequiredMixin, StaffRequiredMixin, ListView):
     context_object_name = 'tipos_curso'
 
     def get_queryset(self):
-        user = self.request.user
+        active_escola = getattr(self.request, 'active_escola', None)
         qs = TipoCurso.objects.all().annotate(num_interessados=Count('aluno'))
         
-        if user.is_superuser:
+        if self.request.user.is_superuser:
+            if active_escola:
+                return qs.filter(escola=active_escola)
             return qs
         
-        if hasattr(user, 'profile') and user.profile.escola:
-            return qs.filter(escola=user.profile.escola)
+        if active_escola:
+            return qs.filter(escola=active_escola)
         
         return qs.none()
 
@@ -486,10 +497,10 @@ class MatriculaView(LoginRequiredMixin, StaffRequiredMixin, ListView):
             )
         ).order_by('-turno_match', '-score_total')
         
-        # Filtra por escola, se o usuário não for superuser
-        user = self.request.user
-        if not user.is_superuser and hasattr(user, 'profile') and user.profile.escola:
-            qs = qs.filter(escola=user.profile.escola)
+        # Filtra por escola ativa (Contexto Admin ou Perfil Staff)
+        active_escola = getattr(self.request, 'active_escola', None)
+        if active_escola:
+            qs = qs.filter(escola=active_escola)
             
         return qs
 
@@ -499,8 +510,9 @@ class MatriculaView(LoginRequiredMixin, StaffRequiredMixin, ListView):
         
         # Queryset de cursos abertos ou em andamento para o seletor
         cursos_abertos_qs = Curso.objects.filter(status__in=['Aberta', 'Em Andamento'])
-        if not user.is_superuser and hasattr(user, 'profile') and user.profile.escola:
-            cursos_abertos_qs = cursos_abertos_qs.filter(escola=user.profile.escola)
+        active_escola = getattr(self.request, 'active_escola', None)
+        if active_escola:
+            cursos_abertos_qs = cursos_abertos_qs.filter(escola=active_escola)
         
         context['cursos_abertos'] = cursos_abertos_qs
         
@@ -630,11 +642,14 @@ class ChamadaCursoListView(LoginRequiredMixin, ListView):
         user = self.request.user
         queryset = Curso.objects.filter(status__in=['Aberta', 'Em Andamento']) # Filtrar por status ativo
 
+        active_escola = getattr(self.request, 'active_escola', None)
         if user.is_superuser:
+            if active_escola:
+                return queryset.filter(escola=active_escola)
             return queryset
         
-        if hasattr(user, 'profile') and user.profile.escola:
-            return queryset.filter(escola=user.profile.escola)
+        if active_escola:
+            return queryset.filter(escola=active_escola)
         
         return Curso.objects.none()
 
@@ -1385,11 +1400,15 @@ class ParceiroListView(LoginRequiredMixin, StaffRequiredMixin, ListView):
     context_object_name = 'parceiros'
 
     def get_queryset(self):
-        user = self.request.user
-        if user.is_superuser:
+        active_escola = getattr(self.request, 'active_escola', None)
+        if self.request.user.is_superuser:
+            if active_escola:
+                return Parceiro.objects.filter(escola=active_escola).order_by('nome')
             return Parceiro.objects.all().order_by('escola__nome', 'nome')
-        if hasattr(user, 'profile') and user.profile.escola:
-            return Parceiro.objects.filter(escola=user.profile.escola).order_by('nome')
+        
+        if active_escola:
+            return Parceiro.objects.filter(escola=active_escola).order_by('nome')
+            
         return Parceiro.objects.none()
 
 class ParceiroCreateView(LoginRequiredMixin, StaffRequiredMixin, AuditLogMixin, CreateView):

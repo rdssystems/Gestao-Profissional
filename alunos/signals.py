@@ -21,13 +21,14 @@ def atualizar_score_aluno(sender, instance, created, **kwargs):
 @receiver(post_save, sender='cursos.Inscricao')
 def incluir_aluno_web_social(sender, instance, created, **kwargs):
     """
-    Inclui o aluno na Web Social quando sua matrícula é marcada como 'concluido'.
-    Somente uma vez por aluno.
+    Inclui o aluno na Web Social quando sua matrícula é marcada como 'concluido'
+    ou quando for 'desistente' com pelo menos 1 presença.
+    Garante somente 1 registro por CPF.
     """
-    if instance.status == 'concluido':
+    if instance.status == 'concluido' or (instance.status == 'desistente' and instance.chamadas.filter(status_presenca='P').exists()):
         aluno = instance.aluno
-        # Verificar se o aluno já está na Web Social
-        if not WebSocialMember.objects.filter(aluno=aluno).exists():
+        # Verificar se algum aluno com o mesmo CPF já está na Web Social para garantir 1 por CPF
+        if not WebSocialMember.objects.filter(aluno__cpf=aluno.cpf).exists():
             WebSocialMember.objects.create(
                 aluno=aluno,
                 ano_inclusao=timezone.now().year

@@ -247,9 +247,29 @@
                     {% endif %}
                     {% if user.is_superuser %}
                     <li class="nav-item">
+                        <a class="nav-link fw-bold text-primary" href="{% url 'escolas:selecionar_contexto' %}">
+                            <i class="bi bi-door-open me-1"></i> Logar Escola
+                        </a>
+                    </li>
+                    <li class="nav-item dropdown">
                         {% url 'escolas:dashboard' as dashboard_url %}
-                        <a class="nav-link {% if request.path == dashboard_url %}active-nav-link{% endif %}"
-                            href="{{ dashboard_url }}">Dashboard</a>
+                        <a class="nav-link dropdown-toggle {% if request.path == dashboard_url %}active-nav-link{% endif %}" 
+                           href="#" id="navbarContextDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false"
+                           style="color: {% if request.active_escola %}#0dcaf0{% else %}#4C7DF0{% endif %} !important; font-weight: 700;">
+                            {% if request.active_escola %}
+                                <i class="bi bi-building-fill-check me-1"></i> {{ request.active_escola.nome }}
+                            {% else %}
+                                <i class="bi bi-globe2 me-1"></i> Visão Global
+                            {% endif %}
+                        </a>
+                        <ul class="dropdown-menu shadow border-0 rounded-3 mt-2" aria-labelledby="navbarContextDropdown">
+                            <li><a class="dropdown-item" href="{{ dashboard_url }}"><i class="bi bi-speedometer2 me-2"></i> Dashboard</a></li>
+                            <li><a class="dropdown-item" href="{% url 'escolas:selecionar_contexto' %}"><i class="bi bi-arrow-left-right me-2"></i> Trocar Contexto</a></li>
+                            {% if request.active_escola %}
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item text-primary fw-bold" href="{% url 'escolas:resetar_contexto' %}"><i class="bi bi-globe2 me-2"></i> Voltar p/ Global</a></li>
+                            {% endif %}
+                        </ul>
                     </li>
                     {% endif %}
 

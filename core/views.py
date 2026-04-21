@@ -7,7 +7,7 @@ from django.http import JsonResponse
 from django.urls import reverse
 from datetime import timedelta, date, time
 from django.db.models import Prefetch, Exists, OuterRef # Import Exists and OuterRef
-from django.views.generic import ListView
+from django.views.generic import ListView, View
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from core.models import AuditLog, Aviso, Profile
 from django.contrib.auth.models import User
@@ -287,3 +287,29 @@ class AuditLogListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
         context = super().get_context_data(**kwargs)
         context['usuarios'] = User.objects.filter(audit_logs__isnull=False).distinct()
         return context
+class LoginSuccessRedirectView(LoginRequiredMixin, View):
+    def get(self, request):
+        if request.user.is_superuser:
+            # Forçar a escolha do contexto após login se for superuser
+            return redirect('escolas:selecionar_contexto')
+        return redirect('escolas:dashboard')
+
+def get_active_escola(request):
+    """
+    Função utilitária para obter a escola ativa do contexto (superuser) 
+    ou a escola do perfil (staff).
+    """
+    user = request.user
+    if not user.is_authenticated:
+        return None
+        
+    if user.is_superuser:
+        escola_id = request.session.get('active_escola_id')
+        if escola_id:
+            from escolas.models import Escola
+            return Escola.objects.filter(id=escola_id).first()
+        return None
+        
+    if hasattr(user, 'profile') and user.profile.escola:
+        return user.profile.escola
+    return None

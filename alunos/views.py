@@ -202,12 +202,16 @@ class AlunoListView(LoginRequiredMixin, ListView):
         user = self.request.user
         queryset = Aluno.objects.all().order_by('-data_criacao', 'nome_completo') # Order by enrollment date/time
 
+        active_escola = getattr(self.request, 'active_escola', None)
+
         if user.is_superuser:
             escola_filter = self.request.GET.get('escola')
             if escola_filter:
                 queryset = queryset.filter(escola__id=escola_filter)
-        elif hasattr(user, 'profile') and user.profile.escola:
-            queryset = queryset.filter(escola=user.profile.escola)
+            elif active_escola:
+                queryset = queryset.filter(escola=active_escola)
+        elif active_escola:
+            queryset = queryset.filter(escola=active_escola)
         else:
             return Aluno.objects.none()
 
@@ -241,13 +245,26 @@ class AlunoListView(LoginRequiredMixin, ListView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         user = self.request.user
+        active_escola = getattr(self.request, 'active_escola', None)
         
         if user.is_superuser:
+            context['escola_selecionada'] = self.request.GET.get('escola', str(active_escola.id) if active_escola else '')
+        
+        from escolas.models import Escola
+        if user.is_superuser:
             context['todas_escolas'] = Escola.objects.all().order_by('nome')
-            context['escola_selecionada'] = self.request.GET.get('escola', '')
             context['todos_cursos_interesse'] = TipoCurso.objects.all().order_by('nome')
-        elif hasattr(user, 'profile') and user.profile.escola:
-            context['todos_cursos_interesse'] = TipoCurso.objects.filter(escola=user.profile.escola).order_by('nome')
+            # Se houver uma escola selecionada ou ativa, filtrar cursos de interesse por ela? 
+            # (Opcional, mas vamos manter a lógica anterior de 'tudo' para admin global)
+            current_escola = None
+            if context.get('escola_selecionada'):
+                current_escola = Escola.objects.filter(id=context['escola_selecionada']).first()
+            
+            if current_escola:
+                 context['todos_cursos_interesse'] = TipoCurso.objects.filter(escola=current_escola).order_by('nome')
+
+        elif active_escola:
+            context['todos_cursos_interesse'] = TipoCurso.objects.filter(escola=active_escola).order_by('nome')
         
         context['tipo_curso_selecionado'] = self.request.GET.get('tipo_curso', '')
         
