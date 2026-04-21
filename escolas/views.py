@@ -1,6 +1,7 @@
 import json
-from django.shortcuts import render, get_object_or_404
-from django.views.generic import ListView, DetailView, TemplateView
+from django.shortcuts import render, get_object_or_404, redirect
+from django.views import View
+from django.views.generic import ListView, DetailView, TemplateView, RedirectView
 from django.views.generic.edit import CreateView, UpdateView, DeleteView
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.urls import reverse_lazy
@@ -9,12 +10,11 @@ from django.db import models
 from django.db.models import Count, Q # Adicionados Count e Q
 from core.mixins import AuditLogMixin
 
+# Modelos importados localmente ou por classes
 from escolas.models import Escola
 from cursos.models import Curso, Inscricao, Chamada, AvaliacaoAlunoCurso
 from alunos.models import Aluno
 from core.models import Profile, AuditLog
-from cursos.views import CursoListView as CursosViewBase
-from alunos.views import AlunoListView as AlunosViewBase
 from .forms import EscolaForm
 
 class SuperuserRequiredMixin(UserPassesTestMixin):
@@ -53,28 +53,33 @@ class DashboardView(LoginRequiredMixin, TemplateView):
         if hasattr(user, 'profile') and user.profile.escola_id:
             user_escola_id = user.profile.escola_id
 
-        # Lógica de Filtragem de Escopo
+        # Lógica de Filtragem de Escopo Priorizando o Contexto (request.active_escola)
+        target_escola = getattr(self.request, 'active_escola', None)
+        
         if user.is_superuser:
+            # No modo superuser, o filtro manual no dashboard sobrescreve o contexto global da sessão
+            # SE o filtro for 'all', voltamos para o contexto da rede (ou da escola ativa na sessão)
             if escola_id_filter != 'all':
                 try:
                     target_escola = Escola.objects.get(pk=escola_id_filter)
-                    aluno_scope = aluno_scope.filter(escola=target_escola)
-                    curso_scope = curso_scope.filter(escola=target_escola)
-                    inscricao_scope = inscricao_scope.filter(curso__escola=target_escola)
-                    context['dashboard_title'] = f"Dashboard: {target_escola.nome}"
-                except (Escola.DoesNotExist, ValueError):
-                    escola_id_filter = 'all'
+                except:
+                    pass
+        
+        if target_escola:
+            aluno_scope = aluno_scope.filter(escola=target_escola)
+            curso_scope = curso_scope.filter(escola=target_escola)
+            inscricao_scope = inscricao_scope.filter(curso__escola=target_escola)
+            context['dashboard_title'] = f"Dashboard: {target_escola.nome}"
+            escola_id_filter = str(target_escola.id)
         else:
-            if user_escola_id:
-                aluno_scope = aluno_scope.filter(escola_id=user_escola_id)
-                curso_scope = curso_scope.filter(escola_id=user_escola_id)
-                inscricao_scope = inscricao_scope.filter(curso__escola_id=user_escola_id)
-                context['dashboard_title'] = user.profile.escola.nome
-                escola_id_filter = str(user_escola_id)
-            else:
+            if not user.is_superuser:
+                # Se não é superuser e não tem escola ativa (erro?), limpa tudo
                 aluno_scope = Aluno.objects.none()
                 curso_scope = Curso.objects.none()
                 inscricao_scope = Inscricao.objects.none()
+            else:
+                context['dashboard_title'] = "Visão Geral do Sistema"
+                escola_id_filter = 'all'
 
         # Filtro de Período
         today = date.today()
@@ -331,38 +336,42 @@ class EscolaDetailView(LoginRequiredMixin, DetailView):
             return Escola.objects.filter(pk=user.profile.escola_id)
         return Escola.objects.none()
 
-class EscolaCreateView(AuditLogMixin, SuperuserRequiredMixin, CreateView):
+class EscolaCreateView(SuperuserRequiredMixin, CreateView):
     model = Escola
     form_class = EscolaForm
     template_name = 'escolas/escola_form.html'
     success_url = reverse_lazy('escolas:dashboard')
 
-class EscolaUpdateView(AuditLogMixin, SuperuserRequiredMixin, UpdateView):
+class EscolaUpdateView(SuperuserRequiredMixin, UpdateView):
     model = Escola
     form_class = EscolaForm
     template_name = 'escolas/escola_form.html'
     success_url = reverse_lazy('escolas:dashboard')
 
-class EscolaDeleteView(AuditLogMixin, SuperuserRequiredMixin, DeleteView):
+class EscolaDeleteView(SuperuserRequiredMixin, DeleteView):
     model = Escola
     template_name = 'escolas/escola_confirm_delete.html'
     success_url = reverse_lazy('escolas:dashboard')
 
-class CursosPorEscolaListView(CursosViewBase):
+class CursosPorEscolaListView(ListView):
+    model = Curso
+    template_name = 'cursos/curso_list.html'
+    context_object_name = 'cursos'
     def get_queryset(self):
-        queryset = super().get_queryset()
         self.escola = get_object_or_404(Escola, pk=self.kwargs['escola_id'])
-        return queryset.filter(escola=self.escola)
+        return Curso.objects.filter(escola=self.escola).order_by('-data_inicio')
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['escola'] = self.escola
         return context
 
-class AlunosPorEscolaListView(AlunosViewBase):
+class AlunosPorEscolaListView(ListView):
+    model = Aluno
+    template_name = 'alunos/aluno_list.html'
+    context_object_name = 'alunos'
     def get_queryset(self):
-        queryset = super().get_queryset()
         self.escola = get_object_or_404(Escola, pk=self.kwargs['escola_id'])
-        return queryset.filter(escola=self.escola)
+        return Aluno.objects.filter(escola=self.escola).order_by('nome_completo')
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['escola'] = self.escola
@@ -397,6 +406,37 @@ class ConcluintesGlobalView(LoginRequiredMixin, SuperuserRequiredMixin, ListView
         context['todas_escolas'] = Escola.objects.all().order_by('nome')
         context['selected_escola_id'] = self.request.GET.get('escola_id', 'all')
         return context
+
+class AdminContextSelectView(SuperuserRequiredMixin, ListView):
+    model = Escola
+    template_name = 'escolas/admin_context_select.html'
+    context_object_name = 'escolas'
+
+    def get_queryset(self):
+        return Escola.objects.all().order_by('nome')
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['next_url'] = self.request.GET.get('next', reverse_lazy('escolas:dashboard'))
+        return context
+
+class AdminContextSwitchView(SuperuserRequiredMixin, View):
+    def post(self, request):
+        escola_id = request.POST.get('escola_id')
+        if escola_id == 'all':
+            if 'active_escola_id' in request.session:
+                del request.session['active_escola_id']
+        else:
+            request.session['active_escola_id'] = escola_id
+        
+        next_url = request.POST.get('next', reverse_lazy('escolas:dashboard'))
+        return redirect(next_url)
+
+class AdminContextResetView(SuperuserRequiredMixin, View):
+    def get(self, request):
+        if 'active_escola_id' in request.session:
+            del request.session['active_escola_id']
+        return redirect('escolas:dashboard')
 
 class ConcluinteUnificadoView(LoginRequiredMixin, ListView):
     model = Inscricao

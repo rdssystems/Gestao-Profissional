@@ -14,4 +14,9 @@ urlpatterns = [
     path('<int:escola_id>/alunos/', views.AlunosPorEscolaListView.as_view(), name='alunos_da_escola'),
     path('concluintes-global/', views.ConcluintesGlobalView.as_view(), name='concluintes_global'),
     path('concluinte-unificado/', views.ConcluinteUnificadoView.as_view(), name='concluinte_unificado'),
+    
+    # Context Switching
+    path('selecionar-contexto/', views.AdminContextSelectView.as_view(), name='selecionar_contexto'),
+    path('trocar-contexto/', views.AdminContextSwitchView.as_view(), name='trocar_contexto'),
+    path('resetar-contexto/', views.AdminContextResetView.as_view(), name='resetar_contexto'),
 ]

@@ -80,6 +80,7 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'core.middleware.ThreadLocalUserMiddleware',
+    'core.middleware.AdminContextMiddleware',
 ]
 
 ROOT_URLCONF = 'gestao_qualificacao_profissional.urls'
@@ -202,7 +203,7 @@ MEDIA_ROOT = BASE_DIR / 'media'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 LOGIN_URL = 'login'
-LOGIN_REDIRECT_URL = 'escolas:dashboard'
+LOGIN_REDIRECT_URL = 'core:login_success'
 LOGOUT_REDIRECT_URL = '/'
 
 # Email backend for development (shows emails in console)
