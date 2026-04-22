@@ -139,6 +139,31 @@ class Inscricao(models.Model):
         ('desistente', 'Desistente'),
     )
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='cursando', verbose_name="Status")
+    
+    data_conclusao = models.DateTimeField(null=True, blank=True, verbose_name="Data de Conclusão")
+    data_desistencia = models.DateTimeField(null=True, blank=True, verbose_name="Data de Desistência")
+
+    def save(self, *args, **kwargs):
+        from django.utils import timezone
+        
+        # Auto-preencher data de conclusão ou desistência
+        if self.pk:
+            try:
+                old_instance = Inscricao.objects.get(pk=self.pk)
+                if old_instance.status != self.status:
+                    if self.status == 'concluido' and not self.data_conclusao:
+                        self.data_conclusao = timezone.now()
+                    elif self.status == 'desistente' and not self.data_desistencia:
+                        self.data_desistencia = timezone.now()
+            except Inscricao.DoesNotExist:
+                pass
+        else:
+            if self.status == 'concluido' and not self.data_conclusao:
+                self.data_conclusao = timezone.now()
+            elif self.status == 'desistente' and not self.data_desistencia:
+                self.data_desistencia = timezone.now()
+                
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f'{self.aluno.nome_completo} - {self.curso.nome}'

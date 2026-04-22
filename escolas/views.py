@@ -81,37 +81,48 @@ class DashboardView(LoginRequiredMixin, TemplateView):
                 context['dashboard_title'] = "Visão Geral do Sistema"
                 escola_id_filter = 'all'
 
-        # Filtro de Período
+        # Filtro de Período Mensal
+        period_filter = self.request.GET.get('mes_ano')
         today = date.today()
-        start_date = None
-        if period_filter == 'current_month':
-            start_date = today.replace(day=1)
-        elif period_filter == 'last_3_months':
-            start_date = today - timedelta(days=90)
-        elif period_filter == 'current_year':
-            start_date = today.replace(month=1, day=1)
+        if not period_filter:
+            period_filter = f"{today.year}-{today.month:02d}"
 
-        if start_date:
-            inscricao_scope = inscricao_scope.filter(data_inscricao__date__range=[start_date, today])
-            curso_scope = curso_scope.filter(
-                models.Q(data_inicio__range=[start_date, today]) | 
-                models.Q(data_fim__range=[start_date, today])
-            ).distinct()
+        try:
+            year, month = map(int, period_filter.split('-'))
+        except:
+            year, month = today.year, today.month
+            period_filter = f"{year}-{month:02d}"
 
-        # Métricas (com tratamento de erro individual)
+        import calendar
+        _, last_day = calendar.monthrange(year, month)
+        start_date = date(year, month, 1)
+        end_date = date(year, month, last_day)
+
+        context['mes_ano_selected'] = period_filter
+
+        # Filtramos curso_scope para o mês (para uso nos gráficos Ocupação/Assiduidade/Demográfico que precisam dos cursos ativos no período)
+        curso_scope = curso_scope.filter(
+            data_inicio__lte=end_date,
+            data_fim__gte=start_date
+        ).distinct()
+
+        # Métricas Globais Iniciais (com tratamento de erro individual)
         try:
             context['total_alunos'] = aluno_scope.count()
-            context['alunos_cursando'] = inscricao_scope.filter(status='cursando').count()
-            context['alunos_concluintes'] = inscricao_scope.filter(status='concluido').count()
-            context['alunos_desistentes'] = inscricao_scope.filter(status='desistente', chamadas__status_presenca='P').distinct().count()
+            context['alunos_cursando'] = inscricao_scope.filter(curso__in=curso_scope, status='cursando').distinct().count()
+            context['alunos_concluintes'] = inscricao_scope.filter(status='concluido', data_conclusao__year=year, data_conclusao__month=month).count()
+            context['alunos_concluintes_unicos'] = inscricao_scope.filter(status='concluido', data_conclusao__year=year, data_conclusao__month=month).values('aluno__cpf').distinct().count()
+            context['alunos_desistentes'] = inscricao_scope.filter(status='desistente', data_desistencia__year=year, data_desistencia__month=month, chamadas__status_presenca='P').distinct().count()
             context['cursos_ativos'] = curso_scope.filter(status__in=['Aberta', 'Em Andamento']).count()
-            context['cursos_concluidos'] = curso_scope.filter(status='Concluído').count()
-            # Hoje (Inscrições do dia = Alunos novos cadastrados hoje)
-            context['inscricoes_hoje'] = aluno_scope.filter(data_criacao__date=today).count()
+            context['cursos_concluidos'] = curso_scope.filter(status='Concluído', data_fim__year=year, data_fim__month=month).count()
+            
+            # Inscrições no mês
+            context['inscricoes_hoje'] = aluno_scope.filter(data_criacao__year=year, data_criacao__month=month).count()
         except:
             context['total_alunos'] = 0
             context['alunos_cursando'] = 0
             context['alunos_concluintes'] = 0
+            context['alunos_concluintes_unicos'] = 0
             context['alunos_desistentes'] = 0
             context['cursos_ativos'] = 0
             context['cursos_concluidos'] = 0
@@ -162,13 +173,14 @@ class DashboardView(LoginRequiredMixin, TemplateView):
 
         # ---- DADOS GLOBAIS DA REDE ----
         if user.is_superuser and (escola_id_filter == 'all' or not escola_id_filter) and escolas_chart.count() > 1:
-            kpi_inscricoes_hoje_g = aluno_scope.filter(data_criacao__date=date.today()).count()
+            kpi_inscricoes_hoje_g = aluno_scope.filter(data_criacao__year=year, data_criacao__month=month).count()
             kpi_total_alunos_g = aluno_scope.count()
-            kpi_alunos_cursando_g = inscricao_scope.filter(status='cursando').distinct().count()
-            kpi_alunos_concluintes_g = inscricao_scope.filter(status='concluido').distinct().count()
-            kpi_alunos_desistentes_g = inscricao_scope.filter(status='desistente', chamadas__status_presenca='P').distinct().count()
+            kpi_alunos_cursando_g = inscricao_scope.filter(curso__in=curso_scope, status='cursando').distinct().count()
+            kpi_alunos_concluintes_g = inscricao_scope.filter(status='concluido', data_conclusao__year=year, data_conclusao__month=month).count()
+            kpi_alunos_concluintes_unicos_g = inscricao_scope.filter(status='concluido', data_conclusao__year=year, data_conclusao__month=month).values('aluno__cpf').distinct().count()
+            kpi_alunos_desistentes_g = inscricao_scope.filter(status='desistente', data_desistencia__year=year, data_desistencia__month=month, chamadas__status_presenca='P').distinct().count()
             kpi_cursos_ativos_g = curso_scope.filter(status__in=['Aberta', 'Em Andamento']).count()
-            kpi_cursos_concluidos_g = curso_scope.filter(status='Concluído').count()
+            kpi_cursos_concluidos_g = curso_scope.filter(status='Concluído', data_fim__year=year, data_fim__month=month).count()
 
             cursos_ativos_g = curso_scope.filter(status__in=['Aberta', 'Em Andamento'])
             vagas_g = cursos_ativos_g.aggregate(total=models.Sum('vagas'))['total'] or 0
@@ -203,6 +215,7 @@ class DashboardView(LoginRequiredMixin, TemplateView):
                     'total_alunos': kpi_total_alunos_g,
                     'alunos_cursando': kpi_alunos_cursando_g,
                     'alunos_concluintes': kpi_alunos_concluintes_g,
+                    'alunos_concluintes_unicos': kpi_alunos_concluintes_unicos_g,
                     'alunos_desistentes': kpi_alunos_desistentes_g,
                     'cursos_ativos': kpi_cursos_ativos_g,
                     'cursos_concluidos': kpi_cursos_concluidos_g,
@@ -268,13 +281,14 @@ class DashboardView(LoginRequiredMixin, TemplateView):
             media_idade_f = calcular_media_idade(fem_query)
             
             # Métricas em Grid (Cards) para a Escola Atual
-            kpi_inscricoes_hoje = aluno_scope.filter(escola=esc, data_criacao__date=date.today()).count()
+            kpi_inscricoes_hoje = aluno_scope.filter(escola=esc, data_criacao__year=year, data_criacao__month=month).count()
             kpi_total_alunos = aluno_scope.filter(escola=esc).count()
-            kpi_alunos_cursando = inscricao_scope.filter(curso__escola=esc, status='cursando').distinct().count()
-            kpi_alunos_concluintes = inscricao_scope.filter(curso__escola=esc, status='concluido').distinct().count()
-            kpi_alunos_desistentes = inscricao_scope.filter(curso__escola=esc, status='desistente', chamadas__status_presenca='P').distinct().count()
-            kpi_cursos_ativos = curso_scope.filter(escola=esc, status__in=['Aberta', 'Em Andamento']).count()
-            kpi_cursos_concluidos = curso_scope.filter(escola=esc, status='Concluído').count()
+            kpi_alunos_cursando = inscricao_scope.filter(curso__escola=esc, curso__in=esc_cursos_ativos, status='cursando').distinct().count()
+            kpi_alunos_concluintes = inscricao_scope.filter(curso__escola=esc, status='concluido', data_conclusao__year=year, data_conclusao__month=month).count()
+            kpi_alunos_concluintes_unicos = inscricao_scope.filter(curso__escola=esc, status='concluido', data_conclusao__year=year, data_conclusao__month=month).values('aluno__cpf').distinct().count()
+            kpi_alunos_desistentes = inscricao_scope.filter(curso__escola=esc, status='desistente', data_desistencia__year=year, data_desistencia__month=month, chamadas__status_presenca='P').distinct().count()
+            kpi_cursos_ativos = esc_cursos_ativos.count()
+            kpi_cursos_concluidos = curso_scope.filter(escola=esc, status='Concluído', data_fim__year=year, data_fim__month=month).count()
 
             # Só exibir escolas que tem ao menos um aluno ou curso rodando
             if vagas > 0 or cursando > 0 or len(assiduidade_series) > 0 or escolas_chart.count() == 1:
@@ -286,6 +300,7 @@ class DashboardView(LoginRequiredMixin, TemplateView):
                         'total_alunos': kpi_total_alunos,
                         'alunos_cursando': kpi_alunos_cursando,
                         'alunos_concluintes': kpi_alunos_concluintes,
+                        'alunos_concluintes_unicos': kpi_alunos_concluintes_unicos,
                         'alunos_desistentes': kpi_alunos_desistentes,
                         'cursos_ativos': kpi_cursos_ativos,
                         'cursos_concluidos': kpi_cursos_concluidos,
