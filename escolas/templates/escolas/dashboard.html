@@ -35,15 +35,7 @@
                     {% endfor %}
                 </select>
                 
-                <select class="form-select form-select-premium shadow-sm py-2 pe-4" name="period" style="min-width: 150px; font-size: 0.9rem;">
-                    {% for key, value in period_options.items %}
-                    {% if selected_period == key %}
-                    <option value="{{ key }}" selected>{{ value }}</option>
-                    {% else %}
-                    <option value="{{ key }}">{{ value }}</option>
-                    {% endif %}
-                    {% endfor %}
-                </select>
+                <input type="month" name="mes_ano" class="form-control form-control-premium shadow-sm py-2" value="{{ mes_ano_selected }}" style="min-width: 150px; font-size: 0.9rem;">
                 
                 <button type="submit" class="btn btn-premium shadow-sm py-2" title="Filtrar">
                     <i class="bi bi-funnel-fill"></i>
@@ -124,7 +116,10 @@
                                 <i class="bi bi-mortarboard-fill"></i>
                             </div>
                             <div class="metric-label">Formados</div>
-                            <div class="metric-value">{{ escola.kpis.alunos_concluintes }}</div>
+                            <div class="metric-value d-flex align-items-baseline gap-2">
+                                <span>{{ escola.kpis.alunos_concluintes }}</span>
+                                <span class="text-muted fw-normal" style="font-size: 0.8rem;" title="Alunos formados únicos (por CPF)">({{ escola.kpis.alunos_concluintes_unicos }} únicos)</span>
+                            </div>
                         </div>
                     </div>
 

@@ -246,11 +246,6 @@
                     {% endif %}
                     {% endif %}
                     {% if user.is_superuser %}
-                    <li class="nav-item">
-                        <a class="nav-link fw-bold text-primary" href="{% url 'escolas:selecionar_contexto' %}">
-                            <i class="bi bi-door-open me-1"></i> Logar Escola
-                        </a>
-                    </li>
                     <li class="nav-item dropdown">
                         {% url 'escolas:dashboard' as dashboard_url %}
                         <a class="nav-link dropdown-toggle {% if request.path == dashboard_url %}active-nav-link{% endif %}" 
@@ -264,7 +259,7 @@
                         </a>
                         <ul class="dropdown-menu shadow border-0 rounded-3 mt-2" aria-labelledby="navbarContextDropdown">
                             <li><a class="dropdown-item" href="{{ dashboard_url }}"><i class="bi bi-speedometer2 me-2"></i> Dashboard</a></li>
-                            <li><a class="dropdown-item" href="{% url 'escolas:selecionar_contexto' %}"><i class="bi bi-arrow-left-right me-2"></i> Trocar Contexto</a></li>
+                            <li><a class="dropdown-item" href="{% url 'escolas:selecionar_contexto' %}"><i class="bi bi-door-open me-2"></i> Logar Escola</a></li>
                             {% if request.active_escola %}
                             <li><hr class="dropdown-divider"></li>
                             <li><a class="dropdown-item text-primary fw-bold" href="{% url 'escolas:resetar_contexto' %}"><i class="bi bi-globe2 me-2"></i> Voltar p/ Global</a></li>
