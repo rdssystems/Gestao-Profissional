@@ -382,7 +382,7 @@
                 <h5 class="modal-title fw-bold" id="modalObservacoesLabel"><i class="bi bi-pencil-square me-2"></i>Editar Observações do Aluno</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <form action="{% url 'alunos:aluno_update_observacoes' pk=aluno.pk %}" method="POST">
+            <form action="{% url 'alunos:atualizar_observacoes' pk=aluno.pk %}" method="POST">
                 {% csrf_token %}
                 <div class="modal-body p-4">
                     <div class="mb-3">
