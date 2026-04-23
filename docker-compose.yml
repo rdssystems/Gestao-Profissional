@@ -1,7 +1,7 @@
 
 services:
   db:
-    image: postgres:17-alpine
+    image: postgres:alpine
     container_name: gq-db
     restart: always
     environment:
