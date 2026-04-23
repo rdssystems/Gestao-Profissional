@@ -6,9 +6,10 @@ echo "--- Iniciando Atualização do Sistema ---"
 echo ">>> Puxando mudanças do Git..."
 git pull origin main
 
-# 2. Reconstruir e subir os containers (aplica mudanças no Dockerfile/requirements)
+# 2. Reconstruir e subir os containers (com fix para ZimaOS Read-Only)
 echo ">>> Reconstruindo containers (Docker Build)..."
-sudo docker compose up -d --build
+export DOCKER_CONFIG=/tmp/.docker
+sudo -E docker compose up -d --build
 
 # 3. Rodar as migrações do Django
 echo ">>> Verificando migrações (makemigrations)..."
