@@ -209,12 +209,30 @@ LOGOUT_REDIRECT_URL = '/'
 # Email backend for development (shows emails in console)
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 
-# --- CONFIGURAÇÃO DE BACKUP (django-dbbackup) ---
-DBBACKUP_STORAGE = 'django.core.files.storage.FileSystemStorage'
-DBBACKUP_STORAGE_OPTIONS = {'location': BASE_DIR / 'backups'}
+# --- CONFIGURAÇÃO DE BACKUP (django-dbbackup + Google Cloud Storage) ---
+from google.oauth2 import service_account
+
+GS_BUCKET_NAME = 'backup-django-qualificacao-2026'
+GS_PROJECT_ID = 'backup-django-2026'
+GS_CREDENTIALS = service_account.Credentials.from_service_account_file(
+    os.path.join(BASE_DIR, 'google_drive_key.json')
+)
+
+STORAGES = {
+    "default": {
+        "BACKEND": "django.core.files.storage.FileSystemStorage",
+    },
+    "staticfiles": {
+        "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
+    },
+    "dbbackup": {
+        "BACKEND": "storages.backends.gcloud.GoogleCloudStorage",
+    },
+}
+
 # Número de backups para manter (apaga os mais antigos automaticamente)
-DBBACKUP_CLEANUP_KEEP = 10 
-DBBACKUP_CLEANUP_KEEP_MEDIA = 10
+DBBACKUP_CLEANUP_KEEP = 1 
+DBBACKUP_CLEANUP_KEEP_MEDIA = 1
 
 # --- CONFIGURAÇÃO PARA ENVIO DE E-MAIL REAL (PRODUÇÃO) ---
 # Para usar, comente a linha acima (EMAIL_BACKEND = '...console...')

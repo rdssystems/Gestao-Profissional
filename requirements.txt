@@ -41,3 +41,4 @@ ujson==5.11.0
 websockets==15.0.1
 zope.interface==8.1.1
 requests==2.32.3
+django-storages[google]==1.14.6

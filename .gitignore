@@ -62,3 +62,11 @@ banco_cadastro.db
 # Media and Uploads
 media/
 documentos_alunos/
+
+# Backup and Security
+google_drive_key.json
+test_gdrive.py
+check_bucket.py
+help_dbbackup.txt
+test_verify.txt
+test_write.txt
