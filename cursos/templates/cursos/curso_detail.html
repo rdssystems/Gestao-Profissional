@@ -127,6 +127,16 @@
             style="background-color: #8b5cf6;">
         <i class="bi bi-star-half"></i> Avaliação
     </a>
+
+    <button type="button" 
+            class="btn btn-action-premium text-white btn-exportar-alunos" 
+            style="background-color: #1e293b;"
+            data-bs-toggle="modal" 
+            data-bs-target="#exportarModal" 
+            data-url="{% url 'cursos:exportar_alunos_xlsx' pk=curso.pk %}"
+            title="Exportar Alunos (Excel)">
+        <i class="bi bi-file-earmark-arrow-down"></i> Exportar Alunos
+    </button>
 </div>
 
 {% block extra_js %}
@@ -149,6 +159,15 @@ function copiarLinkChamada(url) {
         document.body.removeChild(el);
     });
 }
+
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.btn-exportar-alunos').forEach(button => {
+        button.addEventListener('click', function() {
+            const url = this.getAttribute('data-url');
+            document.getElementById('exportarForm').setAttribute('action', url);
+        });
+    });
+});
 </script>
 {% endblock %}
 
@@ -228,5 +247,274 @@ function copiarLinkChamada(url) {
 {% else %}
 <p class="text-muted">Nenhum aluno inscrito neste curso.</p>
 {% endif %}
+
+<!-- Modal de Exportação -->
+<div class="modal fade" id="exportarModal" tabindex="-1" aria-labelledby="exportarModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-dark text-white">
+                <h5 class="modal-title fw-bold" id="exportarModalLabel"><i class="bi bi-download me-2"></i>Exportar Dados dos Alunos</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="exportarForm" method="post">
+                {% csrf_token %}
+                <div class="modal-body p-4">
+                    <p class="text-muted mb-4">Selecione os campos que deseja incluir na planilha dos alunos <strong>cursando</strong>:</p>
+                    
+                    <!-- 1. Identificação -->
+                    <h6 class="fw-bold text-primary mb-3 border-bottom pb-2">1. Identificação</h6>
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-3">
+                            <div class="form-check custom-checkbox">
+                                <input class="form-check-input" type="checkbox" name="campos" value="nome" id="campo_nome" checked>
+                                <label class="form-check-label" for="campo_nome">Nome Completo</label>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-check custom-checkbox">
+                                <input class="form-check-input" type="checkbox" name="campos" value="cpf" id="campo_cpf" checked>
+                                <label class="form-check-label" for="campo_cpf">CPF</label>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-check custom-checkbox">
+                                <input class="form-check-input" type="checkbox" name="campos" value="rg" id="campo_rg">
+                                <label class="form-check-label" for="campo_rg">RG</label>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-check custom-checkbox">
+                                <input class="form-check-input" type="checkbox" name="campos" value="orgao_exp" id="campo_orgao">
+                                <label class="form-check-label" for="campo_orgao">Órgão Exp.</label>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-check custom-checkbox">
+                                <input class="form-check-input" type="checkbox" name="campos" value="data_emissao" id="campo_demissao">
+                                <label class="form-check-label" for="campo_demissao">Data Emissão</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 2. Informações Pessoais -->
+                    <h6 class="fw-bold text-primary mb-3 border-bottom pb-2">2. Informações Pessoais</h6>
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-3">
+                            <div class="form-check custom-checkbox">
+                                <input class="form-check-input" type="checkbox" name="campos" value="data_nascimento" id="campo_nasc" checked>
+                                <label class="form-check-label" for="campo_nasc">Data Nasc.</label>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-check custom-checkbox">
+                                <input class="form-check-input" type="checkbox" name="campos" value="idade" id="campo_idade">
+                                <label class="form-check-label" for="campo_idade">Idade</label>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-check custom-checkbox">
+                                <input class="form-check-input" type="checkbox" name="campos" value="sexo" id="campo_sexo" checked>
+                                <label class="form-check-label" for="campo_sexo">Sexo</label>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-check custom-checkbox">
+                                <input class="form-check-input" type="checkbox" name="campos" value="estado_civil" id="campo_civil">
+                                <label class="form-check-label" for="campo_civil">Estado Civil</label>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-check custom-checkbox">
+                                <input class="form-check-input" type="checkbox" name="campos" value="cor_raca" id="campo_raca">
+                                <label class="form-check-label" for="campo_raca">Cor/Raça</label>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-check custom-checkbox">
+                                <input class="form-check-input" type="checkbox" name="campos" value="naturalidade" id="campo_natural">
+                                <label class="form-check-label" for="campo_natural">Naturalidade</label>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-check custom-checkbox">
+                                <input class="form-check-input" type="checkbox" name="campos" value="uf_naturalidade" id="campo_uf_natural">
+                                <label class="form-check-label" for="campo_uf_natural">UF Naturalidade</label>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-check custom-checkbox">
+                                <input class="form-check-input" type="checkbox" name="campos" value="mae" id="campo_mae">
+                                <label class="form-check-label" for="campo_mae">Nome da Mãe</label>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-check custom-checkbox">
+                                <input class="form-check-input" type="checkbox" name="campos" value="deficiencia" id="campo_pcd">
+                                <label class="form-check-label" for="campo_pcd">Deficiência</label>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-check custom-checkbox">
+                                <input class="form-check-input" type="checkbox" name="campos" value="escolaridade" id="campo_esc">
+                                <label class="form-check-label" for="campo_esc">Escolaridade</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 3. Contato e Endereço -->
+                    <h6 class="fw-bold text-primary mb-3 border-bottom pb-2">3. Contato e Endereço</h6>
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-3">
+                            <div class="form-check custom-checkbox">
+                                <input class="form-check-input" type="checkbox" name="campos" value="whatsapp" id="campo_zap" checked>
+                                <label class="form-check-label" for="campo_zap">WhatsApp</label>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-check custom-checkbox">
+                                <input class="form-check-input" type="checkbox" name="campos" value="telefone" id="campo_tel">
+                                <label class="form-check-label" for="campo_tel">Telefone Principal</label>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-check custom-checkbox">
+                                <input class="form-check-input" type="checkbox" name="campos" value="email" id="campo_email">
+                                <label class="form-check-label" for="campo_email">Email</label>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-check custom-checkbox">
+                                <input class="form-check-input" type="checkbox" name="campos" value="cep" id="campo_cep">
+                                <label class="form-check-label" for="campo_cep">CEP</label>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-check custom-checkbox">
+                                <input class="form-check-input" type="checkbox" name="campos" value="rua" id="campo_rua" checked>
+                                <label class="form-check-label" for="campo_rua">Endereço/Rua</label>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-check custom-checkbox">
+                                <input class="form-check-input" type="checkbox" name="campos" value="numero" id="campo_num">
+                                <label class="form-check-label" for="campo_num">Número</label>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-check custom-checkbox">
+                                <input class="form-check-input" type="checkbox" name="campos" value="bairro" id="campo_bairro" checked>
+                                <label class="form-check-label" for="campo_bairro">Bairro</label>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-check custom-checkbox">
+                                <input class="form-check-input" type="checkbox" name="campos" value="cidade" id="campo_cidade">
+                                <label class="form-check-label" for="campo_cidade">Cidade</label>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-check custom-checkbox">
+                                <input class="form-check-input" type="checkbox" name="campos" value="estado" id="campo_uf">
+                                <label class="form-check-label" for="campo_uf">Estado/UF</label>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-check custom-checkbox">
+                                <input class="form-check-input" type="checkbox" name="campos" value="tempo_moradia" id="campo_tempop">
+                                <label class="form-check-label" for="campo_tempop">Tempo Moradia</label>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-check custom-checkbox">
+                                <input class="form-check-input" type="checkbox" name="campos" value="tipo_moradia" id="campo_tmoradia">
+                                <label class="form-check-label" for="campo_tmoradia">Tipo Moradia</label>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-check custom-checkbox">
+                                <input class="form-check-input" type="checkbox" name="campos" value="valor_moradia" id="campo_vmoradia">
+                                <label class="form-check-label" for="campo_vmoradia">Valor Moradia</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 4. Dados Profissionais e Familiares -->
+                    <h6 class="fw-bold text-primary mb-3 border-bottom pb-2">4. Dados Profissionais e Familiares</h6>
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-3">
+                            <div class="form-check custom-checkbox">
+                                <input class="form-check-input" type="checkbox" name="campos" value="situacao_profissional" id="campo_sprof">
+                                <label class="form-check-label" for="campo_sprof">Sit. Profissional</label>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-check custom-checkbox">
+                                <input class="form-check-input" type="checkbox" name="campos" value="renda_individual" id="campo_renda">
+                                <label class="form-check-label" for="campo_renda">Renda Indiv.</label>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-check custom-checkbox">
+                                <input class="form-check-input" type="checkbox" name="campos" value="renda_familiar" id="campo_rfamiliar">
+                                <label class="form-check-label" for="campo_rfamiliar">Renda Familiar</label>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-check custom-checkbox">
+                                <input class="form-check-input" type="checkbox" name="campos" value="renda_per_capita" id="campo_percapita">
+                                <label class="form-check-label" for="campo_percapita">Renda Per Capita</label>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-check custom-checkbox">
+                                <input class="form-check-input" type="checkbox" name="campos" value="num_moradores" id="campo_nmoradores">
+                                <label class="form-check-label" for="campo_nmoradores">Nº Moradores</label>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-check custom-checkbox">
+                                <input class="form-check-input" type="checkbox" name="campos" value="quantos_trabalham" id="campo_trab">
+                                <label class="form-check-label" for="campo_trab">Quantos Trabalham</label>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-check custom-checkbox">
+                                <input class="form-check-input" type="checkbox" name="campos" value="renda_moradores" id="campo_rmoradores">
+                                <label class="form-check-label" for="campo_rmoradores">Renda Outros</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 5. Outros -->
+                    <h6 class="fw-bold text-primary mb-3 border-bottom pb-2">5. Outros</h6>
+                    <div class="row g-3">
+                        <div class="col-md-3">
+                            <div class="form-check custom-checkbox">
+                                <input class="form-check-input" type="checkbox" name="campos" value="como_soube" id="campo_soube">
+                                <label class="form-check-label" for="campo_soube">Como Soube</label>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-check custom-checkbox">
+                                <input class="form-check-input" type="checkbox" name="campos" value="turno_interesse" id="campo_turno">
+                                <label class="form-check-label" for="campo_turno">Turno Interesse</label>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-check custom-checkbox">
+                                <input class="form-check-input" type="checkbox" name="campos" value="observacoes" id="campo_obs">
+                                <label class="form-check-label" for="campo_obs">Observações</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary px-4"><i class="bi bi-file-earmark-spreadsheet me-2"></i>Baixar Planilha</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 
 {% endblock %}

@@ -119,36 +119,60 @@
             <div class="card-body p-0">
                 {% if controles_diarios %}
                     <div class="table-responsive">
-                        <table class="table table-hover align-middle mb-0">
+                        <table class="table table-hover table-bordered align-middle mb-0">
                             <thead class="table-light">
-                                <tr class="text-secondary small text-uppercase">
-                                    <th>Escola</th>
-                                    <th>Data</th>
-                                    <th>Atendimento</th>
-                                    <th>Inscrições</th>
-                                    <th>Presentes</th>
-                                    <th>Lig. Recebidas</th>
-                                    <th>Lig. Realizadas</th>
-                                    <th>Lançado por</th>
+                                <tr class="text-secondary small text-uppercase text-center">
+                                    <th class="text-start">Métrica</th>
+                                    {% for controle in controles_diarios %}
+                                        <th>{{ controle.escola.nome }}</th>
+                                    {% endfor %}
                                 </tr>
                             </thead>
-                            <tbody>
-                                {% for controle in controles_diarios %}
-                                    <tr>
-                                        <td class="fw-semibold">
-                                            {{ controle.escola.nome }}
-                                        </td>
+                            <tbody class="text-center">
+                                <tr>
+                                    <td class="fw-semibold text-start text-secondary small text-uppercase bg-light" style="width: 15%;">Data</td>
+                                    {% for controle in controles_diarios %}
                                         <td>{{ controle.data|date:"d/m/Y" }}</td>
+                                    {% endfor %}
+                                </tr>
+                                <tr>
+                                    <td class="fw-semibold text-start text-secondary small text-uppercase bg-light">Atendimento</td>
+                                    {% for controle in controles_diarios %}
                                         <td>{{ controle.atendimento }}</td>
+                                    {% endfor %}
+                                </tr>
+                                <tr>
+                                    <td class="fw-semibold text-start text-secondary small text-uppercase bg-light">Inscrições</td>
+                                    {% for controle in controles_diarios %}
                                         <td>{{ controle.inscricoes }}</td>
+                                    {% endfor %}
+                                </tr>
+                                <tr>
+                                    <td class="fw-semibold text-start text-secondary small text-uppercase bg-light">Presentes</td>
+                                    {% for controle in controles_diarios %}
                                         <td>{{ controle.pessoas_presentes }}</td>
+                                    {% endfor %}
+                                </tr>
+                                <tr>
+                                    <td class="fw-semibold text-start text-secondary small text-uppercase bg-light">Lig. Recebidas</td>
+                                    {% for controle in controles_diarios %}
                                         <td>{{ controle.ligacoes_recebidas }}</td>
+                                    {% endfor %}
+                                </tr>
+                                <tr>
+                                    <td class="fw-semibold text-start text-secondary small text-uppercase bg-light">Lig. Realizadas</td>
+                                    {% for controle in controles_diarios %}
                                         <td>{{ controle.ligacoes_realizadas }}</td>
+                                    {% endfor %}
+                                </tr>
+                                <tr>
+                                    <td class="fw-semibold text-start text-secondary small text-uppercase bg-light">Lançado por</td>
+                                    {% for controle in controles_diarios %}
                                         <td>
-                                            {{ controle.usuario.get_full_name|default:controle.usuario.username }}
+                                            <span class="small">{{ controle.usuario.get_full_name|default:controle.usuario.username }}</span>
                                         </td>
-                                    </tr>
-                                {% endfor %}
+                                    {% endfor %}
+                                </tr>
                             </tbody>
                         </table>
                     </div>

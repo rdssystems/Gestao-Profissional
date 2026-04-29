@@ -7,17 +7,14 @@ ENV PYTHONUNBUFFERED 1
 
 WORKDIR /app
 
-# Instala dependências do sistema e o cliente PostgreSQL mais recente
+# Instala dependências do sistema e o cliente PostgreSQL
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     libpq-dev \
     netcat-openbsd \
     curl \
     ca-certificates \
-    gnupg \
-    && curl https://www.postgresql.org/media/keys/ACCC4CF8.asc | gpg --dearmor | tee /usr/share/keyrings/pgdg.gpg > /dev/null \
-    && echo "deb [signed-by=/usr/share/keyrings/pgdg.gpg] http://apt.postgresql.org/pub/repos/apt/ bookworm-pgdg main" > /etc/apt/sources.list.d/pgdg.list \
-    && apt-get update && apt-get install -y --no-install-recommends postgresql-client-18 \
+    postgresql-client \
     && rm -rf /var/lib/apt/lists/*
 
 # Instala dependências do Python
