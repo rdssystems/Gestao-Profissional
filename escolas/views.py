@@ -10,6 +10,8 @@ from django.db import models
 from django.db.models import Count, Q # Adicionados Count e Q
 from core.mixins import AuditLogMixin
 
+from django.contrib.contenttypes.models import ContentType
+
 # Modelos importados localmente ou por classes
 from escolas.models import Escola
 from cursos.models import Curso, Inscricao, Chamada, AvaliacaoAlunoCurso
@@ -116,8 +118,8 @@ class DashboardView(LoginRequiredMixin, TemplateView):
             context['cursos_ativos'] = curso_scope.filter(status__in=['Aberta', 'Em Andamento']).count()
             context['cursos_concluidos'] = curso_scope.filter(status='Concluído', data_fim__year=year, data_fim__month=month).count()
             
-            # Inscrições no mês
-            context['inscricoes_hoje'] = aluno_scope.filter(data_criacao__year=year, data_criacao__month=month).count()
+            # Inscrições no mês (Apenas alunos criados no mês para manter retrocompatibilidade se necessário, mas o card 'Hoje' usará outra variável)
+            context['inscricoes_mes'] = aluno_scope.filter(data_criacao__year=year, data_criacao__month=month).count()
         except:
             context['total_alunos'] = 0
             context['alunos_cursando'] = 0
@@ -126,7 +128,7 @@ class DashboardView(LoginRequiredMixin, TemplateView):
             context['alunos_desistentes'] = 0
             context['cursos_ativos'] = 0
             context['cursos_concluidos'] = 0
-            context['inscricoes_hoje'] = 0
+            context['inscricoes_mes'] = 0
 
         # Histórico Recente
         audit_scope = AuditLog.objects.select_related('usuario', 'usuario__profile', 'content_type').order_by('-data_hora')
@@ -207,11 +209,31 @@ class DashboardView(LoginRequiredMixin, TemplateView):
             masc_query_g = alunos_ativos_g.filter(sexo='M')
             fem_query_g = alunos_ativos_g.filter(sexo='F')
             
+            # Cálculo KPI Hoje Global
+            aluno_ct = ContentType.objects.get_for_model(Aluno)
+            count_novos_alunos_g = aluno_scope.filter(data_criacao__date=today).count()
+            count_novas_inscricoes_g = inscricao_scope.filter(data_inscricao__date=today).count()
+            
+            # Interesses e Migrações via AuditLog (Global)
+            audit_hoje_g = AuditLog.objects.filter(data_hora__date=today, content_type=aluno_ct, acao='UPDATE')
+            count_interesses_g = 0
+            count_migracoes_g = 0
+            for log in audit_hoje_g:
+                if log.detalhes:
+                    try:
+                        detalhes = json.loads(log.detalhes)
+                        alteracoes = detalhes.get('alteracoes', {})
+                        if 'cursos_interesse' in alteracoes: count_interesses_g += 1
+                        if 'escola' in alteracoes: count_migracoes_g += 1
+                    except: pass
+            
+            kpi_hoje_g = count_novos_alunos_g + count_novas_inscricoes_g + count_interesses_g + count_migracoes_g
+
             escolas_dados.append({
                 'id': 'global',
                 'nome': '🌐 Visão Geral da Rede',
                 'kpis': {
-                    'inscricoes_hoje': kpi_inscricoes_hoje_g,
+                    'inscricoes_hoje': kpi_hoje_g,
                     'total_alunos': kpi_total_alunos_g,
                     'alunos_cursando': kpi_alunos_cursando_g,
                     'alunos_concluintes': kpi_alunos_concluintes_g,
@@ -280,8 +302,32 @@ class DashboardView(LoginRequiredMixin, TemplateView):
             media_idade_m = calcular_media_idade(masc_query)
             media_idade_f = calcular_media_idade(fem_query)
             
-            # Métricas em Grid (Cards) para a Escola Atual
-            kpi_inscricoes_hoje = aluno_scope.filter(escola=esc, data_criacao__year=year, data_criacao__month=month).count()
+            # Cálculo KPI Hoje Individual (Escola)
+            aluno_ct = ContentType.objects.get_for_model(Aluno)
+            count_novos_alunos = aluno_scope.filter(escola=esc, data_criacao__date=today).count()
+            count_novas_inscricoes = inscricao_scope.filter(curso__escola=esc, data_inscricao__date=today).count()
+            
+            # Interesses e Migrações via AuditLog (Escola)
+            # Filtramos ações feitas por usuários desta escola
+            audit_hoje_esc = AuditLog.objects.filter(
+                data_hora__date=today, 
+                content_type=aluno_ct, 
+                acao='UPDATE',
+                usuario__profile__escola=esc
+            )
+            count_interesses = 0
+            count_migracoes = 0
+            for log in audit_hoje_esc:
+                if log.detalhes:
+                    try:
+                        detalhes = json.loads(log.detalhes)
+                        alteracoes = detalhes.get('alteracoes', {})
+                        if 'cursos_interesse' in alteracoes: count_interesses += 1
+                        if 'escola' in alteracoes: count_migracoes += 1
+                    except: pass
+            
+            kpi_hoje = count_novos_alunos + count_novas_inscricoes + count_interesses + count_migracoes
+
             kpi_total_alunos = aluno_scope.filter(escola=esc).count()
             kpi_alunos_cursando = inscricao_scope.filter(curso__escola=esc, curso__in=esc_cursos_ativos, status='cursando').distinct().count()
             kpi_alunos_concluintes = inscricao_scope.filter(curso__escola=esc, status='concluido', data_conclusao__year=year, data_conclusao__month=month).count()
@@ -296,7 +342,7 @@ class DashboardView(LoginRequiredMixin, TemplateView):
                     'id': str(esc.id),
                     'nome': esc.nome,
                     'kpis': {
-                        'inscricoes_hoje': kpi_inscricoes_hoje,
+                        'inscricoes_hoje': kpi_hoje,
                         'total_alunos': kpi_total_alunos,
                         'alunos_cursando': kpi_alunos_cursando,
                         'alunos_concluintes': kpi_alunos_concluintes,

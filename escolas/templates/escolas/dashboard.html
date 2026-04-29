@@ -45,12 +45,13 @@
             <a href="{% url 'escolas:criar_escola' %}" class="btn-premium py-2 text-nowrap ms-md-2">
                 <i class="bi bi-plus-lg"></i> Nova Escola
             </a>
-            <!-- Botão Log -->
+            {% endif %}
+
+            <!-- Botão Log (Sempre visível) -->
             <button type="button" class="btn btn-premium shadow-sm py-2 ms-md-2 position-relative" data-bs-toggle="modal" data-bs-target="#feedModal" title="Últimas Atualizações">
                 <i class="bi bi-bell-fill"></i>
                 <span class="position-absolute top-0 start-100 translate-middle p-2 bg-danger border border-light rounded-circle"></span>
             </button>
-            {% endif %}
         </div>
     </div>
 
