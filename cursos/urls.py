@@ -11,6 +11,7 @@ urlpatterns = [
     path('<int:pk>/excluir/', views.CursoDeleteView.as_view(), name='excluir_curso'),
     path('<int:pk>/concluintes/', views.CursoConcluintesView.as_view(), name='curso_concluintes'),
     path('<int:pk>/concluintes/xlsx/', views.CursoConcluintesXLSXView.as_view(), name='curso_concluintes_xlsx'),
+    path('<int:pk>/exportar-alunos/', views.ExportarAlunosView.as_view(), name='exportar_alunos_xlsx'),
     path('<int:pk>/imprimir-lista/', views.CursoImprimirListaView.as_view(), name='curso_imprimir_lista'),
     path('<int:pk>/alterar_status/', views.CursoStatusUpdateView.as_view(), name='alterar_status_curso'),
     path('<int:pk>/qualitativos/', views.CursoQualitativosView.as_view(), name='curso_qualitativos'),

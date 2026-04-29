@@ -322,6 +322,124 @@ class CursoConcluintesXLSXView(LoginRequiredMixin, StaffRequiredMixin, View):
             
         return response
 
+class ExportarAlunosView(LoginRequiredMixin, StaffRequiredMixin, View):
+    def post(self, request, pk):
+        curso = get_object_or_404(Curso, pk=pk)
+        campos_selecionados = request.POST.getlist('campos')
+        
+        if not campos_selecionados:
+            messages.error(request, "Selecione ao menos um campo para exportar.")
+            return redirect('cursos:detalhe_curso', pk=pk)
+
+        # Filtrar alunos matriculados (cursando)
+        inscricoes = curso.inscricao_set.filter(status='cursando').select_related('aluno')
+        
+        data = []
+        for insc in inscricoes:
+            aluno = insc.aluno
+            row = {}
+            
+            # 1. Identificação
+            if 'nome' in campos_selecionados:
+                row['Nome Completo'] = aluno.nome_completo
+            if 'cpf' in campos_selecionados:
+                row['CPF'] = aluno.cpf_formatado
+            if 'rg' in campos_selecionados:
+                row['RG'] = aluno.rg
+            if 'orgao_exp' in campos_selecionados:
+                row['Órgão Exp.'] = aluno.orgao_exp
+            if 'data_emissao' in campos_selecionados:
+                row['Data de Emissão'] = aluno.data_emissao.strftime('%d/%m/%Y') if aluno.data_emissao else ''
+            
+            # 2. Informações Pessoais
+            if 'data_nascimento' in campos_selecionados:
+                row['Data de Nascimento'] = aluno.data_nascimento.strftime('%d/%m/%Y') if aluno.data_nascimento else ''
+            if 'idade' in campos_selecionados:
+                row['Idade'] = aluno.idade
+            if 'sexo' in campos_selecionados:
+                row['Sexo'] = aluno.get_sexo_display()
+            if 'estado_civil' in campos_selecionados:
+                row['Estado Civil'] = aluno.get_estado_civil_display() if hasattr(aluno, 'get_estado_civil_display') else aluno.estado_civil
+            if 'cor_raca' in campos_selecionados:
+                row['Cor/Raça'] = aluno.get_cor_raca_display() if hasattr(aluno, 'get_cor_raca_display') else aluno.cor_raca
+            if 'naturalidade' in campos_selecionados:
+                row['Naturalidade'] = aluno.naturalidade
+            if 'uf_naturalidade' in campos_selecionados:
+                row['UF Naturalidade'] = aluno.uf_naturalidade
+            if 'mae' in campos_selecionados:
+                row['Nome da Mãe'] = aluno.nome_mae
+            if 'deficiencia' in campos_selecionados:
+                row['Deficiência'] = "Sim" if aluno.deficiencia else "Não"
+                row['Tipo Deficiência'] = aluno.tipo_deficiencia if aluno.deficiencia else ''
+            if 'escolaridade' in campos_selecionados:
+                row['Escolaridade'] = aluno.get_escolaridade_display() if hasattr(aluno, 'get_escolaridade_display') else aluno.escolaridade
+
+            # 3. Contato e Endereço
+            if 'email' in campos_selecionados:
+                row['Email'] = aluno.email_principal
+            if 'whatsapp' in campos_selecionados:
+                row['WhatsApp'] = aluno.whatsapp
+            if 'telefone' in campos_selecionados:
+                row['Telefone Principal'] = aluno.telefone_principal
+            if 'cep' in campos_selecionados:
+                row['CEP'] = aluno.endereco_cep
+            if 'rua' in campos_selecionados:
+                row['Rua'] = aluno.endereco_rua
+            if 'numero' in campos_selecionados:
+                row['Número'] = aluno.endereco_numero
+            if 'bairro' in campos_selecionados:
+                row['Bairro'] = aluno.endereco_bairro
+            if 'cidade' in campos_selecionados:
+                row['Cidade'] = aluno.endereco_cidade
+            if 'estado' in campos_selecionados:
+                row['Estado'] = aluno.endereco_estado
+            if 'tempo_moradia' in campos_selecionados:
+                row['Tempo de Moradia'] = aluno.get_tempo_moradia_display() if hasattr(aluno, 'get_tempo_moradia_display') else aluno.tempo_moradia
+            if 'tipo_moradia' in campos_selecionados:
+                row['Tipo de Moradia'] = aluno.get_tipo_moradia_display() if hasattr(aluno, 'get_tipo_moradia_display') else aluno.tipo_moradia
+            if 'valor_moradia' in campos_selecionados:
+                row['Valor da Moradia'] = f"R$ {aluno.valor_moradia}" if aluno.valor_moradia else "R$ 0,00"
+
+            # 4. Dados Profissionais e Familiares
+            if 'situacao_profissional' in campos_selecionados:
+                row['Situação Profissional'] = aluno.get_situacao_profissional_display() if hasattr(aluno, 'get_situacao_profissional_display') else aluno.situacao_profissional
+            if 'renda_individual' in campos_selecionados:
+                row['Renda Individual'] = f"R$ {aluno.renda_individual}" if aluno.renda_individual else "R$ 0,00"
+            if 'num_moradores' in campos_selecionados:
+                row['Nº de Moradores'] = aluno.num_moradores
+            if 'quantos_trabalham' in campos_selecionados:
+                row['Quantos Trabalham'] = aluno.quantos_trabalham
+            if 'renda_moradores' in campos_selecionados:
+                row['Renda Outros Moradores'] = f"R$ {aluno.renda_moradores}" if aluno.renda_moradores else "R$ 0,00"
+            if 'renda_familiar' in campos_selecionados:
+                row['Renda Familiar'] = f"R$ {aluno.renda_familiar}"
+            if 'renda_per_capita' in campos_selecionados:
+                row['Renda Per Capita'] = f"R$ {aluno.renda_per_capita:.2f}"
+
+            # 5. Outros
+            if 'como_soube' in campos_selecionados:
+                row['Como Soube'] = aluno.get_como_soube_display() if hasattr(aluno, 'get_como_soube_display') else aluno.como_soube
+            if 'turno_interesse' in campos_selecionados:
+                row['Turno de Interesse'] = aluno.turno_interesse
+            if 'observacoes' in campos_selecionados:
+                row['Observações'] = aluno.observacoes
+            
+            data.append(row)
+            
+        if not data:
+            messages.warning(request, "Não há alunos cursando neste curso para exportar.")
+            return redirect('cursos:detalhe_curso', pk=pk)
+
+        df = pd.DataFrame(data)
+        
+        response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        response['Content-Disposition'] = f'attachment; filename="alunos_{curso.nome}_{date.today()}.xlsx"'
+        
+        with pd.ExcelWriter(response, engine='openpyxl') as writer:
+            df.to_excel(writer, index=False, sheet_name='Alunos')
+            
+        return response
+
 class CursoImprimirListaView(LoginRequiredMixin, StaffRequiredMixin, DetailView):
     model = Curso
     template_name = 'cursos/curso_imprimir_lista.html'
