@@ -16,31 +16,6 @@ services:
     container_name: gq-redis
     restart: always
 
-  evolution_api:
-    image: atendai/evolution-api:v1.8.7
-    container_name: gq-evolution
-    restart: always
-    ports:
-      - "8080:8080"
-    volumes:
-      - evolution_data:/evolution/instances
-    environment:
-      - SERVER_URL=http://localhost:8080
-      - AUTHENTICATION_TYPE=apikey
-      - AUTHENTICATION_API_KEY=gq-evolution-secret-key-2026
-      - AUTHENTICATION_EXPOSE_IN_FETCH_INSTANCES=true
-      - STORE_SAVE_DATA_INSTANCE=true
-      - STORE_STORE_SAVE_DATA_INSTANCE=true
-      - CONFIG_SESSION_PHONE_VERSION=2.3000.1036821440
-      - WEB_VERSION=2.3000.1036821440
-      - CONFIG_SESSION_NAME_CLIENT=GestaoQualificacao
-      - QRCODE_LIMIT=30
-      - WEBHOOK_GLOBAL_ENABLED=false
-      - LOG_LEVEL=ERROR
-      - LOG_COLOR=false
-    depends_on:
-      - db-redis
-
   web:
     build: .
     container_name: gq-app
@@ -62,15 +37,11 @@ services:
       - DB_PASSWORD=gestao_pass
       - DB_HOST=db
       - DB_PORT=5432
-      - EVOLUTION_API_URL=http://gq-evolution:8080
-      - EVOLUTION_API_KEY=gq-evolution-secret-key-2026
     depends_on:
       - db
       - db-redis
-      - evolution_api
 
 volumes:
   static_volume:
   media_volume:
   postgres_data:
-  evolution_data:
