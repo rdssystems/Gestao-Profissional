@@ -62,7 +62,7 @@ class AlunoClonagemTest(TestCase):
         self.assertEqual(response.status_code, 302)
         
         # Verify new student exists in School B
-        aluno_b = Aluno.objects.filter(escola=self.escola_b, cpf='123.456.789-00').first()
+        aluno_b = Aluno.objects.filter(escola=self.escola_b, cpf='12345678900').first()
         self.assertIsNotNone(aluno_b)
         self.assertNotEqual(aluno_b.pk, self.aluno_a.pk)
         self.assertEqual(aluno_b.nome_completo, 'Aluno Original')
@@ -81,7 +81,7 @@ class AlunoClonagemTest(TestCase):
         
         # Should redirect to list (or safe place) and not create another one
         self.assertEqual(response.status_code, 302)
-        self.assertEqual(Aluno.objects.filter(escola=self.escola_b, cpf='123.456.789-00').count(), 1)
+        self.assertEqual(Aluno.objects.filter(escola=self.escola_b, cpf='12345678900').count(), 1)
 
     def test_verify_cpf_blocks_if_already_in_school(self):
         # Clone first

@@ -63,13 +63,15 @@ class AlunoVerificarCPFView(StaffRequiredMixin, View):
         form = VerificarCPFForm(request.POST)
         if form.is_valid():
             cpf = form.cleaned_data['cpf']
+            from core.utils import clean_digits
+            cpf_limpo = clean_digits(cpf)
             user = request.user
             
             if user.is_superuser:
                 # Superuser creates for any school? Usually superuser flow is different, 
                 # but let's assume they can proceed to create.
                 # For simplicity, superuser just goes to create view with CPF
-                return redirect(f"{reverse_lazy('alunos:criar_aluno')}?cpf={cpf}")
+                return redirect(f"{reverse_lazy('alunos:criar_aluno')}?cpf={cpf_limpo}")
 
             if not hasattr(user, 'profile') or not user.profile.escola:
                 messages.error(request, "Você não está vinculado a nenhuma escola.")
@@ -78,12 +80,12 @@ class AlunoVerificarCPFView(StaffRequiredMixin, View):
             escola_atual = user.profile.escola
 
             # Check if exists in current school
-            if Aluno.objects.filter(escola=escola_atual, cpf=cpf).exists():
+            if Aluno.objects.filter(escola=escola_atual, cpf=cpf_limpo).exists():
                 messages.error(request, f"O Aluno com CPF {cpf} já está cadastrado nesta escola ({escola_atual.nome}).")
                 return render(request, self.template_name, {'form': form})
             
             # Check if exists in ANY other school
-            aluno_existente = Aluno.objects.filter(cpf=cpf).first()
+            aluno_existente = Aluno.objects.filter(cpf=cpf_limpo).first()
             if aluno_existente:
                 # Found in another school -> Offer to clone
                 return render(request, self.template_name, {
@@ -93,7 +95,7 @@ class AlunoVerificarCPFView(StaffRequiredMixin, View):
                 })
             
             # Not found anywhere -> Redirect to Create with CPF pre-filled
-            return redirect(f"{reverse_lazy('alunos:criar_aluno')}?cpf={cpf}")
+            return redirect(f"{reverse_lazy('alunos:criar_aluno')}?cpf={cpf_limpo}")
             
         return render(request, self.template_name, {'form': form})
 
@@ -188,6 +190,8 @@ class AlunoClonarView(AuditLogMixin, StaffRequiredMixin, View):
             messages.success(request, f"Aluno {novo_aluno.nome_completo} importado com sucesso! Os documentos digitais também foram transferidos.")
             return redirect('alunos:editar_aluno', pk=novo_aluno.pk)
         except Exception as e:
+            import traceback
+            traceback.print_exc()
             messages.error(request, f"Erro ao importar aluno: {e}")
             return redirect('alunos:verificar_cpf')
 
@@ -286,6 +290,7 @@ class AlunoCreateView(AuditLogMixin, StaffRequiredMixin, CreateView):
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
         kwargs['user'] = self.request.user
+        kwargs['active_escola'] = getattr(self.request, 'active_escola', None)
         return kwargs
     
     def get_initial(self):
@@ -293,11 +298,17 @@ class AlunoCreateView(AuditLogMixin, StaffRequiredMixin, CreateView):
         cpf = self.request.GET.get('cpf')
         if cpf:
             initial['cpf'] = cpf
+        active_escola = getattr(self.request, 'active_escola', None)
+        if active_escola:
+            initial['escola'] = active_escola
         return initial
 
     def form_valid(self, form):
+        active_escola = getattr(self.request, 'active_escola', None)
         if not self.request.user.is_superuser:
             form.instance.escola = self.request.user.profile.escola
+        elif active_escola:
+            form.instance.escola = active_escola
         return super().form_valid(form)
 
 class AlunoCadastroSucessoView(StaffRequiredMixin, DetailView):
@@ -336,6 +347,7 @@ class AlunoUpdateView(AuditLogMixin, StaffRequiredMixin, UpdateView):
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
         kwargs['user'] = self.request.user
+        kwargs['active_escola'] = getattr(self.request, 'active_escola', None)
         return kwargs
 
 class AlunoDeleteView(AuditLogMixin, StaffRequiredMixin, DeleteView):

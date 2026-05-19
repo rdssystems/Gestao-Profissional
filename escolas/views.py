@@ -464,6 +464,9 @@ class ConcluintesGlobalView(LoginRequiredMixin, SuperuserRequiredMixin, ListView
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        queryset = self.get_queryset()
+        total_concluintes = queryset.aggregate(total=models.Sum('num_concluintes'))['total'] or 0
+        context['total_concluintes'] = total_concluintes
         context['todas_escolas'] = Escola.objects.all().order_by('nome')
         context['selected_escola_id'] = self.request.GET.get('escola_id', 'all')
         return context
