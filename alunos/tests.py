@@ -36,6 +36,18 @@ class AlunoListViewTest(TestCase):
             coordenador_user=self.coordenador2_user
         )
 
+        # Configurar grupos e perfis dos coordenadores
+        from django.contrib.auth.models import Group
+        self.group_coordenador, _ = Group.objects.get_or_create(name='Coordenador')
+        
+        self.coordenador1_user.groups.add(self.group_coordenador)
+        self.coordenador1_user.profile.escola = self.escola1
+        self.coordenador1_user.profile.save()
+        
+        self.coordenador2_user.groups.add(self.group_coordenador)
+        self.coordenador2_user.profile.escola = self.escola2
+        self.coordenador2_user.profile.save()
+
         # Criar alunos para cada escola
         self.aluno1_escola1 = Aluno.objects.create(
             escola=self.escola1, 
@@ -125,7 +137,7 @@ class AlunoListViewTest(TestCase):
         self.client.login(username='coord_aluno1', password='password123')
         detail_url_other_school = reverse('alunos:detalhe_aluno', kwargs={'pk': self.aluno1_escola2.pk})
         response = self.client.get(detail_url_other_school)
-        self.assertEqual(response.status_code, 404) # Deve retornar 404 Not Found
+        self.assertEqual(response.status_code, 403)
 
 class AlunoCrudViewTest(TestCase):
     def setUp(self):
@@ -158,6 +170,18 @@ class AlunoCrudViewTest(TestCase):
             email='coord_crud_aluno2@escola2.com', 
             coordenador_user=self.coordenador2_user
         )
+
+        # Configurar grupos e perfis dos coordenadores
+        from django.contrib.auth.models import Group
+        self.group_coordenador, _ = Group.objects.get_or_create(name='Coordenador')
+        
+        self.coordenador1_user.groups.add(self.group_coordenador)
+        self.coordenador1_user.profile.escola = self.escola1
+        self.coordenador1_user.profile.save()
+        
+        self.coordenador2_user.groups.add(self.group_coordenador)
+        self.coordenador2_user.profile.escola = self.escola2
+        self.coordenador2_user.profile.save()
 
         # Criar um aluno para a escola 1
         self.aluno_escola1 = Aluno.objects.create(
@@ -221,14 +245,24 @@ class AlunoCrudViewTest(TestCase):
             'sexo': 'M', 
             'estado_civil': 'Solteiro', 
             'email_principal': 'novo_admin@escola2.com', 
-            'telefone_principal': '6666-6666', 
+            'telefone_principal': '66999999999', 
+            'whatsapp': '66999999999', 
             'endereco_rua': 'Rua F', 
             'endereco_numero': '6', 
             'endereco_bairro': 'Bairro F', 
             'endereco_cidade': 'Cidade F', 
             'endereco_estado': 'RS', 
             'endereco_cep': '66666-666',
-            'score_aluno': 0 # Adicionado
+            'tempo_moradia': 'Natural',
+            'tipo_moradia': 'Propria',
+            'situacao_profissional': 'Desempregado',
+            'renda_individual': '1000.00',
+            'num_moradores': 3,
+            'quantos_trabalham': 1,
+            'renda_moradores': '2000.00',
+            'como_soube': 'Amigo',
+            'turno_interesse': ['Manhã'],
+            'score_aluno': 0
         }
         response = self.client.post(self.create_url, data=form_data)
         if response.status_code != 302:
@@ -246,14 +280,24 @@ class AlunoCrudViewTest(TestCase):
             'sexo': 'F', 
             'estado_civil': 'Casado', 
             'email_principal': 'novo_coord1@escola1.com', 
-            'telefone_principal': '7777-7777', 
+            'telefone_principal': '77999999999', 
+            'whatsapp': '77999999999', 
             'endereco_rua': 'Rua G', 
             'endereco_numero': '7', 
             'endereco_bairro': 'Bairro G', 
             'endereco_cidade': 'Cidade G', 
             'endereco_estado': 'SP', 
             'endereco_cep': '77777-777',
-            'score_aluno': 0 # Adicionado
+            'tempo_moradia': 'Natural',
+            'tipo_moradia': 'Propria',
+            'situacao_profissional': 'Desempregado',
+            'renda_individual': '1000.00',
+            'num_moradores': 3,
+            'quantos_trabalham': 1,
+            'renda_moradores': '2000.00',
+            'como_soube': 'Amigo',
+            'turno_interesse': ['Manhã'],
+            'score_aluno': 0
         }
         response = self.client.post(self.create_url, data=form_data)
         if response.status_code != 302:
@@ -288,14 +332,24 @@ class AlunoCrudViewTest(TestCase):
             'sexo': 'M', 
             'estado_civil': 'Solteiro', 
             'email_principal': 'crud_aluno1_updated@escola1.com', 
-            'telefone_principal': '4444-4444', 
+            'telefone_principal': '44999999999', 
+            'whatsapp': '44999999999', 
             'endereco_rua': 'Rua D', 
             'endereco_numero': '4', 
             'endereco_bairro': 'Bairro D', 
             'endereco_cidade': 'Cidade D', 
             'endereco_estado': 'SC', 
             'endereco_cep': '44444-444',
-            'score_aluno': 0 # Adicionado
+            'tempo_moradia': 'Natural',
+            'tipo_moradia': 'Propria',
+            'situacao_profissional': 'Desempregado',
+            'renda_individual': '1000.00',
+            'num_moradores': 3,
+            'quantos_trabalham': 1,
+            'renda_moradores': '2000.00',
+            'como_soube': 'Amigo',
+            'turno_interesse': ['Manhã'],
+            'score_aluno': 0
         }
         response = self.client.post(self.update_url_escola1, data=form_data)
         if response.status_code != 302:
@@ -314,14 +368,24 @@ class AlunoCrudViewTest(TestCase):
             'sexo': 'M', 
             'estado_civil': 'Solteiro', 
             'email_principal': 'crud_aluno1_updated_coord@escola1.com', 
-            'telefone_principal': '4444-4444', 
+            'telefone_principal': '44999999999', 
+            'whatsapp': '44999999999', 
             'endereco_rua': 'Rua D', 
             'endereco_numero': '4', 
             'endereco_bairro': 'Bairro D', 
             'endereco_cidade': 'Cidade D', 
             'endereco_estado': 'SC', 
             'endereco_cep': '44444-444',
-            'score_aluno': 0 # Adicionado
+            'tempo_moradia': 'Natural',
+            'tipo_moradia': 'Propria',
+            'situacao_profissional': 'Desempregado',
+            'renda_individual': '1000.00',
+            'num_moradores': 3,
+            'quantos_trabalham': 1,
+            'renda_moradores': '2000.00',
+            'como_soube': 'Amigo',
+            'turno_interesse': ['Manhã'],
+            'score_aluno': 0
         }
         response = self.client.post(self.update_url_escola1, data=form_data)
         if response.status_code != 302:

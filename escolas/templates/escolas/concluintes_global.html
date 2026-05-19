@@ -21,13 +21,13 @@
     <!-- Filtros -->
     <div class="premium-card mb-4 animate-up" style="animation-delay: 0.1s;">
         <form method="GET" class="row g-3 align-items-end">
-            <div class="col-md-6 col-lg-5">
+            <div class="col-md-5 col-lg-4">
                 <label class="form-label small fw-bold text-muted mb-1 text-uppercase">Filtrar por Unidade</label>
                 <select name="escola_id" class="form-select form-select-premium shadow-sm" onchange="this.form.submit()">
                     <option value="all">Todas as Unidades</option>
-                    {% for escola in todas_escolas %}
-                    <option value="{{ escola.pk }}" {% if selected_escola_id == escola.pk|stringformat:"s" %}selected{% endif %}>
-                        {{ escola.nome }}
+                    {% for school in todas_escolas %}
+                    <option value="{{ school.pk }}" {% if selected_escola_id == school.pk|stringformat:"s" %}selected{% endif %}>
+                        {{ school.nome }}
                     </option>
                     {% endfor %}
                 </select>
@@ -44,6 +44,19 @@
                 </a>
             </div>
             {% endif %}
+            
+            <!-- Contador Total -->
+            <div class="col-auto ms-auto">
+                <div class="d-flex align-items-center bg-success-soft px-3 py-2 rounded-3 border border-success-subtle shadow-sm">
+                    <div class="me-3 bg-success text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 42px; height: 42px;">
+                        <i class="bi bi-person-check-fill fs-4"></i>
+                    </div>
+                    <div>
+                        <div class="small text-muted text-uppercase fw-bold" style="font-size: 0.65rem; letter-spacing: 0.02em; line-height: 1.2;">Total de Concluintes</div>
+                        <div class="h4 mb-0 fw-bold text-success" style="line-height: 1;">{{ total_concluintes }}</div>
+                    </div>
+                </div>
+            </div>
         </form>
     </div>
 
