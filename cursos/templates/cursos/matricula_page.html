@@ -146,6 +146,12 @@
                         <i class="bi bi-printer me-1"></i>
                         Imprimir Lista
                     </button>
+
+                    <button type="button" class="btn btn-success btn-sm fw-semibold"
+                        onclick="openWhatsappModal()">
+                        <i class="bi bi-whatsapp me-1"></i>
+                        Whatsapp
+                    </button>
                 </div>
             </div>
         </div>
@@ -167,7 +173,7 @@
                 </thead>
                 <tbody>
                     {% for aluno in alunos_sugeridos %}
-                    <tr class="aluno-row" data-id="{{ aluno.pk }}" data-nome="{{ aluno.nome_completo }}">
+                    <tr class="aluno-row" data-id="{{ aluno.pk }}" data-nome="{{ aluno.nome_completo }}" data-telefone="{{ aluno.telefone_principal|apenas_numeros }}">
 
                         <td class="text-center">
                             <input type="checkbox" class="form-check-input aluno-select" value="{{ aluno.pk }}">
@@ -252,6 +258,58 @@
 
 </div>
 
+<!-- Modal de Envio de WhatsApp -->
+<div class="modal fade" id="whatsappModal" tabindex="-1" aria-labelledby="whatsappModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 20px; overflow: hidden;">
+            <div class="modal-header bg-success text-white border-0 py-3">
+                <h5 class="modal-title fw-bold d-flex align-items-center" id="whatsappModalLabel">
+                    <i class="bi bi-whatsapp me-2"></i> Envio de Mensagens WhatsApp
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <div class="row g-4">
+                    <!-- Coluna do Template e Controle -->
+                    <div class="col-md-7 border-end">
+                        <h6 class="fw-bold text-secondary mb-3">Mensagem a ser enviada:</h6>
+                        <textarea id="whatsappTemplate" class="form-control mb-3" rows="8" style="resize: vertical; font-size: 0.95rem;"></textarea>
+                        
+                        <div class="alert alert-light border small text-muted mb-3 py-2 px-3">
+                            <strong>Tags disponíveis:</strong><br>
+                            <span class="badge bg-light text-dark border me-1">{NOME}</span> Nome do aluno<br>
+                            <span class="badge bg-light text-dark border me-1">{CURSO}</span> Nome do curso<br>
+                            <span class="badge bg-light text-dark border me-1">{ESCOLA}</span> Escola do curso<br>
+                            <span class="badge bg-light text-dark border me-1">{TURNO}</span> Turno do curso<br>
+                            <span class="badge bg-light text-dark border me-1">{HORARIO}</span> Horário de início
+                        </div>
+                        
+                        <div class="d-grid gap-2">
+                            <button type="button" id="btnEnviarWhatsApp" class="btn btn-success fw-bold shadow-sm" onclick="sendCurrentStudent()">
+                                <i class="bi bi-whatsapp me-2"></i> Abrir Conversa no WhatsApp
+                            </button>
+                            <button type="button" id="btnProximoWhatsApp" class="btn btn-outline-primary fw-bold shadow-sm" onclick="nextStudent()" disabled>
+                                <i class="bi bi-arrow-right-short fs-5 align-middle me-1"></i> Próximo Aluno
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Coluna da Lista de Alunos -->
+                    <div class="col-md-5">
+                        <h6 class="fw-bold text-secondary mb-3 d-flex justify-content-between align-items-center">
+                            Alunos Selecionados
+                            <span id="whatsappProgressBadge" class="badge bg-light text-dark border small">0/0</span>
+                        </h6>
+                        <div id="whatsappStudentsList" style="max-height: 320px; overflow-y: auto; border-radius: 8px; border: 1px solid #dee2e6;" class="list-group list-group-flush">
+                            <!-- Preenchido dinamicamente via JS -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 {% endblock %}
 
 {% block extra_js %}
@@ -305,9 +363,9 @@
             selected.push({
                 id: row.dataset.id,
                 nome: row.dataset.nome,
-                cpf: row.cells[2].textContent,
-                telefone: row.cells[3].textContent,
-                score: row.cells[4].textContent,
+                cpf: row.cells[2].textContent.trim(),
+                telefone: row.cells[3].textContent.trim(),
+                score: row.cells[4].textContent.trim(),
             });
         });
         return selected;
@@ -339,6 +397,129 @@
         printWindow.document.write('<script>setTimeout(() => { window.print(); window.close(); }, 500);</' + 'script>');
         printWindow.document.write('</body></html>');
         printWindow.document.close();
+    }
+
+    // --- WhatsApp Broadcast Flow ---
+    let whatsappSelectedStudents = [];
+    let whatsappCurrentIndex = 0;
+    const whatsappModal = new bootstrap.Modal(document.getElementById('whatsappModal'));
+
+    function openWhatsappModal() {
+        whatsappSelectedStudents = [];
+        const checkboxes = document.querySelectorAll('.aluno-select:checked');
+        
+        if (checkboxes.length === 0) {
+            alert('Por favor, selecione ao menos um aluno para enviar mensagens.');
+            return;
+        }
+        
+        checkboxes.forEach(cb => {
+            const row = cb.closest('.aluno-row');
+            whatsappSelectedStudents.push({
+                id: row.dataset.id,
+                nome: row.dataset.nome,
+                telefone: row.dataset.telefone || ''
+            });
+        });
+        
+        const defaultTemplate = `Olá, {NOME}! Vimos seu interesse no curso de {CURSO} da unidade {ESCOLA}.
+Estamos com matrículas abertas para o turno {TURNO} ({HORARIO}).
+Gostaria de garantir a sua vaga?`;
+        
+        document.getElementById('whatsappTemplate').value = defaultTemplate;
+        whatsappCurrentIndex = 0;
+        
+        renderWhatsappStudentsList();
+        
+        document.getElementById('btnEnviarWhatsApp').disabled = false;
+        document.getElementById('btnProximoWhatsApp').disabled = true;
+        
+        whatsappModal.show();
+    }
+
+    function renderWhatsappStudentsList() {
+        const listContainer = document.getElementById('whatsappStudentsList');
+        listContainer.innerHTML = '';
+        
+        document.getElementById('whatsappProgressBadge').textContent = `${whatsappCurrentIndex}/${whatsappSelectedStudents.length}`;
+        
+        whatsappSelectedStudents.forEach((student, idx) => {
+            const item = document.createElement('div');
+            item.className = 'list-group-item d-flex justify-content-between align-items-center py-2 px-3';
+            if (idx === whatsappCurrentIndex) {
+                item.classList.add('bg-primary-subtle', 'text-primary-emphasis', 'fw-bold', 'border-start', 'border-primary', 'border-3');
+            }
+            
+            let badgeHtml = '';
+            if (idx < whatsappCurrentIndex) {
+                badgeHtml = '<span class="badge bg-success"><i class="bi bi-check-lg"></i> Feito</span>';
+            } else if (idx === whatsappCurrentIndex) {
+                badgeHtml = '<span class="badge bg-primary">Atual</span>';
+            } else {
+                badgeHtml = '<span class="badge bg-secondary text-white-50">Pendente</span>';
+            }
+            
+            const formattedPhone = student.telefone ? `(${student.telefone.substring(0, 2)}) ${student.telefone.substring(2)}` : 'Sem telefone';
+            
+            item.innerHTML = `
+                <div>
+                    <div class="mb-0 text-dark" style="font-size: 0.95rem;">${student.nome}</div>
+                    <small class="text-muted" style="font-size: 0.8rem;">${formattedPhone}</small>
+                </div>
+                <div>${badgeHtml}</div>
+            `;
+            listContainer.appendChild(item);
+        });
+        
+        const currentItem = listContainer.children[whatsappCurrentIndex];
+        if (currentItem) {
+            currentItem.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+    }
+
+    function sendCurrentStudent() {
+        if (whatsappCurrentIndex >= whatsappSelectedStudents.length) return;
+        
+        const student = whatsappSelectedStudents[whatsappCurrentIndex];
+        if (!student.telefone) {
+            alert(`O aluno ${student.nome} não possui telefone cadastrado.`);
+            document.getElementById('btnProximoWhatsApp').disabled = false;
+            return;
+        }
+        
+        const template = document.getElementById('whatsappTemplate').value;
+        const cursoInfo = {
+            nome: "{{ selected_curso.nome|escapejs }}",
+            escola: "{{ selected_curso.escola.nome|escapejs }}",
+            turno: "{{ selected_curso.get_turno_display|escapejs }}",
+            horario: "{{ selected_curso.horario|date:'H:i'|escapejs }}"
+        };
+        
+        let msg = template
+            .replace(/{NOME}/g, student.nome)
+            .replace(/{CURSO}/g, cursoInfo.nome)
+            .replace(/{ESCOLA}/g, cursoInfo.escola)
+            .replace(/{TURNO}/g, cursoInfo.turno)
+            .replace(/{HORARIO}/g, cursoInfo.horario);
+            
+        const url = `https://api.whatsapp.com/send?phone=55${student.telefone}&text=${encodeURIComponent(msg)}`;
+        window.open(url, '_blank');
+        
+        document.getElementById('btnProximoWhatsApp').disabled = false;
+    }
+
+    function nextStudent() {
+        if (whatsappCurrentIndex < whatsappSelectedStudents.length - 1) {
+            whatsappCurrentIndex++;
+            renderWhatsappStudentsList();
+            sendCurrentStudent();
+        } else {
+            whatsappCurrentIndex++;
+            renderWhatsappStudentsList();
+            alert('Disparo concluído para todos os alunos selecionados!');
+            document.getElementById('btnEnviarWhatsApp').disabled = true;
+            document.getElementById('btnProximoWhatsApp').disabled = true;
+        }
     }
 </script>
 {% endblock %}
