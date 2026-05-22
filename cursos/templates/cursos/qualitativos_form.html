@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load my_filters %}
 
 {% block title %}Qualitativos - {{ curso.nome }}{% endblock %}
 
@@ -89,6 +90,12 @@
                         {% endif %}
                         <input type="hidden" name="data_aula" value="{{ data_selecionada }}">
                         
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h5 class="mb-0 fw-bold">Alunos Ausentes</h5>
+                            <button type="button" class="btn btn-success fw-bold rounded-pill" onclick="openWhatsappModal()">
+                                <i class="bi bi-whatsapp me-1"></i> Enviar Mensagem
+                            </button>
+                        </div>
                         <div class="table-responsive">
                             <table class="table table-hover align-middle">
                                 <thead class="table-light">
@@ -101,7 +108,7 @@
                                 </thead>
                                 <tbody>
                                     {% for chamada in chamadas %}
-                                    <tr class="aluno-row">
+                                    <tr class="aluno-row" data-id="{{ chamada.id }}" data-nome="{{ chamada.inscricao.aluno.nome_completo }}" data-telefone="{{ chamada.inscricao.aluno.telefone_principal|default:''|apenas_numeros }}">
                                         <td class="fw-bold text-dark">
                                             {{ chamada.inscricao.aluno.nome_completo }}
                                             {% if chamada.inscricao.aluno.whatsapp_link %}
@@ -153,6 +160,54 @@
     </div>
 </div>
 
+<!-- Modal de Envio de WhatsApp -->
+<div class="modal fade" id="whatsappModal" tabindex="-1" aria-labelledby="whatsappModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 20px; overflow: hidden;">
+            <div class="modal-header bg-success text-white border-0 py-3">
+                <h5 class="modal-title fw-bold d-flex align-items-center" id="whatsappModalLabel">
+                    <i class="bi bi-whatsapp me-2"></i> Envio de Mensagens para Ausentes
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <div class="row g-4">
+                    <!-- Coluna do Template e Controle -->
+                    <div class="col-md-7 border-end">
+                        <h6 class="fw-bold text-secondary mb-3">Mensagem a ser enviada:</h6>
+                        <textarea id="whatsappTemplate" class="form-control mb-3" rows="8" style="resize: vertical; font-size: 0.95rem;"></textarea>
+                        
+                        <div class="alert alert-light border small text-muted mb-3 py-2 px-3">
+                            <strong>Tags disponíveis:</strong><br>
+                            <span class="badge bg-light text-dark border me-1">{NOME}</span> Nome do aluno
+                        </div>
+                        
+                        <div class="d-grid gap-2">
+                            <button type="button" id="btnEnviarWhatsApp" class="btn btn-success fw-bold shadow-sm" onclick="sendCurrentStudent()">
+                                <i class="bi bi-whatsapp me-2"></i> Abrir Conversa no WhatsApp
+                            </button>
+                            <button type="button" id="btnProximoWhatsApp" class="btn btn-outline-primary fw-bold shadow-sm" onclick="nextStudent()" disabled>
+                                <i class="bi bi-arrow-right-short fs-5 align-middle me-1"></i> Próximo Aluno
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Coluna da Lista de Alunos -->
+                    <div class="col-md-5">
+                        <h6 class="fw-bold text-secondary mb-3 d-flex justify-content-between align-items-center">
+                            Lista de Ausentes
+                            <span id="whatsappProgressBadge" class="badge bg-light text-dark border small">0/0</span>
+                        </h6>
+                        <div id="whatsappStudentsList" style="max-height: 320px; overflow-y: auto; border-radius: 8px; border: 1px solid #dee2e6;" class="list-group list-group-flush">
+                            <!-- Preenchido dinamicamente via JS -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         const selects = document.querySelectorAll('.motivo-select');
@@ -171,5 +226,116 @@
             });
         });
     });
+
+    // --- WhatsApp Broadcast Flow ---
+    let whatsappSelectedStudents = [];
+    let whatsappCurrentIndex = 0;
+    
+    function openWhatsappModal() {
+        const whatsappModalEl = document.getElementById('whatsappModal');
+        const whatsappModal = new bootstrap.Modal(whatsappModalEl);
+        
+        whatsappSelectedStudents = [];
+        const rows = document.querySelectorAll('.aluno-row');
+        
+        if (rows.length === 0) {
+            alert('Não há alunos ausentes listados para enviar mensagens.');
+            return;
+        }
+        
+        rows.forEach(row => {
+            whatsappSelectedStudents.push({
+                id: row.dataset.id,
+                nome: row.dataset.nome,
+                telefone: row.dataset.telefone || ''
+            });
+        });
+        
+        const defaultTemplate = `Olá {NOME}, \nSentimos a sua falta na aula de hoje.\nGostaríamos de saber qual o motivo da sua falta?`;
+        
+        document.getElementById('whatsappTemplate').value = defaultTemplate;
+        whatsappCurrentIndex = 0;
+        
+        renderWhatsappStudentsList();
+        
+        document.getElementById('btnEnviarWhatsApp').disabled = false;
+        document.getElementById('btnProximoWhatsApp').disabled = true;
+        
+        whatsappModal.show();
+    }
+
+    function renderWhatsappStudentsList() {
+        const listContainer = document.getElementById('whatsappStudentsList');
+        listContainer.innerHTML = '';
+        
+        document.getElementById('whatsappProgressBadge').textContent = `${whatsappCurrentIndex}/${whatsappSelectedStudents.length}`;
+        
+        whatsappSelectedStudents.forEach((student, idx) => {
+            const item = document.createElement('div');
+            item.className = 'list-group-item d-flex justify-content-between align-items-center py-2 px-3';
+            if (idx === whatsappCurrentIndex) {
+                item.classList.add('bg-primary-subtle', 'text-primary-emphasis', 'fw-bold', 'border-start', 'border-primary', 'border-3');
+            }
+            
+            let badgeHtml = '';
+            if (idx < whatsappCurrentIndex) {
+                badgeHtml = '<span class="badge bg-success"><i class="bi bi-check-lg"></i> Feito</span>';
+            } else if (idx === whatsappCurrentIndex) {
+                badgeHtml = '<span class="badge bg-primary">Atual</span>';
+            } else {
+                badgeHtml = '<span class="badge bg-secondary text-white-50">Pendente</span>';
+            }
+            
+            const formattedPhone = student.telefone ? `(${student.telefone.substring(0, 2)}) ${student.telefone.substring(2)}` : 'Sem telefone';
+            
+            item.innerHTML = `
+                <div>
+                    <div class="mb-0 text-dark" style="font-size: 0.95rem;">${student.nome}</div>
+                    <small class="text-muted" style="font-size: 0.8rem;">${formattedPhone}</small>
+                </div>
+                <div>${badgeHtml}</div>
+            `;
+            listContainer.appendChild(item);
+        });
+        
+        const currentItem = listContainer.children[whatsappCurrentIndex];
+        if (currentItem) {
+            currentItem.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+    }
+
+    function sendCurrentStudent() {
+        if (whatsappCurrentIndex >= whatsappSelectedStudents.length) return;
+        
+        const student = whatsappSelectedStudents[whatsappCurrentIndex];
+        if (!student.telefone) {
+            alert(`O aluno ${student.nome} não possui telefone cadastrado.`);
+            document.getElementById('btnProximoWhatsApp').disabled = false;
+            return;
+        }
+        
+        const template = document.getElementById('whatsappTemplate').value;
+        
+        let msg = template.replace(/{NOME}/g, student.nome);
+            
+        const url = `https://api.whatsapp.com/send?phone=55${student.telefone}&text=${encodeURIComponent(msg)}`;
+        window.open(url, '_blank');
+        
+        document.getElementById('btnProximoWhatsApp').disabled = false;
+    }
+
+    function nextStudent() {
+        if (whatsappCurrentIndex < whatsappSelectedStudents.length - 1) {
+            whatsappCurrentIndex++;
+            renderWhatsappStudentsList();
+            sendCurrentStudent();
+        } else {
+            whatsappCurrentIndex++;
+            renderWhatsappStudentsList();
+            alert('Disparo concluído para todos os alunos selecionados!');
+            document.getElementById('btnEnviarWhatsApp').disabled = true;
+            document.getElementById('btnProximoWhatsApp').disabled = true;
+        }
+    }
 </script>
 {% endblock %}
