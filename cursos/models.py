@@ -98,6 +98,7 @@ class Curso(models.Model):
 
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='Aberta')
     nome_professor = models.CharField(max_length=200, blank=True, null=True, verbose_name="Nome do Professor")
+    telefone_professor = models.CharField(max_length=20, blank=True, null=True, verbose_name="Whatsapp/Telefone do Professor")
     parceiro = models.ForeignKey(Parceiro, on_delete=models.SET_NULL, null=True, blank=True, related_name='cursos', verbose_name="Parceiro")
     token_acesso = models.UUIDField(default=uuid.uuid4, editable=False, unique=True, verbose_name="Token de Acesso")
 
