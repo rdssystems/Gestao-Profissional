@@ -10,12 +10,13 @@ from django.forms import inlineformset_factory
 class CursoForm(forms.ModelForm):
     class Meta:
         model = Curso
-        fields = ['escola', 'tipo_curso', 'nome', 'nome_professor', 'parceiro', 'carga_horaria', 'vagas', 'data_inicio', 'data_fim', 'turno', 'horario', 'horario_fim', 'dia_inicio_semana', 'dia_fim_semana', 'status']
+        fields = ['escola', 'tipo_curso', 'nome', 'nome_professor', 'telefone_professor', 'parceiro', 'carga_horaria', 'vagas', 'data_inicio', 'data_fim', 'turno', 'horario', 'horario_fim', 'dia_inicio_semana', 'dia_fim_semana', 'status']
         widgets = {
             'escola': forms.Select(attrs={'class': 'form-select form-select-premium'}),
             'tipo_curso': forms.Select(attrs={'class': 'form-select form-select-premium'}),
             'nome': forms.TextInput(attrs={'class': 'form-control form-control-premium'}),
             'nome_professor': forms.TextInput(attrs={'class': 'form-control form-control-premium', 'placeholder': 'Opcional'}),
+            'telefone_professor': forms.TextInput(attrs={'class': 'form-control form-control-premium', 'placeholder': 'Ex: (11) 99999-9999'}),
             'parceiro': forms.Select(attrs={'class': 'form-select form-select-premium'}),
             'carga_horaria': forms.NumberInput(attrs={'class': 'form-control form-control-premium'}),
             'vagas': forms.NumberInput(attrs={'class': 'form-control form-control-premium', 'placeholder': 'Ex: 30'}),
