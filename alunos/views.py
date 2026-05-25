@@ -446,6 +446,9 @@ class AlunoUpdateObservacoesView(AuditLogMixin, StaffRequiredMixin, View):
         # Log manual
         self.save_log(aluno, 'UPDATE', {'campo': 'observacoes', 'valor': 'atualizado'})
         
+        if request.headers.get('x-requested-with') == 'XMLHttpRequest' or request.GET.get('ajax') == '1':
+            return JsonResponse({'sucesso': True, 'observacoes': aluno.observacoes or ''})
+
         messages.success(request, "Observações do histórico atualizadas com sucesso.")
         return redirect('alunos:historico_aluno', pk=aluno.pk)
 

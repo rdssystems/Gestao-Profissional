@@ -4,7 +4,7 @@ import json
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
 import pandas as pd
-from django.db.models import Count, Prefetch, Exists, OuterRef, Q, Case, When, Value, IntegerField, Sum # Import Count
+from django.db.models import Count, Prefetch, Exists, OuterRef, Q, Case, When, Value, IntegerField, Sum, Subquery # Import Count
 from datetime import date, time, datetime # Import datetime and time
 from django.http import HttpResponse, Http404, JsonResponse
 
@@ -20,7 +20,7 @@ from django import forms
 from django.forms import inlineformset_factory # Adicionar import
 
 # Importar modelos e formulários
-from .models import Curso, TipoCurso, Inscricao, RegistroAula, Chamada, Parceiro, EmentaPadrao, AvaliacaoProfessorAluno, AvaliacaoAlunoCurso # Adicionar RegistroAula, Chamada, Parceiro, EmentaPadrao, AvaliacaoProfessorAluno, AvaliacaoAlunoCurso
+from .models import Curso, TipoCurso, Inscricao, RegistroAula, Chamada, Parceiro, EmentaPadrao, AvaliacaoProfessorAluno, AvaliacaoAlunoCurso, ContatoMatricula # Adicionar RegistroAula, Chamada, Parceiro, EmentaPadrao, AvaliacaoProfessorAluno, AvaliacaoAlunoCurso
 from .forms import CursoForm, InscricaoForm, RegistroAulaForm, ChamadaFormSet, CursoCSVUploadForm, ChamadaForm, ParceiroForm, EmentaPadraoForm # Adicionar ParceiroForm, EmentaPadraoForm
 from core.mixins import StaffRequiredMixin, AuditLogMixin, CoordenadorRequiredMixin
 from alunos.models import Aluno
@@ -613,7 +613,17 @@ class MatriculaView(LoginRequiredMixin, StaffRequiredMixin, ListView):
                 default=Value(0),
                 output_field=IntegerField(),
             )
-        ).order_by('-turno_match', '-score_total')
+        )
+        
+        # Anotar o status do contato de matrícula para o curso selecionado
+        status_subquery = ContatoMatricula.objects.filter(
+            aluno=OuterRef('pk'),
+            curso=curso
+        ).values('status')[:1]
+        
+        qs = qs.annotate(contato_status=Subquery(status_subquery))
+        
+        qs = qs.order_by('-turno_match', '-score_total')
         
         # Filtra por escola ativa (Contexto Admin ou Perfil Staff)
         active_escola = getattr(self.request, 'active_escola', None)
@@ -639,7 +649,44 @@ class MatriculaView(LoginRequiredMixin, StaffRequiredMixin, ListView):
             context['selected_curso'] = get_object_or_404(Curso, pk=curso_id)
             context['alunos_matriculados'] = Inscricao.objects.filter(curso=context['selected_curso'], status='cursando').order_by('aluno__nome_completo')
             
+            # Adicionar as escolhas de status ao contexto
+            context['contato_status_choices'] = ContatoMatricula.STATUS_CHOICES
+            
         return context
+
+
+class AtualizarContatoMatriculaAjaxView(LoginRequiredMixin, StaffRequiredMixin, View):
+    def post(self, request, *args, **kwargs):
+        try:
+            data = json.loads(request.body)
+            aluno_id = data.get('aluno_id')
+            curso_id = data.get('curso_id')
+            status = data.get('status')
+            
+            if not aluno_id or not curso_id or not status:
+                return JsonResponse({'success': False, 'error': 'Parâmetros incompletos.'}, status=400)
+                
+            aluno = get_object_or_404(Aluno, pk=aluno_id)
+            curso = get_object_or_404(Curso, pk=curso_id)
+            
+            # Validar se o status é uma opção válida
+            valid_statuses = [choice[0] for choice in ContatoMatricula.STATUS_CHOICES]
+            if status not in valid_statuses:
+                return JsonResponse({'success': False, 'error': 'Status inválido.'}, status=400)
+                
+            contato, created = ContatoMatricula.objects.update_or_create(
+                aluno=aluno,
+                curso=curso,
+                defaults={'status': status}
+            )
+            
+            return JsonResponse({
+                'success': True, 
+                'status': contato.status, 
+                'status_display': contato.get_status_display()
+            })
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)}, status=500)
 
 class MatricularAlunoDiretoView(LoginRequiredMixin, StaffRequiredMixin, View):
     def post(self, request, *args, **kwargs):

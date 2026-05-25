@@ -165,15 +165,16 @@
                         </th>
                         <th>Nome</th>
                         <th>CPF</th>
-                        <th>Telefone</th>
+                        <th>Whatsapp/ Tel</th>
                         <th>Turno Pref.</th>
                         <th>Score</th>
+                        <th>Contato</th>
                         <th class="text-end">Ação</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for aluno in alunos_sugeridos %}
-                    <tr class="aluno-row" data-id="{{ aluno.pk }}" data-nome="{{ aluno.nome_completo }}" data-telefone="{{ aluno.telefone_principal|apenas_numeros }}">
+                    <tr class="aluno-row" data-id="{{ aluno.pk }}" data-nome="{{ aluno.nome_completo }}" data-telefone="{{ aluno.whatsapp|apenas_numeros }}">
 
                         <td class="text-center">
                             <input type="checkbox" class="form-check-input aluno-select" value="{{ aluno.pk }}">
@@ -185,12 +186,14 @@
 
                         <td>{{ aluno.cpf }}</td>
                         <td>
-                            {{ aluno.telefone_principal }}
-                            {% if aluno.telefone_principal %}
-                            <a href="https://wa.me/55{{ aluno.telefone_principal|apenas_numeros }}" target="_blank"
-                                class="text-success ms-1" title="Enviar WhatsApp">
-                                <i class="bi bi-whatsapp"></i>
-                            </a>
+                            {% if aluno.whatsapp and aluno.whatsapp != 'None' and aluno.whatsapp != 'none' %}
+                                {{ aluno.whatsapp }}
+                                <a href="https://wa.me/55{{ aluno.whatsapp|apenas_numeros }}" target="_blank"
+                                    class="text-success ms-1" title="Enviar WhatsApp">
+                                    <i class="bi bi-whatsapp"></i>
+                                </a>
+                            {% else %}
+                                <span class="text-muted small">-</span>
                             {% endif %}
                         </td>
                         <td>
@@ -203,6 +206,18 @@
                             {% endif %}
                         </td>
                         <td>{{ aluno.score_total }}</td>
+                        <td>
+                            <select class="form-select form-select-sm contato-select fw-semibold border-0" 
+                                    data-aluno-id="{{ aluno.pk }}" 
+                                    onchange="saveContatoStatus(this)"
+                                    style="min-width: 155px; cursor: pointer; transition: all 0.2s ease;">
+                                {% for val, label in contato_status_choices %}
+                                    <option value="{{ val }}" {% if aluno.contato_status == val or not aluno.contato_status and val == 'nao_contatado' %}selected{% endif %}>
+                                        {{ label }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </td>
 
                         <td class="text-end">
                             <div class="d-flex gap-2 justify-content-end align-items-center">
@@ -223,7 +238,7 @@
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="6" class="text-center text-muted py-4">
+                        <td colspan="8" class="text-center text-muted py-4">
                             Nenhum interessado localizado no banco de dados para este tipo de curso.
                         </td>
                     </tr>
@@ -243,14 +258,14 @@
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
                         aria-label="Close"></button>
                 </div>
-                <div class="modal-body p-4" style="min-height: 400px; max-height: 80vh; overflow-y: auto;">
-                    <div id="historyPlaceholder" class="text-center py-5 d-none">
+                <div class="modal-body p-0 position-relative" style="min-height: 500px; height: 80vh; overflow: hidden;">
+                    <div id="historyPlaceholder" class="text-center py-5 position-absolute w-100 h-100 bg-white d-flex flex-column align-items-center justify-content-center" style="z-index: 10; top: 0; left: 0;">
                         <div class="spinner-border text-primary" role="status">
                             <span class="visually-hidden">Carregando...</span>
                         </div>
                         <p class="text-muted mt-2">Carregando histórico...</p>
                     </div>
-                    <div id="historyContent"></div>
+                    <iframe id="historyIframe" src="" style="width: 100%; height: 100%; border: none;" class="d-none"></iframe>
                 </div>
             </div>
         </div>
@@ -324,24 +339,19 @@
     // Modal de Histórico
     const historyModal = new bootstrap.Modal(document.getElementById('historyModal'));
     const historyPlaceholder = document.getElementById('historyPlaceholder');
-    const historyContent = document.getElementById('historyContent');
+    const historyIframe = document.getElementById('historyIframe');
 
     function openHistoryModal(historyUrl, alunoNome) {
         historyModalLabel.innerText = `Histórico: ${alunoNome}`;
-        historyContent.innerHTML = '';
         historyPlaceholder.classList.remove('d-none');
+        historyIframe.classList.add('d-none');
+        historyIframe.src = historyUrl + "?popup=1";
         historyModal.show();
 
-        fetch(historyUrl + "?popup=1")
-            .then(response => response.text())
-            .then(html => {
-                historyPlaceholder.classList.add('d-none');
-                historyContent.innerHTML = html;
-            })
-            .catch(err => {
-                historyPlaceholder.classList.add('d-none');
-                historyContent.innerHTML = `<div class="alert alert-danger">Erro ao carregar histórico: ${err}</div>`;
-            });
+        historyIframe.onload = function() {
+            historyPlaceholder.classList.add('d-none');
+            historyIframe.classList.remove('d-none');
+        };
     }
 
     function closeModal() {
@@ -365,7 +375,7 @@
                 nome: row.dataset.nome,
                 cpf: row.cells[2].textContent.trim(),
                 telefone: row.cells[3].textContent.trim(),
-                score: row.cells[4].textContent.trim(),
+                score: row.cells[5].textContent.trim(),
             });
         });
         return selected;
@@ -521,5 +531,72 @@ Gostaria de garantir a sua vaga?`;
             document.getElementById('btnProximoWhatsApp').disabled = true;
         }
     }
+
+    function updateSelectStyle(selectElement) {
+        const value = selectElement.value;
+        selectElement.classList.remove(
+            'bg-light', 'text-dark',
+            'bg-warning-subtle', 'text-warning-emphasis',
+            'bg-danger-subtle', 'text-danger-emphasis',
+            'bg-info-subtle', 'text-info-emphasis',
+            'bg-success-subtle', 'text-success-emphasis',
+            'bg-secondary-subtle', 'text-secondary-emphasis'
+        );
+        
+        if (value === 'nao_contatado') {
+            selectElement.classList.add('bg-light', 'text-dark');
+        } else if (value.startsWith('tentativa')) {
+            selectElement.classList.add('bg-warning-subtle', 'text-warning-emphasis');
+        } else if (value === 'contatado') {
+            selectElement.classList.add('bg-info-subtle', 'text-info-emphasis');
+        } else if (value === 'interessado') {
+            selectElement.classList.add('bg-success-subtle', 'text-success-emphasis');
+        } else if (value === 'recusou') {
+            selectElement.classList.add('bg-secondary-subtle', 'text-secondary-emphasis');
+        } else if (value === 'numero_invalido') {
+            selectElement.classList.add('bg-danger-subtle', 'text-danger-emphasis');
+        }
+    }
+
+    function saveContatoStatus(selectElement) {
+        const alunoId = selectElement.dataset.alunoId;
+        const cursoId = "{{ selected_curso.pk }}";
+        const status = selectElement.value;
+        
+        updateSelectStyle(selectElement);
+        
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+        
+        fetch("{% url 'cursos:atualizar_contato_ajax' %}", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "X-CSRFToken": csrfToken
+            },
+            body: JSON.stringify({
+                aluno_id: alunoId,
+                curso_id: cursoId,
+                status: status
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                console.log(`Status de ${alunoId} atualizado para ${data.status_display}`);
+            } else {
+                alert("Erro ao salvar status de contato: " + data.error);
+            }
+        })
+        .catch(err => {
+            alert("Erro de conexão ao salvar status de contato.");
+            console.error(err);
+        });
+    }
+
+    document.addEventListener("DOMContentLoaded", function() {
+        document.querySelectorAll('.contato-select').forEach(select => {
+            updateSelectStyle(select);
+        });
+    });
 </script>
 {% endblock %}

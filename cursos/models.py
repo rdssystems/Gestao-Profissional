@@ -334,3 +334,30 @@ class AvaliacaoAlunoCurso(models.Model):
 
     def __str__(self):
         return f"Satisfação: {self.inscricao.aluno.nome_completo} ({self.inscricao.curso.nome})"
+
+
+class ContatoMatricula(models.Model):
+    STATUS_CHOICES = (
+        ('nao_contatado', 'Não Contatado'),
+        ('tentativa_1', '1ª Tentativa (Sem Resposta)'),
+        ('tentativa_2', '2ª Tentativa (Sem Resposta)'),
+        ('tentativa_3', '3ª Tentativa (Sem Resposta)'),
+        ('contatado', 'Contatado (Em Conversa)'),
+        ('interessado', 'Interessado (Matricular)'),
+        ('recusou', 'Recusou / Sem Interesse'),
+        ('numero_invalido', 'Número Inválido'),
+    )
+    
+    aluno = models.ForeignKey('alunos.Aluno', on_delete=models.CASCADE, related_name='contatos_matricula')
+    curso = models.ForeignKey(Curso, on_delete=models.CASCADE, related_name='contatos_matricula')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='nao_contatado')
+    data_atualizacao = models.DateTimeField(auto_now=True)
+    observacao = models.TextField(blank=True, null=True)
+
+    class Meta:
+        unique_together = ('aluno', 'curso')
+        verbose_name = 'Contato de Matrícula'
+        verbose_name_plural = 'Contatos de Matrícula'
+
+    def __str__(self):
+        return f"{self.aluno.nome_completo} - {self.curso.nome} ({self.get_status_display()})"
