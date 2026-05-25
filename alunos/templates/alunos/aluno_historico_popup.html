@@ -13,6 +13,13 @@
         color: #1e293b;
     }
 
+    .page-title {
+        font-weight: 700;
+        color: #0f172a;
+        font-size: 1.5rem;
+        letter-spacing: -0.025em;
+    }
+
     .info-card {
         border-radius: 16px;
         background: white;
@@ -27,6 +34,10 @@
         padding: 1rem 1.5rem;
         font-weight: 600;
         font-size: 1.1rem;
+    }
+
+    .info-card .card-body {
+        padding: 1.5rem;
     }
 
     .table-card {
@@ -45,121 +56,427 @@
         color: #475569;
     }
 
+    .table {
+        margin-bottom: 0;
+    }
+
+    .table thead {
+        background: #f8fafc;
+        border-bottom: 1px solid #e2e8f0;
+    }
+
+    .table thead th {
+        color: #64748b;
+        font-weight: 600;
+        font-size: 0.8rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        padding: 1rem 1.5rem;
+        border: none;
+    }
+
+    .table tbody tr {
+        border-bottom: 1px solid #f1f5f9;
+        transition: background-color 0.2s ease;
+    }
+
+    .table tbody tr:last-child {
+        border-bottom: none;
+    }
+
+    .table tbody tr:hover {
+        background-color: #f8fafc !important;
+    }
+
+    .table tbody td {
+        padding: 1rem 1.5rem;
+        color: #334155;
+        font-size: 0.9rem;
+        vertical-align: middle;
+        border: none;
+    }
+
     .status-badge {
         border-radius: 8px;
         padding: 0.35rem 0.75rem;
         font-weight: 600;
         font-size: 0.8rem;
     }
+    
+    .border-dashed {
+        border-style: dashed !important;
+    }
 </style>
 
 <div class="py-3">
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <h2 class="mb-0 fw-bold">Histórico do Aluno</h2>
-        <button type="button" class="btn btn-secondary btn-sm" onclick="window.parent.closeModal()">Fechar</button>
+    <!-- Cabeçalho -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="mb-0 page-title"><i class="bi bi-clock-history me-2 text-primary"></i>Histórico do Aluno</h2>
+        <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill px-3 fw-semibold shadow-sm" onclick="window.parent.closeModal()">
+            <i class="bi bi-x-lg me-1"></i> Fechar
+        </button>
     </div>
 
-    <!-- Informações Básicas -->
-    <div class="card info-card mb-4">
-        <div class="card-header d-flex justify-content-between align-items-center">
-            <span><i class="bi bi-person-badge me-2"></i> {{ aluno.nome_completo }}</span>
-            <span class="badge bg-white text-primary rounded-pill px-3">{{ aluno.cpf }}</span>
-        </div>
-        <div class="card-body">
-            <div class="row">
-                <div class="col-md-6">
-                    <p class="mb-1 text-muted small text-uppercase">Escola de Origem</p>
-                    <p class="fw-bold mb-0 text-dark">{{ aluno.escola.nome }}</p>
+    <div class="row">
+        <div class="col-lg-8">
+            <!-- Informações Básicas (Mini) -->
+            <div class="card info-card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center text-white">
+                    <span><i class="bi bi-person-badge me-2"></i> {{ aluno.nome_completo }}</span>
+                    <span class="badge bg-white text-primary rounded-pill px-3">{{ aluno.cpf }}</span>
                 </div>
-                <div class="col-md-6 text-md-end">
-                    <p class="mb-1 text-muted small text-uppercase">Data de Cadastro</p>
-                    <p class="fw-bold mb-0 text-dark">{{ aluno.data_criacao|date:"d/m/Y" }}</p>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p class="mb-1 text-muted small text-uppercase">Escola de Origem</p>
+                            <p class="fw-bold mb-0 text-dark">{{ aluno.escola.nome }}</p>
+                        </div>
+                        <div class="col-md-6 text-md-end">
+                            <p class="mb-1 text-muted small text-uppercase">Data de Cadastro</p>
+                            <p class="fw-bold mb-0 text-dark">{{ aluno.data_criacao|date:"d/m/Y" }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Observações do Histórico (Editáveis via AJAX) -->
+            <div class="card table-card mb-4 shadow-sm border-0">
+                <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center py-3">
+                    <h5 class="mb-0 text-primary fw-bold"><i class="bi bi-journal-text me-2"></i>Observações do Histórico</h5>
+                    <div class="d-flex align-items-center gap-2">
+                        <span id="obs-status-msg" class="text-success small fw-semibold d-none"><i class="bi bi-check-circle-fill me-1"></i>Salvo!</span>
+                        <button type="button" id="btn-edit-obs" class="btn btn-sm btn-primary rounded-pill px-3" onclick="toggleEditObservations()">
+                            <i class="bi bi-pencil-square me-1"></i> Editar
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body p-4">
+                    <!-- Estado de visualização -->
+                    <div id="obs-view-container" class="{% if not aluno.observacoes %}d-none{% endif %}">
+                        <div class="bg-light p-4 rounded-3 border-start border-4 border-primary">
+                            <p id="obs-text" class="mb-0" style="white-space: pre-wrap; line-height: 1.6;">{{ aluno.observacoes|default:'' }}</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Estado vazio -->
+                    <div id="obs-empty-container" class="{% if aluno.observacoes %}d-none{% endif %} text-center py-4 text-muted border rounded-3 border-dashed">
+                        <i class="bi bi-chat-left-dots display-6 opacity-25 d-block mb-2"></i>
+                        Nenhuma observação registrada para este aluno.
+                    </div>
+
+                    <!-- Estado de edição inline -->
+                    <div id="obs-edit-container" class="d-none">
+                        <div class="mb-3">
+                            <textarea class="form-control border-0 bg-light p-3" id="obs-textarea" rows="6" placeholder="Digite aqui o histórico, observações ou notas relevantes sobre este aluno..." style="border-radius: 12px; line-height: 1.6;">{{ aluno.observacoes|default:'' }}</textarea>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <button type="button" class="btn btn-primary btn-sm rounded-pill px-4 fw-bold shadow-sm" onclick="saveObservations()">
+                                <i class="bi bi-check-circle me-1"></i> Salvar
+                            </button>
+                            <button type="button" class="btn btn-light btn-sm rounded-pill px-3 border" onclick="toggleEditObservations()">Cancelar</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Cursos e Status (Completo com detalhes e avaliações) -->
+            <div class="card table-card shadow-sm border-0">
+                <div class="card-header bg-white border-bottom py-3">
+                    <h5 class="mb-0 text-primary fw-bold"><i class="bi bi-mortarboard-fill me-2"></i>Cursos Matriculados</h5>
+                </div>
+
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table align-middle mb-0">
+                            <thead class="bg-light">
+                                <tr>
+                                    <th scope="col" class="px-4">Curso</th>
+                                    <th scope="col">Período</th>
+                                    <th scope="col" class="text-center">Frequência</th>
+                                    <th scope="col" class="text-center">Status Atual</th>
+                                    <th scope="col" class="text-center">Ações</th>
+                                </tr>
+                            </thead>
+
+                            <tbody>
+                                {% for inscricao in inscricoes %}
+                                <tr>
+                                    <td class="px-4">
+                                        <div class="fw-bold text-dark">{{ inscricao.curso.nome }}</div>
+                                        <small class="text-muted">{{ inscricao.curso.escola.nome }}</small>
+                                    </td>
+                                    <td>
+                                        <div class="small fw-medium">{{ inscricao.curso.data_inicio|date:"d/m/Y" }}</div>
+                                        <div class="small text-muted">{{ inscricao.curso.data_fim|date:"d/m/Y" }}</div>
+                                    </td>
+                                    <td class="text-center">
+                                        <div class="fw-bold text-primary">{{ inscricao.frequencia_porcentagem|default:"--" }}%</div>
+                                        <small class="text-muted">{{ inscricao.total_presencas }}P / {{ inscricao.total_faltas }}F</small>
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="badge status-badge 
+                                            {% if inscricao.status == 'concluido' %}bg-success text-white
+                                            {% elif inscricao.status == 'desistente' %}bg-danger text-white
+                                            {% else %}bg-info text-white{% endif %}
+                                            shadow-sm
+                                        ">
+                                            {{ inscricao.get_status_display }}
+                                        </span>
+                                    </td>
+                                    <td class="text-center">
+                                        <button class="btn btn-sm btn-outline-primary rounded-pill px-3" onclick="toggleDetails('{{ inscricao.id }}')">
+                                            <i class="bi bi-list-ul me-1"></i> Detalhes
+                                        </button>
+                                    </td>
+                                </tr>
+                                <!-- Linha de Detalhes (Dossiê) -->
+                                <tr id="details-{{ inscricao.id }}" style="display: none; background-color: #f8fafc;">
+                                    <td colspan="5" class="p-4 border-top">
+                                        <div class="row">
+                                            <!-- Bloco de Desempenho Profissional -->
+                                            <div class="col-md-5 border-end">
+                                                <h6 class="fw-bold text-dark mb-3"><i class="bi bi-star-fill text-warning me-2"></i>Desempenho Profissional</h6>
+                                                {% if inscricao.avaliacao_professor %}
+                                                    <div class="row g-2">
+                                                        <div class="col-12">
+                                                            <div class="p-2 rounded bg-white shadow-sm border-start border-4 border-primary mb-2">
+                                                                <div class="small text-muted text-uppercase mb-1" style="font-size: 0.7rem;">Conceitual</div>
+                                                                <div class="fw-bold">{{ inscricao.avaliacao_professor.get_conceptual_nota_display }}</div>
+                                                            </div>
+                                                        </div>
+                                                        <div class="col-12">
+                                                            <div class="p-2 rounded bg-white shadow-sm border-start border-4 border-success mb-2">
+                                                                <div class="small text-muted text-uppercase mb-1" style="font-size: 0.7rem;">Comportamental</div>
+                                                                <div class="fw-bold">{{ inscricao.avaliacao_professor.get_behavioral_nota_display }}</div>
+                                                            </div>
+                                                        </div>
+                                                        <div class="col-12">
+                                                            <div class="p-2 rounded bg-white shadow-sm border-start border-4 border-info mb-2">
+                                                                <div class="small text-muted text-uppercase mb-1" style="font-size: 0.7rem;">Atitudinal</div>
+                                                                <div class="fw-bold">{{ inscricao.avaliacao_professor.get_attitudinal_nota_display }}</div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                {% else %}
+                                                    <div class="alert alert-light border-dashed text-center">
+                                                        <i class="bi bi-info-circle me-1"></i> Avaliação do professor não disponível ou pendente.
+                                                    </div>
+                                                {% endif %}
+                                            </div>
+
+                                            <!-- Bloco de Frequência Qualitativa -->
+                                            <div class="col-md-7 ps-md-4">
+                                                <h6 class="fw-bold text-dark mb-3"><i class="bi bi-calendar-x-fill text-danger me-2"></i>Histórico Qualitativo de Faltas</h6>
+                                                <div class="table-responsive">
+                                                    <table class="table table-sm table-hover align-middle" style="font-size: 0.85rem;">
+                                                        <thead class="bg-white">
+                                                            <tr>
+                                                                <th>Data</th>
+                                                                <th>Status</th>
+                                                                <th>Motivo da Falta</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            {% for chamada in inscricao.chamadas.all %}
+                                                                {% if chamada.status_presenca != 'P' %}
+                                                                <tr>
+                                                                    <td>{{ chamada.registro_aula.data_aula|date:"d/m/Y" }}</td>
+                                                                    <td>
+                                                                        <span class="badge {% if chamada.status_presenca == 'A' %}bg-danger{% else %}bg-warning text-dark{% endif %} p-1">
+                                                                            {{ chamada.get_status_presenca_display }}
+                                                                        </span>
+                                                                    </td>
+                                                                    <td>
+                                                                        {% if chamada.motivo_falta %}
+                                                                            <span class="fw-medium text-dark">
+                                                                                {% if chamada.motivo_falta == 'Outros' %}
+                                                                                    <i class="bi bi-chat-dots me-1"></i>{{ chamada.motivo_falta_outro }}
+                                                                                {% else %}
+                                                                                    {{ chamada.get_motivo_falta_display }}
+                                                                                {% endif %}
+                                                                            </span>
+                                                                        {% else %}
+                                                                            <span class="text-muted italic">Motivo não registrado</span>
+                                                                        {% endif %}
+                                                                    </td>
+                                                                </tr>
+                                                                {% endif %}
+                                                            {% empty %}
+                                                            {% endfor %}
+                                                            
+                                                            {% with total_faltas=inscricao.total_faltas %}
+                                                                {% if total_faltas == 0 %}
+                                                                <tr>
+                                                                    <td colspan="3" class="text-center py-4 text-success">
+                                                                        <i class="bi bi-check-all me-1"></i> Este aluno possui 100% de presença neste curso.
+                                                                    </td>
+                                                                </tr>
+                                                                {% endif %}
+                                                            {% endwith %}
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="5" class="text-center py-5">
+                                        <div class="text-muted">
+                                            <i class="bi bi-journal-x display-4 d-block mb-3 opacity-25"></i>
+                                            Nenhuma inscrição encontrada na base de dados.
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Linha do Tempo (Logs de Status) -->
+        <div class="col-lg-4">
+            <div class="card table-card shadow-sm border-0">
+                <div class="card-header bg-white border-bottom py-3">
+                    <h5 class="mb-0 text-primary fw-bold"><i class="bi bi-activity me-2"></i>Timeline de Eventos</h5>
+                </div>
+                <div class="card-body p-3">
+                    <ul class="list-unstyled mb-0">
+                        {% for event in timeline %}
+                        <li class="mb-4 ps-3 border-start border-2 border-primary position-relative" style="font-size: 0.85rem;">
+                            <i class="bi bi-circle-fill text-primary position-absolute" style="left: -7px; top: 0; font-size: 10px; background: white;"></i>
+                            <div class="small text-muted mb-1">{{ event.data_hora|date:"d/m/Y H:i" }}</div>
+                            <div class="fw-bold mb-1">
+                                Status Atualizado
+                            </div>
+                            <div class="small text-secondary mb-2">
+                                 Por: <strong>{{ event.usuario.username }}</strong>
+                            </div>
+                            <div class="text-dark bg-light p-2 rounded border-start border-3 border-success" style="font-size: 0.8rem;">
+                                <i class="bi bi-check2-circle text-success me-1"></i> Alterado para: <span class="fw-bold">{{ event.status }}</span>
+                            </div>
+                        </li>
+                        {% empty %}
+                        <div class="text-center py-4 text-muted border rounded-3 border-dashed">
+                            Nenhum evento registrado.
+                        </div>
+                        {% endfor %}
+                    </ul>
                 </div>
             </div>
         </div>
     </div>
-
-    <!-- Observações -->
-    <div class="card table-card mb-4">
-        <div class="card-header">
-            <h6 class="mb-0"><i class="bi bi-journal-text me-2"></i>Observações</h6>
-        </div>
-        <div class="card-body">
-            {% if aluno.observacoes %}
-                <div class="bg-light p-3 rounded-3 border-start border-4 border-primary">
-                    <p class="mb-0 small" style="white-space: pre-wrap;">{{ aluno.observacoes }}</p>
-                </div>
-            {% else %}
-                <p class="text-muted small mb-0">Nenhuma observação registrada.</p>
-            {% endif %}
-        </div>
-    </div>
-
-    <!-- Cursos Matriculados -->
-    <div class="card table-card shadow-sm border-0 mb-4">
-        <div class="card-header bg-white border-bottom py-3">
-            <h6 class="mb-0 text-primary fw-bold"><i class="bi bi-mortarboard-fill me-2"></i>Cursos Matriculados</h6>
-        </div>
-        <div class="table-responsive">
-            <table class="table align-middle mb-0 small">
-                <thead class="bg-light">
-                    <tr>
-                        <th class="px-3">Curso</th>
-                        <th>Período</th>
-                        <th class="text-center">Status</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for inscricao in inscricoes %}
-                    <tr>
-                        <td class="px-3">
-                            <div class="fw-bold">{{ inscricao.curso.nome }}</div>
-                            <small class="text-muted">{{ inscricao.curso.escola.nome }}</small>
-                        </td>
-                        <td>
-                            <div>{{ inscricao.curso.data_inicio|date:"d/m/Y" }}</div>
-                            <div class="text-muted">{{ inscricao.curso.data_fim|date:"d/m/Y" }}</div>
-                        </td>
-                        <td class="text-center">
-                            <span class="badge status-badge 
-                                {% if inscricao.status == 'concluido' %}bg-success
-                                {% elif inscricao.status == 'desistente' %}bg-danger
-                                {% else %}bg-info{% endif %}
-                            ">
-                                {{ inscricao.get_status_display }}
-                            </span>
-                        </td>
-                    </tr>
-                    {% empty %}
-                    <tr>
-                        <td colspan="3" class="text-center py-4 text-muted">Nenhuma inscrição encontrada.</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-    </div>
-
-    <!-- Timeline (Mini) -->
-    <div class="card table-card shadow-sm border-0">
-        <div class="card-header bg-white border-bottom py-3">
-            <h6 class="mb-0 text-primary fw-bold"><i class="bi bi-activity me-2"></i>Timeline de Eventos</h6>
-        </div>
-        <div class="card-body p-3">
-            <ul class="list-unstyled mb-0" style="font-size: 0.85rem;">
-                {% for event in timeline|slice:":5" %}
-                <li class="mb-3 ps-3 border-start border-2 border-primary position-relative">
-                    <div class="small text-muted mb-1">{{ event.data_hora|date:"d/m/Y H:i" }}</div>
-                    <div class="fw-bold">{{ event.status }}</div>
-                    <div class="small text-secondary">Por: {{ event.usuario.username }}</div>
-                </li>
-                {% endfor %}
-                {% if timeline|length > 5 %}
-                <li class="text-center small text-muted">Exibindo os últimos 5 eventos</li>
-                {% endif %}
-            </ul>
-        </div>
-    </div>
 </div>
 
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function toggleDetails(id) {
+        const row = document.getElementById('details-' + id);
+        if (row.style.display === 'none') {
+            row.style.display = 'table-row';
+        } else {
+            row.style.display = 'none';
+        }
+    }
+
+    function toggleEditObservations() {
+        const viewContainer = document.getElementById('obs-view-container');
+        const emptyContainer = document.getElementById('obs-empty-container');
+        const editContainer = document.getElementById('obs-edit-container');
+        const btnEdit = document.getElementById('btn-edit-obs');
+        
+        if (editContainer.classList.contains('d-none')) {
+            // Entrar no modo de edição
+            editContainer.classList.remove('d-none');
+            viewContainer.classList.add('d-none');
+            emptyContainer.classList.add('d-none');
+            btnEdit.classList.add('d-none');
+        } else {
+            // Sair do modo de edição (Cancelar)
+            editContainer.classList.add('d-none');
+            btnEdit.classList.remove('d-none');
+            const hasObs = document.getElementById('obs-textarea').value.trim().length > 0;
+            if (hasObs) {
+                viewContainer.classList.remove('d-none');
+            } else {
+                emptyContainer.classList.remove('d-none');
+            }
+        }
+    }
+
+    function saveObservations() {
+        const textarea = document.getElementById('obs-textarea');
+        const observacoes = textarea.value;
+        const saveUrl = "{% url 'alunos:atualizar_observacoes' pk=aluno.pk %}";
+        const statusMsg = document.getElementById('obs-status-msg');
+        
+        // Desabilitar o botão temporariamente
+        const saveBtn = event ? event.target : null;
+        if (saveBtn) {
+            saveBtn.disabled = true;
+            saveBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Salvando...';
+        }
+        
+        fetch(saveUrl + "?ajax=1", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-CSRFToken': '{{ csrf_token }}',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: new URLSearchParams({
+                'observacoes': observacoes
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.sucesso) {
+                // Atualizar o texto na visualização
+                document.getElementById('obs-text').textContent = data.observacoes;
+                
+                // Atualizar o valor do textarea
+                textarea.value = data.observacoes;
+                
+                // Mostrar animação de salvo com sucesso
+                statusMsg.classList.remove('d-none');
+                statusMsg.style.opacity = '1';
+                setTimeout(() => {
+                    statusMsg.style.opacity = '0';
+                    setTimeout(() => {
+                        statusMsg.classList.add('d-none');
+                    }, 500);
+                }, 2000);
+
+                // Voltar para o modo de exibição
+                document.getElementById('obs-edit-container').classList.add('d-none');
+                document.getElementById('btn-edit-obs').classList.remove('d-none');
+                
+                if (data.observacoes.trim().length > 0) {
+                    document.getElementById('obs-view-container').classList.remove('d-none');
+                    document.getElementById('obs-empty-container').classList.add('d-none');
+                } else {
+                    document.getElementById('obs-view-container').classList.add('d-none');
+                    document.getElementById('obs-empty-container').classList.remove('d-none');
+                }
+            } else {
+                alert('Erro ao salvar as observações.');
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            alert('Erro de conexão ao salvar observações.');
+        })
+        .finally(() => {
+            if (saveBtn) {
+                saveBtn.disabled = false;
+                saveBtn.innerHTML = '<i class="bi bi-check-circle me-1"></i> Salvar';
+            }
+        });
+    }
+</script>
 {% endblock %}

@@ -42,6 +42,7 @@ urlpatterns = [
 
     # URL para a nova página de Matrícula
     path('matriculas/', views.MatriculaView.as_view(), name='matricula'),
+    path('matriculas/atualizar-contato-ajax/', views.AtualizarContatoMatriculaAjaxView.as_view(), name='atualizar_contato_ajax'),
     path('matricular-direto/', views.MatricularAlunoDiretoView.as_view(), name='matricular_aluno_direto'),
     path('cancelar-matricula-direto/', views.CancelarMatriculaDiretoView.as_view(), name='cancelar_matricula_direto'),
 

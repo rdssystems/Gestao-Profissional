@@ -483,3 +483,75 @@ class TipoCursoCrudViewTest(TestCase):
         response = self.client.post(self.delete_url_escola2)
         self.assertEqual(response.status_code, 403)
         self.assertTrue(TipoCurso.objects.filter(pk=self.tipo_curso_escola2.pk).exists()) # Garante que não foi excluído
+
+
+class ContatoMatriculaTest(TestCase):
+    def setUp(self):
+        from django.contrib.auth.models import User
+        from escolas.models import Escola
+        from .models import Curso, TipoCurso, ContatoMatricula
+        from alunos.models import Aluno
+        
+        self.user = User.objects.create_superuser(
+            username='admin_test',
+            password='password123',
+            email='admin@test.com'
+        )
+        self.escola = Escola.objects.create(nome='Escola Teste', email='test@escola.com')
+        self.tipo_curso = TipoCurso.objects.create(nome='Informatica', escola=self.escola)
+        self.curso = Curso.objects.create(
+            nome='Curso Teste',
+            carga_horaria=40,
+            vagas=10,
+            data_inicio='2026-06-01',
+            data_fim='2026-07-01',
+            tipo_curso=self.tipo_curso,
+            escola=self.escola
+        )
+        self.aluno = Aluno.objects.create(
+            nome_completo='Aluno Teste',
+            cpf='123.456.789-01',
+            telefone_principal='11999999999',
+            data_nascimento='2000-01-01',
+            escola=self.escola
+        )
+        self.aluno.cursos_interesse.add(self.tipo_curso)
+
+    def test_ajax_update_creates_contato_matricula(self):
+        from .models import ContatoMatricula
+        self.client.login(username='admin_test', password='password123')
+        
+        url = reverse('cursos:atualizar_contato_ajax')
+        import json
+        
+        # Test creating new contact status
+        data = {
+            'aluno_id': self.aluno.pk,
+            'curso_id': self.curso.pk,
+            'status': 'tentativa_1'
+        }
+        response = self.client.post(
+            url, 
+            data=json.dumps(data), 
+            content_type='application/json'
+        )
+        
+        self.assertEqual(response.status_code, 200)
+        res_data = response.json()
+        self.assertTrue(res_data['success'])
+        self.assertEqual(res_data['status'], 'tentativa_1')
+        
+        # Verify persistence
+        contato = ContatoMatricula.objects.get(aluno=self.aluno, curso=self.curso)
+        self.assertEqual(contato.status, 'tentativa_1')
+        
+        # Test updating contact status
+        data['status'] = 'interessado'
+        response = self.client.post(
+            url, 
+            data=json.dumps(data), 
+            content_type='application/json'
+        )
+        self.assertEqual(response.status_code, 200)
+        contato.refresh_from_db()
+        self.assertEqual(contato.status, 'interessado')
