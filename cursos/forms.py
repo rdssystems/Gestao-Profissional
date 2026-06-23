@@ -32,12 +32,13 @@ class CursoForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         user = kwargs.pop('user', None)
+        sistema = kwargs.pop('sistema', 'CP').upper()
         super().__init__(*args, **kwargs)
 
         if user and not user.is_superuser:
             if hasattr(user, 'profile') and user.profile.escola:
                 escola = user.profile.escola
-                self.fields['escola'].queryset = Escola.objects.filter(pk=escola.pk)
+                self.fields['escola'].queryset = Escola.objects.filter(pk=escola.pk, tipo=sistema)
                 self.fields['escola'].initial = escola
                 self.fields['escola'].disabled = True
                 self.fields['tipo_curso'].queryset = TipoCurso.objects.filter(escola=escola)
@@ -47,9 +48,9 @@ class CursoForm(forms.ModelForm):
                 self.fields['tipo_curso'].queryset = TipoCurso.objects.none()
                 self.fields['parceiro'].queryset = Parceiro.objects.none()
         else:
-            self.fields['escola'].queryset = Escola.objects.all()
-            self.fields['tipo_curso'].queryset = TipoCurso.objects.all()
-            self.fields['parceiro'].queryset = Parceiro.objects.all()
+            self.fields['escola'].queryset = Escola.objects.filter(tipo=sistema)
+            self.fields['tipo_curso'].queryset = TipoCurso.objects.filter(escola__tipo=sistema)
+            self.fields['parceiro'].queryset = Parceiro.objects.filter(escola__tipo=sistema)
 
         self.fields['data_inicio'].required = True
         self.fields['data_fim'].required = True
@@ -73,6 +74,7 @@ class InscricaoForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         user = kwargs.pop('user', None)
         curso_id = kwargs.pop('curso_id', None)
+        sistema = kwargs.pop('sistema', 'CP').upper()
         super().__init__(*args, **kwargs)
 
         if user and not user.is_superuser:
@@ -84,7 +86,8 @@ class InscricaoForm(forms.ModelForm):
                 self.fields['aluno'].queryset = Aluno.objects.none()
                 self.fields['curso'].queryset = Curso.objects.none()
         else:
-            self.fields['curso'].queryset = Curso.objects.filter(status='Aberta')
+            self.fields['aluno'].queryset = Aluno.objects.filter(escola__tipo=sistema)
+            self.fields['curso'].queryset = Curso.objects.filter(status='Aberta', escola__tipo=sistema)
 
         if curso_id:
             self.fields['curso'].initial = curso_id
@@ -161,13 +164,16 @@ class ParceiroForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         user = kwargs.pop('user', None)
+        sistema = kwargs.pop('sistema', 'CP').upper()
         super().__init__(*args, **kwargs)
         
         if user and not user.is_superuser and hasattr(user, 'profile') and user.profile.escola:
-            self.fields['escola'].queryset = Escola.objects.filter(pk=user.profile.escola.pk)
+            self.fields['escola'].queryset = Escola.objects.filter(pk=user.profile.escola.pk, tipo=sistema)
             self.fields['escola'].initial = user.profile.escola
             self.fields['escola'].disabled = True
-        elif not user.is_superuser:
+        elif user and user.is_superuser:
+            self.fields['escola'].queryset = Escola.objects.filter(tipo=sistema)
+        else:
             self.fields['escola'].queryset = self.fields['escola'].queryset.none()
 
 class EmentaPadraoForm(forms.ModelForm):

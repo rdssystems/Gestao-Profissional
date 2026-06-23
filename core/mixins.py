@@ -13,7 +13,8 @@ class StaffRequiredMixin(UserPassesTestMixin):
     """
     Mixin que verifica se o usuário é:
     1. Superuser.
-    2. Pertence a um grupo de staff (Coordenador, Auxiliar) E está associado a uma escola.
+    2. Administrador de Segmento (ADMIN_CP/ADMIN_UDITECH) no portal correto.
+    3. Pertence a um grupo de staff (Coordenador, Auxiliar) E está associado a uma escola.
     Para Detail/Update/Delete views, também verifica se o objeto a ser modificado
     pertence à mesma escola do usuário.
     """
@@ -22,55 +23,89 @@ class StaffRequiredMixin(UserPassesTestMixin):
         if user.is_superuser:
             return True
         
-        if hasattr(user, 'profile') and user.profile.escola:
-            is_staff = user.groups.filter(name__in=['Coordenador', 'Auxiliar Administrativo']).exists()
-            if not is_staff:
-                return False
+        profile = getattr(user, 'profile', None)
+        if not profile:
+            return False
 
-            # Se for uma view de lista ou criação, a permissão é baseada apenas no grupo do usuário.
-            if isinstance(self, (CreateView, ListView)):
+        sistema = self.request.session.get('sistema', 'cp').upper()
+
+        # Administradores de Segmento
+        if not profile.escola:
+            if profile.nivel_acesso == 'ADMIN_CP' and sistema == 'CP':
                 return True
-            
-            # Para outros tipos de view, tenta verificar a permissão no nível do objeto.
-            if hasattr(self, 'get_object'):
-                obj = self.get_object()
-                if hasattr(obj, 'escola'):
-                    return obj.escola == user.profile.escola
-                elif hasattr(obj, 'curso') and hasattr(obj.curso, 'escola'):
-                    return obj.curso.escola == user.profile.escola
-                elif hasattr(obj, 'profile') and hasattr(obj.profile, 'escola'):
-                    return obj.profile.escola == user.profile.escola
-            
-            # Se a view não tem get_object (ex: uma View de ação), a verificação de grupo é suficiente.
-            # A view é responsável por sua própria lógica de permissão interna.
+            if profile.nivel_acesso == 'ADMIN_UDITECH' and sistema == 'UDITECH':
+                return True
+            if profile.nivel_acesso == 'SUPERUSER':
+                return True
+            return False
+        
+        # Coordenador local / Auxiliar
+        is_staff = user.groups.filter(name__in=['Coordenador', 'Auxiliar Administrativo']).exists()
+        if not is_staff:
+            return False
+
+        # Se for uma view de lista ou criação, a permissão é baseada apenas no grupo do usuário.
+        if isinstance(self, (CreateView, ListView)):
             return True
+        
+        # Para outros tipos de view, tenta verificar a permissão no nível do objeto.
+        obj = None
+        if hasattr(self, 'get_object'):
+            try:
+                obj = self.get_object()
+            except Exception:
+                pass
+        
+        if not obj:
+            pk = self.kwargs.get('pk') or self.kwargs.get('id')
+            if pk and hasattr(self, 'model') and self.model:
+                try:
+                    obj = self.model.objects.get(pk=pk)
+                except Exception:
+                    pass
+        
+        if obj:
+            if hasattr(obj, 'escola') and obj.escola:
+                return obj.escola == profile.escola
+            elif hasattr(obj, 'curso') and hasattr(obj.curso, 'escola') and obj.curso.escola:
+                return obj.curso.escola == profile.escola
+            elif hasattr(obj, 'profile') and hasattr(obj.profile, 'escola') and obj.profile.escola:
+                return obj.profile.escola == profile.escola
+        
+        return True
 
 
-        return False
 class CoordenadorRequiredMixin(UserPassesTestMixin):
     """
     Mixin que verifica se o usuário é:
     1. Superuser.
-    2. Pertence ao grupo 'Coordenador' E está associado a uma escola.
+    2. Administrador de Segmento (ADMIN_CP/ADMIN_UDITECH) no portal correto.
+    3. Pertence ao grupo 'Coordenador' E está associado a uma escola.
     """
     def test_func(self):
         user = self.request.user
-        import sys
-        
         if user.is_superuser:
-            # sys.stderr.write(f"DEBUG: Superuser {user.username} access granted.\n")
             return True
         
-        has_profile = hasattr(user, 'profile')
-        has_escola = bool(user.profile.escola) if has_profile else False
+        profile = getattr(user, 'profile', None)
+        if not profile:
+            return False
+
+        sistema = self.request.session.get('sistema', 'cp').upper()
+
+        # Administradores de Segmento
+        if not profile.escola:
+            if profile.nivel_acesso == 'ADMIN_CP' and sistema == 'CP':
+                return True
+            if profile.nivel_acesso == 'ADMIN_UDITECH' and sistema == 'UDITECH':
+                return True
+            if profile.nivel_acesso == 'SUPERUSER':
+                return True
+            return False
+
+        # Coordenador local
         is_coordenador = user.groups.filter(name='Coordenador').exists()
-        
-        res = has_profile and has_escola and is_coordenador
-        
-        if not res:
-            sys.stderr.write(f"DEBUG 403: User={user.username}, Profile={has_profile}, Escola={has_escola}, Coord={is_coordenador}\n")
-            
-        return res
+        return bool(profile.escola) and is_coordenador
 
 
 class AuditLogMixin:

@@ -141,9 +141,10 @@ class AlunoForm(forms.ModelForm):
             'turno_interesse': {'required': _("Este Campo é Obrigatório")},
         }
 
-    def __init__(self, *args, user=None, active_escola=None, **kwargs):
+    def __init__(self, *args, user=None, active_escola=None, sistema='CP', **kwargs):
         super().__init__(*args, **kwargs)
         self.user = user
+        sistema = sistema.upper()
 
         # Determina a escola alvo para filtragem
         # Prioridade: active_escola (enviada pela view), depois a escola do perfil (para coordenador/auxiliar)
@@ -155,24 +156,24 @@ class AlunoForm(forms.ModelForm):
         # Se houver uma escola alvo (seja do perfil ou active_escola do admin logado como escola)
         if target_escola:
             if 'escola' in self.fields:
-                self.fields['escola'].queryset = Escola.objects.filter(pk=target_escola.pk)
+                self.fields['escola'].queryset = Escola.objects.filter(pk=target_escola.pk, tipo=sistema)
             if 'cursos_interesse' in self.fields:
-                self.fields['cursos_interesse'].queryset = TipoCurso.objects.filter(escola=target_escola)
+                self.fields['cursos_interesse'].queryset = TipoCurso.objects.filter(escola=target_escola, escola__tipo=sistema)
         else:
             # Caso não haja escola alvo (admin global não logado como escola específica)
-            if user and user.is_superuser:
-                self.fields['cursos_interesse'] = forms.ModelMultipleChoiceField(
-                    queryset=TipoCurso.objects.all(),
-                    widget=forms.CheckboxSelectMultiple,
-                    label=_("Cursos de Interesse"),
-                    required=False
-                )
-            else:
-                # Fallback para usuários normais sem escola vinculada
-                if 'escola' in self.fields:
-                    self.fields['escola'].queryset = Escola.objects.none()
-                if 'cursos_interesse' in self.fields:
-                    self.fields['cursos_interesse'].queryset = TipoCurso.objects.none()
+            if 'escola' in self.fields:
+                self.fields['escola'].queryset = Escola.objects.filter(tipo=sistema)
+            if 'cursos_interesse' in self.fields:
+                if user and user.is_superuser:
+                    self.fields['cursos_interesse'] = forms.ModelMultipleChoiceField(
+                        queryset=TipoCurso.objects.filter(escola__tipo=sistema),
+                        widget=forms.CheckboxSelectMultiple,
+                        label=_("Cursos de Interesse"),
+                        required=False
+                    )
+                else:
+                    # Fallback para usuários normais sem escola vinculada
+                    self.fields['cursos_interesse'].queryset = TipoCurso.objects.filter(escola__tipo=sistema)
 
         # Preencher o turno_interesse inicial se for edição (está salvo como string separada por vírgula)
         if self.instance and self.instance.pk and self.instance.turno_interesse:

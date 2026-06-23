@@ -264,26 +264,37 @@
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const escolasDados = {{ escolas_dados_json|safe }};
+    const sistemaAtual = "{{ request.session.sistema }}".toLowerCase();
     
     escolasDados.forEach(function(escola) {
         
         // 1. Gráfico Ocupação (Rosca)
         if(escola.ocupacao.vagas_total > 0 || escola.ocupacao.series[0] > 0) {
+            let roscaColors = ['#198754', '#d3d8e3'];
+            let labelColor = '#8898aa';
+            let valueColor = '#4C5B7A';
+            
+            if (sistemaAtual === 'uditech') {
+                roscaColors = ['#18529D', '#F1B514']; // Azul Uditech e Amarelo da Paleta
+                labelColor = '#18529D';
+                valueColor = '#0E3262';
+            }
+
             var optionsRosca = {
                 series: escola.ocupacao.series,
                 labels: escola.ocupacao.labels,
                 chart: { type: 'donut', height: 280, fontFamily: 'Inter, sans-serif' },
-                colors: ['#198754', '#d3d8e3'], // Verde para cursando, cinza para ociosas
+                colors: roscaColors,
                 plotOptions: {
                     pie: {
                         donut: {
                             size: '72%',
                             labels: {
                                 show: true,
-                                name: { show: true, color: '#8898aa', fontSize: '13px' },
-                                value: { show: true, color: '#4C5B7A', fontSize: '24px', fontWeight: 600 },
+                                name: { show: true, color: labelColor, fontSize: '13px' },
+                                value: { show: true, color: valueColor, fontSize: '24px', fontWeight: 600 },
                                 total: {
-                                    show: true, showAlways: true, label: 'Total Vagas', color: '#8898aa',
+                                    show: true, showAlways: true, label: 'Total Vagas', color: labelColor,
                                     formatter: function (w) { return escola.ocupacao.vagas_total }
                                 }
                             }
@@ -308,10 +319,29 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // 2. Gráfico Assiduidade (Barra Horizontal)
         if(escola.assiduidade.series.length > 0) {
+            let barColors = ['#0dcaf0'];
+            let barFill = { type: 'solid' };
+            
+            if (sistemaAtual === 'uditech') {
+                barColors = ['#18529D'];
+                barFill = {
+                    type: 'gradient',
+                    gradient: {
+                        type: 'horizontal',
+                        gradientToColors: ['#00D0FF'], // Fim do degradê (ciano brilhante)
+                        shadeIntensity: 0.6,
+                        opacityFrom: 0.95,
+                        opacityTo: 0.95,
+                        stops: [0, 100]
+                    }
+                };
+            }
+
             var optionsAssiduidade = {
                 series: [{ name: 'Assiduidade (%)', data: escola.assiduidade.series }],
                 chart: { type: 'bar', height: 280, fontFamily: 'Inter, sans-serif', toolbar: {show: false} },
-                colors: ['#0dcaf0'], // Info / Azul ciano
+                colors: barColors,
+                fill: barFill,
                 plotOptions: {
                     bar: {
                         horizontal: true, barHeight: '50%', borderRadius: 4, borderRadiusApplication: 'end',
@@ -338,11 +368,19 @@ document.addEventListener('DOMContentLoaded', function() {
         // 3. Gráfico Donut - Perfil Demográfico
         var sumPerfil = escola.perfil.series.reduce((a, b) => a + b, 0);
         if(sumPerfil > 0) {
+            let perfilColors = ['#3b82f6', '#ec4899'];
+            let titleColor = '#1e293b';
+            
+            if (sistemaAtual === 'uditech') {
+                perfilColors = ['#2563eb', '#f43f5e']; // Azul vibrante e Sunset Rose
+                titleColor = '#0E3262';
+            }
+
             var optionsPerfil = {
                 series: escola.perfil.series,
                 chart: { type: 'donut', height: 280, fontFamily: 'Inter, sans-serif' },
                 labels: escola.perfil.labels,
-                colors: ['#3b82f6', '#ec4899'], // Azul para M, Rosa para F
+                colors: perfilColors,
                 plotOptions: {
                     pie: {
                         donut: {
@@ -350,7 +388,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             labels: {
                                 show: true,
                                 name: { show: true, offsetY: -10 },
-                                value: { show: true, offsetY: 5, fontSize: '24px', fontWeight: 600, color: '#1e293b' },
+                                value: { show: true, offsetY: 5, fontSize: '24px', fontWeight: 600, color: titleColor },
                                 total: { 
                                     show: true, showAlways: false, label: 'Média de Idade', 
                                     formatter: function (w) { 

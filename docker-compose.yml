@@ -1,13 +1,15 @@
 
 services:
   db:
-    image: postgres:alpine
+    image: postgres:16-alpine
     container_name: gq-db
     restart: always
     environment:
       - POSTGRES_DB=gestao_db
       - POSTGRES_USER=gestao_user
       - POSTGRES_PASSWORD=gestao_pass
+    ports:
+      - "5434:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
 

@@ -44,23 +44,41 @@ class TipoCursoForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         user = kwargs.pop('user', None)
+        active_escola = kwargs.pop('active_escola', None)
+        sistema = kwargs.pop('sistema', 'CP')
         super().__init__(*args, **kwargs)
         
-        if user and not user.is_superuser and hasattr(user, 'profile') and user.profile.escola:
-            self.fields['escola'].queryset = Escola.objects.filter(pk=user.profile.escola.pk)
-            self.fields['escola'].initial = user.profile.escola
-            self.fields['escola'].disabled = True
-        elif not user.is_superuser:
-            self.fields['escola'].queryset = self.fields['escola'].queryset.none()
+        if self.fields.get('escola'):
+            self.fields['escola'].queryset = Escola.objects.filter(tipo=sistema).order_by('nome')
+            
+        if self.fields.get('cor'):
+            self.fields['cor'].required = False
+            self.fields['cor'].initial = 'primary'
+            
+        if user and not user.is_superuser:
+            profile = getattr(user, 'profile', None)
+            if profile and profile.escola:
+                self.fields['escola'].queryset = Escola.objects.filter(pk=profile.escola.pk)
+                self.fields['escola'].initial = profile.escola
+                self.fields['escola'].disabled = True
+            elif profile and profile.nivel_acesso in ['ADMIN_CP', 'ADMIN_UDITECH']:
+                self.fields['escola'].queryset = Escola.objects.filter(tipo=sistema).order_by('nome')
+            else:
+                self.fields['escola'].queryset = self.fields['escola'].queryset.none()
+
+    def clean_cor(self):
+        cor = self.cleaned_data.get('cor')
+        return cor if cor else 'primary'
 
 
 class CursoListView(LoginRequiredMixin, ListView):
     model = Curso
     template_name = 'cursos/curso_list.html'
-
+    context_object_name = 'cursos'
     def get_queryset(self):
         user = self.request.user
-        base_queryset = super().get_queryset()
+        sistema = self.request.session.get('sistema', 'cp').upper()
+        base_queryset = super().get_queryset().filter(escola__tipo=sistema)
 
         # Automatização de Status: Curso 'Aberta' na data de início vira 'Em Andamento'
         from datetime import date
@@ -69,14 +87,18 @@ class CursoListView(LoginRequiredMixin, ListView):
             cursos_para_iniciar.update(status='Em Andamento')
         
         active_escola = getattr(self.request, 'active_escola', None)
+        active_escola_is_fallback = getattr(self.request, 'active_escola_is_fallback', False)
+        profile = getattr(user, 'profile', None)
 
-        if user.is_superuser:
+        is_global_admin = user.is_superuser or (profile and not profile.escola and profile.nivel_acesso in ['ADMIN_CP', 'ADMIN_UDITECH'])
+
+        if is_global_admin:
             qs = base_queryset
             # Filtro por Escola (Unidade) para Admin
             escola_id = self.request.GET.get('escola')
             if escola_id:
                 qs = qs.filter(escola_id=escola_id)
-            elif active_escola:
+            elif active_escola and not active_escola_is_fallback:
                 qs = qs.filter(escola=active_escola)
         elif active_escola:
             qs = base_queryset.filter(escola=active_escola)
@@ -128,17 +150,18 @@ class CursoListView(LoginRequiredMixin, ListView):
 
         # Adiciona os tipos de curso ao contexto, como antes
         user = self.request.user
+        sistema = self.request.session.get('sistema', 'cp').upper()
         if user.is_superuser:
-            context['tipos_curso'] = TipoCurso.objects.all()
+            context['tipos_curso'] = TipoCurso.objects.filter(escola__tipo=sistema)
         elif hasattr(user, 'profile') and user.profile.escola:
-            context['tipos_curso'] = TipoCurso.objects.filter(escola=user.profile.escola)
+            context['tipos_curso'] = TipoCurso.objects.filter(escola=user.profile.escola, escola__tipo=sistema)
         else:
             context['tipos_curso'] = TipoCurso.objects.none()
         
         # Adiciona escolas para o filtro de admin
         active_escola = getattr(self.request, 'active_escola', None)
         if user.is_superuser:
-            context['escolas'] = Escola.objects.all().order_by('nome')
+            context['escolas'] = Escola.objects.filter(tipo=sistema).order_by('nome')
             context['escola_selecionada'] = self.request.GET.get('escola', str(active_escola.id) if active_escola else '')
             
         return context
@@ -150,14 +173,15 @@ class CursoDetailView(LoginRequiredMixin, DetailView):
 
     def get_queryset(self):
         user = self.request.user
+        sistema = self.request.session.get('sistema', 'cp').upper()
         active_escola = getattr(self.request, 'active_escola', None)
         if user.is_superuser:
             if active_escola:
-                return Curso.objects.filter(escola=active_escola)
-            return Curso.objects.all()
+                return Curso.objects.filter(escola=active_escola, escola__tipo=sistema)
+            return Curso.objects.filter(escola__tipo=sistema)
         
         if active_escola:
-            return Curso.objects.filter(escola=active_escola)
+            return Curso.objects.filter(escola=active_escola, escola__tipo=sistema)
             
         return Curso.objects.none()
 
@@ -170,6 +194,7 @@ class CursoCreateView(LoginRequiredMixin, StaffRequiredMixin, AuditLogMixin, Cre
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
         kwargs['user'] = self.request.user
+        kwargs['sistema'] = self.request.session.get('sistema', 'cp').upper()
         return kwargs
 
     def form_valid(self, form):
@@ -183,9 +208,14 @@ class CursoUpdateView(LoginRequiredMixin, StaffRequiredMixin, AuditLogMixin, Upd
     template_name = 'cursos/curso_form.html'
     success_url = reverse_lazy('cursos:lista_cursos')
 
+    def get_queryset(self):
+        sistema = self.request.session.get('sistema', 'cp').upper()
+        return Curso.objects.filter(escola__tipo=sistema)
+
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
         kwargs['user'] = self.request.user
+        kwargs['sistema'] = self.request.session.get('sistema', 'cp').upper()
         return kwargs
 
 class CursoDeleteView(LoginRequiredMixin, StaffRequiredMixin, AuditLogMixin, DeleteView):
@@ -193,13 +223,18 @@ class CursoDeleteView(LoginRequiredMixin, StaffRequiredMixin, AuditLogMixin, Del
     template_name = 'cursos/curso_confirm_delete.html'
     success_url = reverse_lazy('cursos:lista_cursos')
 
+    def get_queryset(self):
+        sistema = self.request.session.get('sistema', 'cp').upper()
+        return Curso.objects.filter(escola__tipo=sistema)
+
 from django.contrib.contenttypes.models import ContentType # Import ContentType
 from core.models import AuditLog # Import AuditLog
 
 class CursoStatusUpdateView(LoginRequiredMixin, StaffRequiredMixin, View):
     model = Curso
     def post(self, request, pk):
-        curso = get_object_or_404(Curso, pk=pk)
+        sistema = request.session.get('sistema', 'cp').upper()
+        curso = get_object_or_404(Curso, pk=pk, escola__tipo=sistema)
         novo_status = request.POST.get('status')
         
         # Bloqueia alteração se o curso estiver Concluído/Arquivado e o usuário não for superusuário
@@ -219,40 +254,6 @@ class CursoStatusUpdateView(LoginRequiredMixin, StaffRequiredMixin, View):
                         "Por favor, lance os concluintes e desistentes na lista de alunos antes de concluir o curso."
                     )
                     return redirect('cursos:detalhe_curso', pk=pk)
-
-                # 2. Validação de Avaliações (Professor e Aluno) - COMENTADO PARA FUTURA HABILITAÇÃO
-                """
-                inscricoes_concluidas = curso.inscricao_set.filter(status='concluido')
-                total_concluintes = inscricoes_concluidas.count()
-                
-                # Se houver concluintes, validar avaliações
-                if total_concluintes > 0:
-                    # Avaliações do Professor (100% dos concluintes)
-                    # Usamos Count com o related_name 'avaliacao_professor'
-                    prof_eval_count = AvaliacaoProfessorAluno.objects.filter(inscricao__curso=curso, inscricao__status='concluido').count()
-                    
-                    # Avaliações dos Alunos (50% dos concluintes)
-                    # Usamos Count com o related_name 'avaliacao_aluno'
-                    student_eval_count = AvaliacaoAlunoCurso.objects.filter(inscricao__curso=curso, inscricao__status='concluido').count()
-                    
-                    min_student_eval = (total_concluintes + 1) // 2  # Metade arredondada para cima
-                    
-                    erros_avaliacao = []
-                    
-                    if prof_eval_count < total_concluintes:
-                        erros_avaliacao.append(f"Faltam {total_concluintes - prof_eval_count} avaliações de desempenho do professor.")
-                    
-                    if student_eval_count < min_student_eval:
-                        erros_avaliacao.append(f"Faltam {min_student_eval - student_eval_count} avaliações de feedback dos alunos (necessário pelo menos 50%).")
-                    
-                    if erros_avaliacao:
-                        msg = f"Não é possível concluir o curso '{curso.nome}' devido a pendências: " + " ".join(erros_avaliacao)
-                        messages.warning(request, msg)
-                        return redirect('cursos:detalhe_curso', pk=pk)
-                elif total_concluintes == 0:
-                    # Se não houver concluintes (apenas desistentes), permite concluir mas avisa
-                    messages.info(request, "O curso está sendo concluído sem nenhum aluno aprovado (apenas desistentes).")
-                """
 
             old_status = curso.status
             curso.status = novo_status
@@ -280,6 +281,10 @@ class CursoConcluintesView(LoginRequiredMixin, StaffRequiredMixin, DetailView):
     template_name = 'cursos/curso_concluintes.html'
     context_object_name = 'curso'
 
+    def get_queryset(self):
+        sistema = self.request.session.get('sistema', 'cp').upper()
+        return Curso.objects.filter(escola__tipo=sistema)
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         # Filtrar apenas as inscrições com status 'concluido'
@@ -295,7 +300,8 @@ class CursoConcluintesView(LoginRequiredMixin, StaffRequiredMixin, DetailView):
 
 class CursoConcluintesXLSXView(LoginRequiredMixin, StaffRequiredMixin, View):
     def get(self, request, pk):
-        curso = get_object_or_404(Curso, pk=pk)
+        sistema = request.session.get('sistema', 'cp').upper()
+        curso = get_object_or_404(Curso, pk=pk, escola__tipo=sistema)
         concluintes = curso.inscricao_set.filter(status='concluido').select_related('aluno').order_by('aluno__nome_completo')
         
         # Preparar dados para o DataFrame
@@ -324,7 +330,8 @@ class CursoConcluintesXLSXView(LoginRequiredMixin, StaffRequiredMixin, View):
 
 class ExportarAlunosView(LoginRequiredMixin, StaffRequiredMixin, View):
     def post(self, request, pk):
-        curso = get_object_or_404(Curso, pk=pk)
+        sistema = request.session.get('sistema', 'cp').upper()
+        curso = get_object_or_404(Curso, pk=pk, escola__tipo=sistema)
         campos_selecionados = request.POST.getlist('campos')
         
         if not campos_selecionados:
@@ -445,6 +452,10 @@ class CursoImprimirListaView(LoginRequiredMixin, StaffRequiredMixin, DetailView)
     template_name = 'cursos/curso_imprimir_lista.html'
     context_object_name = 'curso'
 
+    def get_queryset(self):
+        sistema = self.request.session.get('sistema', 'cp').upper()
+        return Curso.objects.filter(escola__tipo=sistema)
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         curso = self.get_object()
@@ -464,11 +475,16 @@ class TipoCursoListView(LoginRequiredMixin, StaffRequiredMixin, ListView):
     context_object_name = 'tipos_curso'
 
     def get_queryset(self):
+        sistema = self.request.session.get('sistema', 'cp').upper()
         active_escola = getattr(self.request, 'active_escola', None)
-        qs = TipoCurso.objects.all().annotate(num_interessados=Count('aluno'))
+        active_escola_is_fallback = getattr(self.request, 'active_escola_is_fallback', False)
+        profile = getattr(self.request.user, 'profile', None)
+        qs = TipoCurso.objects.filter(escola__tipo=sistema).annotate(num_interessados=Count('aluno'))
         
-        if self.request.user.is_superuser:
-            if active_escola:
+        is_global_admin = self.request.user.is_superuser or (profile and not profile.escola and profile.nivel_acesso in ['ADMIN_CP', 'ADMIN_UDITECH'])
+
+        if is_global_admin:
+            if active_escola and not active_escola_is_fallback:
                 return qs.filter(escola=active_escola)
             return qs
         
@@ -486,6 +502,8 @@ class TipoCursoCreateView(LoginRequiredMixin, StaffRequiredMixin, AuditLogMixin,
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
         kwargs['user'] = self.request.user
+        kwargs['active_escola'] = getattr(self.request, 'active_escola', None)
+        kwargs['sistema'] = self.request.session.get('sistema', 'cp').upper()
         return kwargs
 
     def form_valid(self, form):
@@ -499,9 +517,15 @@ class TipoCursoUpdateView(LoginRequiredMixin, StaffRequiredMixin, AuditLogMixin,
     template_name = 'cursos/tipocurso_form.html'
     success_url = reverse_lazy('cursos:lista_tipos_curso')
 
+    def get_queryset(self):
+        sistema = self.request.session.get('sistema', 'cp').upper()
+        return TipoCurso.objects.filter(escola__tipo=sistema)
+
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
         kwargs['user'] = self.request.user
+        kwargs['active_escola'] = getattr(self.request, 'active_escola', None)
+        kwargs['sistema'] = self.request.session.get('sistema', 'cp').upper()
         return kwargs
 
 class TipoCursoDeleteView(LoginRequiredMixin, StaffRequiredMixin, AuditLogMixin, DeleteView):
@@ -509,11 +533,19 @@ class TipoCursoDeleteView(LoginRequiredMixin, StaffRequiredMixin, AuditLogMixin,
     template_name = 'cursos/tipocurso_confirm_delete.html'
     success_url = reverse_lazy('cursos:lista_tipos_curso')
 
+    def get_queryset(self):
+        sistema = self.request.session.get('sistema', 'cp').upper()
+        return TipoCurso.objects.filter(escola__tipo=sistema)
+
 # Views para Inscrição
 class InscricaoCreateView(AuditLogMixin, LoginRequiredMixin, StaffRequiredMixin, CreateView):
     model = Inscricao
     form_class = InscricaoForm
     template_name = 'cursos/inscricao_form.html'
+
+    def get_queryset(self):
+        sistema = self.request.session.get('sistema', 'cp').upper()
+        return Inscricao.objects.filter(curso__escola__tipo=sistema)
 
     def get_success_url(self):
         return reverse_lazy('cursos:detalhe_curso', kwargs={'pk': self.object.curso.pk})
@@ -521,6 +553,7 @@ class InscricaoCreateView(AuditLogMixin, LoginRequiredMixin, StaffRequiredMixin,
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
         kwargs['user'] = self.request.user
+        kwargs['sistema'] = self.request.session.get('sistema', 'cp').upper()
         if 'curso_pk' in self.kwargs:
             kwargs['curso_id'] = self.kwargs['curso_pk']
         return kwargs
@@ -550,6 +583,10 @@ class InscricaoCreateView(AuditLogMixin, LoginRequiredMixin, StaffRequiredMixin,
 
 class UpdateInscricaoStatusView(LoginRequiredMixin, StaffRequiredMixin, SingleObjectMixin, View):
     model = Inscricao
+
+    def get_queryset(self):
+        sistema = self.request.session.get('sistema', 'cp').upper()
+        return Inscricao.objects.filter(curso__escola__tipo=sistema)
 
     def post(self, request, pk):
         inscricao = self.get_object()
@@ -592,16 +629,18 @@ class MatriculaView(LoginRequiredMixin, StaffRequiredMixin, ListView):
     context_object_name = 'alunos_sugeridos'
 
     def get_queryset(self):
+        sistema = self.request.session.get('sistema', 'cp').upper()
         curso_id = self.request.GET.get('curso_id')
         if not curso_id:
             return Aluno.objects.none()
 
-        curso = get_object_or_404(Curso, pk=curso_id, status__in=['Aberta', 'Em Andamento'])
+        curso = get_object_or_404(Curso, pk=curso_id, status__in=['Aberta', 'Em Andamento'], escola__tipo=sistema)
         
         # Filtrar alunos que têm o tipo de curso do curso selecionado em seus interesses
         # e que ainda não estão inscritos neste curso.
         alunos_interessados = Aluno.objects.filter(
-            cursos_interesse=curso.tipo_curso
+            cursos_interesse=curso.tipo_curso,
+            escola__tipo=sistema
         )
         
         ids_alunos_ja_inscritos = Inscricao.objects.filter(curso=curso).values_list('aluno_id', flat=True)
@@ -635,9 +674,10 @@ class MatriculaView(LoginRequiredMixin, StaffRequiredMixin, ListView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         user = self.request.user
+        sistema = self.request.session.get('sistema', 'cp').upper()
         
         # Queryset de cursos abertos ou em andamento para o seletor
-        cursos_abertos_qs = Curso.objects.filter(status__in=['Aberta', 'Em Andamento'])
+        cursos_abertos_qs = Curso.objects.filter(status__in=['Aberta', 'Em Andamento'], escola__tipo=sistema)
         active_escola = getattr(self.request, 'active_escola', None)
         if active_escola:
             cursos_abertos_qs = cursos_abertos_qs.filter(escola=active_escola)
@@ -646,7 +686,7 @@ class MatriculaView(LoginRequiredMixin, StaffRequiredMixin, ListView):
         
         curso_id = self.request.GET.get('curso_id')
         if curso_id:
-            context['selected_curso'] = get_object_or_404(Curso, pk=curso_id)
+            context['selected_curso'] = get_object_or_404(Curso, pk=curso_id, escola__tipo=sistema)
             context['alunos_matriculados'] = Inscricao.objects.filter(curso=context['selected_curso'], status='cursando').order_by('aluno__nome_completo')
             
             # Adicionar as escolhas de status ao contexto
@@ -666,8 +706,9 @@ class AtualizarContatoMatriculaAjaxView(LoginRequiredMixin, StaffRequiredMixin, 
             if not aluno_id or not curso_id or not status:
                 return JsonResponse({'success': False, 'error': 'Parâmetros incompletos.'}, status=400)
                 
-            aluno = get_object_or_404(Aluno, pk=aluno_id)
-            curso = get_object_or_404(Curso, pk=curso_id)
+            sistema = request.session.get('sistema', 'cp').upper()
+            aluno = get_object_or_404(Aluno, pk=aluno_id, escola__tipo=sistema)
+            curso = get_object_or_404(Curso, pk=curso_id, escola__tipo=sistema)
             
             # Validar se o status é uma opção válida
             valid_statuses = [choice[0] for choice in ContatoMatricula.STATUS_CHOICES]
@@ -693,39 +734,25 @@ class MatricularAlunoDiretoView(LoginRequiredMixin, StaffRequiredMixin, View):
         aluno_id = request.POST.get('aluno_id')
         curso_id = request.POST.get('curso_id')
         
-        aluno = get_object_or_404(Aluno, pk=aluno_id)
-        curso = get_object_or_404(Curso, pk=curso_id)
+        sistema = request.session.get('sistema', 'cp').upper()
+        aluno = get_object_or_404(Aluno, pk=aluno_id, escola__tipo=sistema)
+        curso = get_object_or_404(Curso, pk=curso_id, escola__tipo=sistema)
 
         # URL de redirecionamento em caso de sucesso ou erro
         redirect_url = reverse('cursos:matricula') + f'?curso_id={curso_id}'
 
-        
-
         # Verifica se o aluno já está inscrito
-
         if Inscricao.objects.filter(aluno=aluno, curso=curso).exists():
-
             messages.warning(request, f'O aluno {aluno.nome_completo} já está matriculado neste curso.')
-
             return redirect(redirect_url)
-
-        
 
         # --- Lógica de validação de conflitos de matrícula usando a função auxiliar ---
-
         try:
-
             validar_conflito_matricula(aluno, curso)
-
         except ValidationError as e:
-
             messages.error(request, e.message)
-
             return redirect(redirect_url)
-
         # --- Fim da lógica de validação ---
-
-
 
         from core.utils import audit_context
         with audit_context(skip=True):
@@ -746,13 +773,13 @@ class MatricularAlunoDiretoView(LoginRequiredMixin, StaffRequiredMixin, View):
             print(f"Erro log matricula direta: {e}")
 
         messages.success(request, f'Aluno {aluno.nome_completo} matriculado com sucesso no curso {curso.nome}.')
-
         return redirect(redirect_url)
 
 class CancelarMatriculaDiretoView(LoginRequiredMixin, StaffRequiredMixin, View):
     def post(self, request, *args, **kwargs):
         inscricao_id = request.POST.get('inscricao_id')
-        inscricao = get_object_or_404(Inscricao, pk=inscricao_id)
+        sistema = request.session.get('sistema', 'cp').upper()
+        inscricao = get_object_or_404(Inscricao, pk=inscricao_id, curso__escola__tipo=sistema)
         curso_id = inscricao.curso.pk
         
         # Confirmação adicional de permissão (escola) se necessário, mas CoordenadorRequiredMixin + filtro inicial já ajuda
@@ -793,6 +820,10 @@ class InscricaoDeleteView(AuditLogMixin, LoginRequiredMixin, StaffRequiredMixin,
     template_name = 'cursos/inscricao_confirm_delete.html' # Pode ser um template genérico ou um específico
     context_object_name = 'inscricao'
 
+    def get_queryset(self):
+        sistema = self.request.session.get('sistema', 'cp').upper()
+        return Inscricao.objects.filter(curso__escola__tipo=sistema)
+
     def get_success_url(self):
         # Redireciona de volta para a página de detalhes do curso
         messages.success(self.request, f"Matrícula de '{self.object.aluno.nome_completo}' no curso '{self.object.curso.nome}' removida com sucesso.")
@@ -805,7 +836,8 @@ class ChamadaCursoListView(LoginRequiredMixin, ListView):
     
     def get_queryset(self):
         user = self.request.user
-        queryset = Curso.objects.filter(status__in=['Aberta', 'Em Andamento']) # Filtrar por status ativo
+        sistema = self.request.session.get('sistema', 'cp').upper()
+        queryset = Curso.objects.filter(status__in=['Aberta', 'Em Andamento'], escola__tipo=sistema) # Filtrar por status ativo
 
         active_escola = getattr(self.request, 'active_escola', None)
         if user.is_superuser:
@@ -823,7 +855,8 @@ class FazerChamadaView(LoginRequiredMixin, StaffRequiredMixin, View):
     template_name = 'cursos/fazer_chamada.html'
 
     def get(self, request, curso_pk, registro_aula_pk=None):
-        curso = get_object_or_404(Curso, pk=curso_pk)
+        sistema = request.session.get('sistema', 'cp').upper()
+        curso = get_object_or_404(Curso, pk=curso_pk, escola__tipo=sistema)
         
         # Verificar permissão de escola se não for superuser
         if not request.user.is_superuser and hasattr(request.user, 'profile') and request.user.profile.escola != curso.escola:
@@ -913,7 +946,8 @@ class FazerChamadaView(LoginRequiredMixin, StaffRequiredMixin, View):
         return render(request, self.template_name, context)
 
     def post(self, request, curso_pk, registro_aula_pk=None):
-        curso = get_object_or_404(Curso, pk=curso_pk)
+        sistema = request.session.get('sistema', 'cp').upper()
+        curso = get_object_or_404(Curso, pk=curso_pk, escola__tipo=sistema)
 
         # Verificar permissão de escola se não for superuser
         if not request.user.is_superuser and hasattr(request.user, 'profile') and request.user.profile.escola != curso.escola:
@@ -1063,7 +1097,8 @@ class ObterDadosChamadaDataView(LoginRequiredMixin, StaffRequiredMixin, View):
         except ValueError:
             return JsonResponse({'error': 'Formato de data inválido'}, status=400)
             
-        curso = get_object_or_404(Curso, pk=curso_pk)
+        sistema = request.session.get('sistema', 'cp').upper()
+        curso = get_object_or_404(Curso, pk=curso_pk, escola__tipo=sistema)
         registro_aula = RegistroAula.objects.filter(curso=curso, data_aula=data_obj).first()
         
         if not registro_aula:
@@ -1086,7 +1121,8 @@ class HistoricoChamadasCursoView(LoginRequiredMixin, StaffRequiredMixin, ListVie
     paginate_by = 30 # Aumentado para ver mais dias
 
     def get_queryset(self):
-        self.curso = get_object_or_404(Curso, pk=self.kwargs['curso_pk'])
+        sistema = self.request.session.get('sistema', 'cp').upper()
+        self.curso = get_object_or_404(Curso, pk=self.kwargs['curso_pk'], escola__tipo=sistema)
         
         # Verificar permissão de escola se não for superuser
         user = self.request.user
@@ -1106,8 +1142,14 @@ class RelatorioFrequenciaView(LoginRequiredMixin, StaffRequiredMixin, DetailView
     context_object_name = 'curso'
     pk_url_kwarg = 'curso_pk'
 
+    def get_queryset(self):
+        sistema = self.request.session.get('sistema', 'cp').upper()
+        return Curso.objects.filter(escola__tipo=sistema)
+
     def get_object(self, queryset=None):
-        return get_object_or_404(Curso, pk=self.kwargs['curso_pk'])
+        if queryset is None:
+            queryset = self.get_queryset()
+        return get_object_or_404(queryset, pk=self.kwargs['curso_pk'])
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -1209,7 +1251,8 @@ class RelatorioFrequenciaView(LoginRequiredMixin, StaffRequiredMixin, DetailView
 
 class ExcluirRegistroAulaView(LoginRequiredMixin, StaffRequiredMixin, View):
     def post(self, request, pk):
-        registro = get_object_or_404(RegistroAula, pk=pk)
+        sistema = request.session.get('sistema', 'cp').upper()
+        registro = get_object_or_404(RegistroAula, pk=pk, curso__escola__tipo=sistema)
         curso = registro.curso
         
         # Verificar permissão de escola se não for superuser
@@ -1244,7 +1287,7 @@ class CursoCSVUploadView(LoginRequiredMixin, UserPassesTestMixin, View):
     def test_func(self):
         return self.request.user.is_superuser
 
-    def handle_uploaded_file(self, file):
+    def handle_uploaded_file(self, file, sistema):
         decoded_file = file.read().decode('utf-8')
         io_string = io.StringIO(decoded_file)
         reader = csv.DictReader(io_string)
@@ -1263,9 +1306,9 @@ class CursoCSVUploadView(LoginRequiredMixin, UserPassesTestMixin, View):
                     raise ValueError("Coluna 'escola_nome' é obrigatória.")
                 
                 try:
-                    escola = Escola.objects.get(nome=escola_nome)
+                    escola = Escola.objects.get(nome=escola_nome, tipo=sistema)
                 except Escola.DoesNotExist:
-                    raise ValueError(f"Escola '{escola_nome}' não encontrada. As escolas devem ser criadas antes do upload do CSV.")
+                    raise ValueError(f"Escola '{escola_nome}' não encontrada no portal ativo. As escolas devem ser criadas antes do upload do CSV.")
 
                 # 2. Get or create TipoCurso (using nome_curso as type name)
                 nome_curso = row.get('nome_curso') # Need nome_curso first for TipoCurso
@@ -1350,7 +1393,8 @@ class CursoCSVUploadView(LoginRequiredMixin, UserPassesTestMixin, View):
                 messages.error(request, "Por favor, envie um arquivo CSV válido.")
                 return render(request, self.template_name, {'form': form})
 
-            created_count, updated_count, errors = self.handle_uploaded_file(csv_file)
+            sistema = request.session.get('sistema', 'cp').upper()
+            created_count, updated_count, errors = self.handle_uploaded_file(csv_file, sistema)
 
             if errors:
                 for error in errors:
@@ -1565,14 +1609,20 @@ class ParceiroListView(LoginRequiredMixin, StaffRequiredMixin, ListView):
     context_object_name = 'parceiros'
 
     def get_queryset(self):
+        sistema = self.request.session.get('sistema', 'cp').upper()
         active_escola = getattr(self.request, 'active_escola', None)
-        if self.request.user.is_superuser:
-            if active_escola:
-                return Parceiro.objects.filter(escola=active_escola).order_by('nome')
-            return Parceiro.objects.all().order_by('escola__nome', 'nome')
+        active_escola_is_fallback = getattr(self.request, 'active_escola_is_fallback', False)
+        profile = getattr(self.request.user, 'profile', None)
+
+        is_global_admin = self.request.user.is_superuser or (profile and not profile.escola and profile.nivel_acesso in ['ADMIN_CP', 'ADMIN_UDITECH'])
+
+        if is_global_admin:
+            if active_escola and not active_escola_is_fallback:
+                return Parceiro.objects.filter(escola=active_escola, escola__tipo=sistema).order_by('nome')
+            return Parceiro.objects.filter(escola__tipo=sistema).order_by('escola__nome', 'nome')
         
         if active_escola:
-            return Parceiro.objects.filter(escola=active_escola).order_by('nome')
+            return Parceiro.objects.filter(escola=active_escola, escola__tipo=sistema).order_by('nome')
             
         return Parceiro.objects.none()
 
@@ -1585,6 +1635,7 @@ class ParceiroCreateView(LoginRequiredMixin, StaffRequiredMixin, AuditLogMixin, 
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
         kwargs['user'] = self.request.user
+        kwargs['sistema'] = self.request.session.get('sistema', 'cp').upper()
         return kwargs
 
     def form_valid(self, form):
@@ -1598,15 +1649,24 @@ class ParceiroUpdateView(LoginRequiredMixin, StaffRequiredMixin, AuditLogMixin, 
     template_name = 'cursos/parceiro_form.html'
     success_url = reverse_lazy('cursos:lista_parceiros')
 
+    def get_queryset(self):
+        sistema = self.request.session.get('sistema', 'cp').upper()
+        return Parceiro.objects.filter(escola__tipo=sistema)
+
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
         kwargs['user'] = self.request.user
+        kwargs['sistema'] = self.request.session.get('sistema', 'cp').upper()
         return kwargs
 
 class ParceiroDeleteView(LoginRequiredMixin, StaffRequiredMixin, AuditLogMixin, DeleteView):
     model = Parceiro
     template_name = 'cursos/curso_confirm_delete.html' 
     success_url = reverse_lazy('cursos:lista_parceiros')
+
+    def get_queryset(self):
+        sistema = self.request.session.get('sistema', 'cp').upper()
+        return Parceiro.objects.filter(escola__tipo=sistema)
 
 # --- CRUD para Ementa Padrão (Global - Admin) ---
 
@@ -1655,6 +1715,10 @@ class CursoAvaliacaoDashboardView(LoginRequiredMixin, StaffRequiredMixin, Detail
     model = Curso
     template_name = 'cursos/avaliacao_dashboard.html'
     context_object_name = 'curso'
+
+    def get_queryset(self):
+        sistema = self.request.session.get('sistema', 'cp').upper()
+        return Curso.objects.filter(escola__tipo=sistema)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -1778,7 +1842,8 @@ class AvaliarCursoPublicView(View):
 
 class ObterDadosGraficosAvaliacaoView(LoginRequiredMixin, StaffRequiredMixin, View):
     def get(self, request, pk):
-        curso = get_object_or_404(Curso, pk=pk)
+        sistema = request.session.get('sistema', 'cp').upper()
+        curso = get_object_or_404(Curso, pk=pk, escola__tipo=sistema)
         from .models import AvaliacaoAlunoCurso
         from django.db.models import Count
         avaliacoes = AvaliacaoAlunoCurso.objects.filter(inscricao__curso=curso)
@@ -1794,7 +1859,8 @@ class ObterDadosGraficosAvaliacaoView(LoginRequiredMixin, StaffRequiredMixin, Vi
 class AvaliacaoDetalhesView(LoginRequiredMixin, StaffRequiredMixin, View):
     template_name = 'cursos/avaliacao_detalhes_modal.html'
     def get(self, request, inscricao_pk):
-        inscricao = get_object_or_404(Inscricao, pk=inscricao_pk)
+        sistema = request.session.get('sistema', 'cp').upper()
+        inscricao = get_object_or_404(Inscricao, pk=inscricao_pk, curso__escola__tipo=sistema)
         return render(request, self.template_name, {
             'inscricao': inscricao,
             'av_prof': getattr(inscricao, 'avaliacao_professor', None),
@@ -1823,7 +1889,8 @@ class CursoAvaliacaoConsolidadoView(LoginRequiredMixin, StaffRequiredMixin, View
         return data
 
     def get(self, request, pk):
-        curso = get_object_or_404(Curso, pk=pk)
+        sistema = request.session.get('sistema', 'cp').upper()
+        curso = get_object_or_404(Curso, pk=pk, escola__tipo=sistema)
         from .models import AvaliacaoProfessorAluno, AvaliacaoAlunoCurso
         
         av_prof_qs = AvaliacaoProfessorAluno.objects.filter(inscricao__curso=curso)
@@ -1855,7 +1922,8 @@ class CursoQualitativosView(LoginRequiredMixin, StaffRequiredMixin, View):
     template_name = 'cursos/qualitativos_form.html'
 
     def get(self, request, pk):
-        curso = get_object_or_404(Curso, pk=pk)
+        sistema = request.session.get('sistema', 'cp').upper()
+        curso = get_object_or_404(Curso, pk=pk, escola__tipo=sistema)
         data_selecionada = request.GET.get('data')
         
         chamadas = None
@@ -1881,7 +1949,8 @@ class CursoQualitativosView(LoginRequiredMixin, StaffRequiredMixin, View):
         })
 
     def post(self, request, pk):
-        curso = get_object_or_404(Curso, pk=pk)
+        sistema = request.session.get('sistema', 'cp').upper()
+        curso = get_object_or_404(Curso, pk=pk, escola__tipo=sistema)
         chamadas_ids = request.POST.getlist('chamada_id')
         data_aula = request.POST.get('data_aula')
         

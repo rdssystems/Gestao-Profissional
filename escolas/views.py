@@ -23,6 +23,11 @@ class SuperuserRequiredMixin(UserPassesTestMixin):
     def test_func(self):
         return self.request.user.is_superuser
 
+class SegmentAdminRequiredMixin(UserPassesTestMixin):
+    def test_func(self):
+        user = self.request.user
+        return user.is_superuser or (hasattr(user, 'profile') and user.profile.nivel_acesso in ['ADMIN_CP', 'ADMIN_UDITECH'])
+
 class DashboardView(LoginRequiredMixin, TemplateView):
     template_name = 'escolas/dashboard.html'
 
@@ -38,8 +43,15 @@ class DashboardView(LoginRequiredMixin, TemplateView):
         period_filter = self.request.GET.get('period', 'current_month')
 
         # Escopos iniciais
-        aluno_scope = Aluno.objects.all()
-        curso_scope = Curso.objects.all()
+        sistema = self.request.session.get('sistema', 'cp').upper()
+        if user.is_superuser:
+            aluno_scope = Aluno.objects.all()
+            curso_scope = Curso.objects.all()
+            inscricao_scope = Inscricao.objects.all()
+        else:
+            aluno_scope = Aluno.objects.filter(escola__tipo=sistema)
+            curso_scope = Curso.objects.filter(escola__tipo=sistema)
+            inscricao_scope = Inscricao.objects.filter(curso__escola__tipo=sistema)
 
         # Automatização de Status do Curso: Aberta -> Em Andamento na data de início
         from datetime import date
@@ -47,7 +59,6 @@ class DashboardView(LoginRequiredMixin, TemplateView):
         if cursos_para_iniciar.exists():
             cursos_para_iniciar.update(status='Em Andamento')
 
-        inscricao_scope = Inscricao.objects.all()
         context['dashboard_title'] = "Visão Geral do Sistema"
 
         # Identificar escola do usuário logado
@@ -57,13 +68,23 @@ class DashboardView(LoginRequiredMixin, TemplateView):
 
         # Lógica de Filtragem de Escopo Priorizando o Contexto (request.active_escola)
         target_escola = getattr(self.request, 'active_escola', None)
+        active_escola_is_fallback = getattr(self.request, 'active_escola_is_fallback', False)
         
-        if user.is_superuser:
-            # No modo superuser, o filtro manual no dashboard sobrescreve o contexto global da sessão
-            # SE o filtro for 'all', voltamos para o contexto da rede (ou da escola ativa na sessão)
-            if escola_id_filter != 'all':
+        is_segment_admin = hasattr(user, 'profile') and user.profile.nivel_acesso in ['ADMIN_CP', 'ADMIN_UDITECH']
+        has_global_access = user.is_superuser or is_segment_admin
+        
+        # Se o usuário possui privilégios de acesso global e está acessando o dashboard de forma global
+        # (seja por filtro explícito 'all' ou porque a escola ativa na sessão é apenas um fallback automático),
+        # limpamos target_escola para que a visão global (de todas as escolas da rede/segmento) seja mostrada.
+        if has_global_access:
+            if escola_id_filter == 'all' or active_escola_is_fallback:
+                target_escola = None
+            elif escola_id_filter != 'all':
                 try:
-                    target_escola = Escola.objects.get(pk=escola_id_filter)
+                    if user.is_superuser:
+                        target_escola = Escola.objects.get(pk=escola_id_filter)
+                    else:
+                        target_escola = Escola.objects.get(pk=escola_id_filter, tipo=sistema)
                 except:
                     pass
         
@@ -74,8 +95,8 @@ class DashboardView(LoginRequiredMixin, TemplateView):
             context['dashboard_title'] = f"Dashboard: {target_escola.nome}"
             escola_id_filter = str(target_escola.id)
         else:
-            if not user.is_superuser:
-                # Se não é superuser e não tem escola ativa (erro?), limpa tudo
+            if not has_global_access:
+                # Se não é superuser/admin de segmento e não tem escola ativa (erro?), limpa tudo
                 aluno_scope = Aluno.objects.none()
                 curso_scope = Curso.objects.none()
                 inscricao_scope = Inscricao.objects.none()
@@ -137,18 +158,28 @@ class DashboardView(LoginRequiredMixin, TemplateView):
                 audit_scope = audit_scope.filter(usuario__profile__escola_id=user_escola_id)
             else:
                 audit_scope = audit_scope.none()
-        elif escola_id_filter != 'all':
-            try:
-                audit_scope = audit_scope.filter(usuario__profile__escola_id=int(escola_id_filter))
-            except:
-                pass
+        else:
+            if escola_id_filter != 'all':
+                try:
+                    audit_scope = audit_scope.filter(usuario__profile__escola_id=int(escola_id_filter), usuario__profile__escola__tipo=sistema)
+                except:
+                    pass
+            else:
+                from django.db.models import Q
+                if user.is_superuser:
+                    audit_scope = audit_scope.all()
+                else:
+                    audit_scope = audit_scope.filter(Q(usuario__profile__escola__tipo=sistema) | Q(usuario__profile__escola__isnull=True))
         
         context['historico_recente'] = audit_scope[:15]
         
         # Filtros para o Template
         # Preparação do Gráfico
-        escolas_chart = Escola.objects.all().order_by('nome')
-        if not user.is_superuser:
+        if user.is_superuser:
+            escolas_chart = Escola.objects.all().order_by('nome')
+        else:
+            escolas_chart = Escola.objects.filter(tipo=sistema).order_by('nome')
+        if not has_global_access:
              if user_escola_id:
                  escolas_chart = escolas_chart.filter(id=user_escola_id)
              else:
@@ -158,7 +189,7 @@ class DashboardView(LoginRequiredMixin, TemplateView):
                  escolas_chart = escolas_chart.filter(id=int(escola_id_filter))
              except:
                  pass
-             
+               
         radar_fields = [
             'c3_1', 'c3_2', 'c3_3', 'c3_4'
         ]
@@ -174,7 +205,7 @@ class DashboardView(LoginRequiredMixin, TemplateView):
             return int(sum(idades) / len(idades)) if idades else 0
 
         # ---- DADOS GLOBAIS DA REDE ----
-        if user.is_superuser and (escola_id_filter == 'all' or not escola_id_filter) and escolas_chart.count() > 1:
+        if has_global_access and (escola_id_filter == 'all' or not escola_id_filter) and escolas_chart.count() > 1:
             kpi_inscricoes_hoje_g = aluno_scope.filter(data_criacao__year=year, data_criacao__month=month).count()
             kpi_total_alunos_g = aluno_scope.count()
             kpi_alunos_cursando_g = inscricao_scope.filter(curso__in=curso_scope, status='cursando').distinct().count()
@@ -327,7 +358,7 @@ class DashboardView(LoginRequiredMixin, TemplateView):
                     except: pass
             
             kpi_hoje = count_novos_alunos + count_novas_inscricoes + count_interesses + count_migracoes
-
+ 
             kpi_total_alunos = aluno_scope.filter(escola=esc).count()
             kpi_alunos_cursando = inscricao_scope.filter(curso__escola=esc, curso__in=esc_cursos_ativos, status='cursando').distinct().count()
             kpi_alunos_concluintes = inscricao_scope.filter(curso__escola=esc, status='concluido', data_conclusao__year=year, data_conclusao__month=month).count()
@@ -335,7 +366,7 @@ class DashboardView(LoginRequiredMixin, TemplateView):
             kpi_alunos_desistentes = inscricao_scope.filter(curso__escola=esc, status='desistente', data_desistencia__year=year, data_desistencia__month=month, chamadas__status_presenca='P').distinct().count()
             kpi_cursos_ativos = esc_cursos_ativos.count()
             kpi_cursos_concluidos = curso_scope.filter(escola=esc, status='Concluído', data_fim__year=year, data_fim__month=month).count()
-
+ 
             # Só exibir escolas que tem ao menos um aluno ou curso rodando
             if vagas > 0 or cursando > 0 or len(assiduidade_series) > 0 or escolas_chart.count() == 1:
                 escolas_dados.append({
@@ -366,11 +397,14 @@ class DashboardView(LoginRequiredMixin, TemplateView):
                         'idade_media': [media_idade_m, media_idade_f]
                     }
                 })
-
+ 
         context['escolas_dados'] = escolas_dados
         context['escolas_dados_json'] = json.dumps(escolas_dados)
-
-        context['todas_escolas'] = Escola.objects.all().order_by('nome')
+ 
+        if user.is_superuser:
+            context['todas_escolas'] = Escola.objects.all().order_by('nome')
+        else:
+            context['todas_escolas'] = Escola.objects.filter(tipo=sistema).order_by('nome')
         context['period_options'] = {
             'all': 'Todo o Período',
             'current_month': 'Mês Atual',
@@ -391,10 +425,11 @@ class EscolaDetailView(LoginRequiredMixin, DetailView):
 
     def get_queryset(self):
         user = self.request.user
+        sistema = self.request.session.get('sistema', 'cp').upper()
         if user.is_superuser:
             return Escola.objects.all()
         if hasattr(user, 'profile') and user.profile.escola_id:
-            return Escola.objects.filter(pk=user.profile.escola_id)
+            return Escola.objects.filter(pk=user.profile.escola_id, tipo=sistema)
         return Escola.objects.none()
 
 class EscolaCreateView(SuperuserRequiredMixin, CreateView):
@@ -403,23 +438,44 @@ class EscolaCreateView(SuperuserRequiredMixin, CreateView):
     template_name = 'escolas/escola_form.html'
     success_url = reverse_lazy('escolas:dashboard')
 
+    def form_valid(self, form):
+        sistema = self.request.session.get('sistema', 'cp').upper()
+        form.instance.tipo = sistema
+        return super().form_valid(form)
+
 class EscolaUpdateView(SuperuserRequiredMixin, UpdateView):
     model = Escola
     form_class = EscolaForm
     template_name = 'escolas/escola_form.html'
     success_url = reverse_lazy('escolas:dashboard')
 
+    def get_queryset(self):
+        if self.request.user.is_superuser:
+            return Escola.objects.all()
+        sistema = self.request.session.get('sistema', 'cp').upper()
+        return Escola.objects.filter(tipo=sistema)
+
 class EscolaDeleteView(SuperuserRequiredMixin, DeleteView):
     model = Escola
     template_name = 'escolas/escola_confirm_delete.html'
     success_url = reverse_lazy('escolas:dashboard')
+
+    def get_queryset(self):
+        if self.request.user.is_superuser:
+            return Escola.objects.all()
+        sistema = self.request.session.get('sistema', 'cp').upper()
+        return Escola.objects.filter(tipo=sistema)
 
 class CursosPorEscolaListView(ListView):
     model = Curso
     template_name = 'cursos/curso_list.html'
     context_object_name = 'cursos'
     def get_queryset(self):
-        self.escola = get_object_or_404(Escola, pk=self.kwargs['escola_id'])
+        if self.request.user.is_superuser:
+            self.escola = get_object_or_404(Escola, pk=self.kwargs['escola_id'])
+        else:
+            sistema = self.request.session.get('sistema', 'cp').upper()
+            self.escola = get_object_or_404(Escola, pk=self.kwargs['escola_id'], tipo=sistema)
         return Curso.objects.filter(escola=self.escola).order_by('-data_inicio')
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -431,7 +487,11 @@ class AlunosPorEscolaListView(ListView):
     template_name = 'alunos/aluno_list.html'
     context_object_name = 'alunos'
     def get_queryset(self):
-        self.escola = get_object_or_404(Escola, pk=self.kwargs['escola_id'])
+        if self.request.user.is_superuser:
+            self.escola = get_object_or_404(Escola, pk=self.kwargs['escola_id'])
+        else:
+            sistema = self.request.session.get('sistema', 'cp').upper()
+            self.escola = get_object_or_404(Escola, pk=self.kwargs['escola_id'], tipo=sistema)
         return Aluno.objects.filter(escola=self.escola).order_by('nome_completo')
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -443,7 +503,19 @@ class EscolaListView(LoginRequiredMixin, ListView):
     template_name = 'escolas/escola_list.html'
     context_object_name = 'escolas'
     def get_queryset(self):
-        return Escola.objects.all().order_by('nome')
+        sistema = self.request.session.get('sistema', 'cp').upper()
+        qs = Escola.objects.filter(tipo=sistema).order_by('nome')
+        
+        profile = getattr(self.request.user, 'profile', None)
+        is_global_admin = self.request.user.is_superuser or (profile and not profile.escola and profile.nivel_acesso in ['ADMIN_CP', 'ADMIN_UDITECH'])
+        
+        if is_global_admin:
+            return qs
+            
+        if profile and profile.escola:
+            return qs.filter(pk=profile.escola.pk)
+            
+        return qs.none()
 
 class ConcluintesGlobalView(LoginRequiredMixin, SuperuserRequiredMixin, ListView):
     model = Curso
@@ -451,9 +523,9 @@ class ConcluintesGlobalView(LoginRequiredMixin, SuperuserRequiredMixin, ListView
     context_object_name = 'cursos_concluintes'
 
     def get_queryset(self):
+        sistema = self.request.session.get('sistema', 'cp').upper()
         escola_id = self.request.GET.get('escola_id')
-        # Filtra cursos que possuem pelo menos 1 aluno com status 'concluido'
-        queryset = Curso.objects.annotate(
+        queryset = Curso.objects.filter(escola__tipo=sistema).annotate(
             num_concluintes=Count('inscricao', filter=Q(inscricao__status='concluido'))
         ).filter(num_concluintes__gt=0).order_by('-data_fim', 'nome')
         
@@ -464,39 +536,63 @@ class ConcluintesGlobalView(LoginRequiredMixin, SuperuserRequiredMixin, ListView
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        sistema = self.request.session.get('sistema', 'cp').upper()
         queryset = self.get_queryset()
         total_concluintes = queryset.aggregate(total=models.Sum('num_concluintes'))['total'] or 0
         context['total_concluintes'] = total_concluintes
-        context['todas_escolas'] = Escola.objects.all().order_by('nome')
+        context['todas_escolas'] = Escola.objects.filter(tipo=sistema).order_by('nome')
         context['selected_escola_id'] = self.request.GET.get('escola_id', 'all')
         return context
 
-class AdminContextSelectView(SuperuserRequiredMixin, ListView):
+class AdminContextSelectView(SegmentAdminRequiredMixin, ListView):
     model = Escola
     template_name = 'escolas/admin_context_select.html'
     context_object_name = 'escolas'
 
     def get_queryset(self):
-        return Escola.objects.all().order_by('nome')
+        user = self.request.user
+        sistema = self.request.session.get('sistema', 'cp').upper()
+        if user.is_superuser:
+            return Escola.objects.all().order_by('tipo', 'nome')
+        
+        profile = getattr(user, 'profile', None)
+        if profile and profile.nivel_acesso == 'ADMIN_UDITECH' and sistema == 'UDITECH':
+            return Escola.objects.filter(tipo='UDITECH').order_by('nome')
+        elif profile and profile.nivel_acesso == 'ADMIN_CP' and sistema == 'CP':
+            return Escola.objects.filter(tipo='CP').order_by('nome')
+        return Escola.objects.none()
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['next_url'] = self.request.GET.get('next', reverse_lazy('escolas:dashboard'))
         return context
 
-class AdminContextSwitchView(SuperuserRequiredMixin, View):
+class AdminContextSwitchView(SegmentAdminRequiredMixin, View):
     def post(self, request):
         escola_id = request.POST.get('escola_id')
+        sistema = request.session.get('sistema', 'cp').upper()
         if escola_id == 'all':
             if 'active_escola_id' in request.session:
                 del request.session['active_escola_id']
         else:
-            request.session['active_escola_id'] = escola_id
+            # Valida se o usuário tem permissão para esta escola específica
+            from django.shortcuts import get_object_or_404
+            user = request.user
+            if user.is_superuser:
+                escola = get_object_or_404(Escola, id=escola_id)
+                request.session['active_escola_id'] = escola_id
+            else:
+                escola = get_object_or_404(Escola, id=escola_id, tipo=sistema)
+                profile = getattr(user, 'profile', None)
+                if profile and profile.nivel_acesso == 'ADMIN_UDITECH' and escola.tipo == 'UDITECH' and sistema == 'UDITECH':
+                    request.session['active_escola_id'] = escola_id
+                elif profile and profile.nivel_acesso == 'ADMIN_CP' and escola.tipo == 'CP' and sistema == 'CP':
+                    request.session['active_escola_id'] = escola_id
         
         next_url = request.POST.get('next', reverse_lazy('escolas:dashboard'))
         return redirect(next_url)
 
-class AdminContextResetView(SuperuserRequiredMixin, View):
+class AdminContextResetView(SegmentAdminRequiredMixin, View):
     def get(self, request):
         if 'active_escola_id' in request.session:
             del request.session['active_escola_id']
@@ -508,8 +604,9 @@ class ConcluinteUnificadoView(LoginRequiredMixin, ListView):
     context_object_name = 'concluintes'
 
     def get_queryset(self):
+        sistema = self.request.session.get('sistema', 'cp').upper()
         escola_id = self.request.GET.get('escola_id')
-        queryset = Inscricao.objects.filter(status='concluido').select_related(
+        queryset = Inscricao.objects.filter(status='concluido', curso__escola__tipo=sistema).select_related(
             'aluno', 'curso', 'curso__escola', 'curso__escola__coordenador_user'
         ).order_by('curso__escola__nome', 'aluno__nome_completo')
         
@@ -520,6 +617,7 @@ class ConcluinteUnificadoView(LoginRequiredMixin, ListView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        sistema = self.request.session.get('sistema', 'cp').upper()
         concluintes = self.get_queryset()
         
         # Agrupar por escola para facilitar no template
@@ -534,6 +632,6 @@ class ConcluinteUnificadoView(LoginRequiredMixin, ListView):
             })
             
         context['grouped_concluintes'] = grouped
-        context['todas_escolas'] = Escola.objects.all().order_by('nome')
+        context['todas_escolas'] = Escola.objects.filter(tipo=sistema).order_by('nome')
         context['selected_escola_id'] = self.request.GET.get('escola_id', 'all')
         return context

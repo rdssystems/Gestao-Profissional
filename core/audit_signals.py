@@ -38,6 +38,11 @@ def create_audit_log(sender, instance, action, user=None, **kwargs):
     if user and not user.is_authenticated:
         user = None
 
+    # Garantir que o usuário existe no banco de dados para evitar IntegrityError (especialmente durante os testes)
+    if user and user.pk:
+        if not User.objects.filter(pk=user.pk).exists():
+            user = None
+
     # Garantir que object_id é uma string para GenericForeignKey
     object_id_str = str(instance.pk) if instance.pk else None
 

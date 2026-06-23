@@ -12,6 +12,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from core.models import AuditLog, Aviso, Profile
 from django.contrib.auth.models import User
 from django.contrib import messages # Adicionado o import para messages
+from django.contrib.auth.views import LoginView
 
 # ... (omitted calendar_view, get_course_events, sobre_view, limpar_agenda_cursos_view, AuditLogListView)
 
@@ -56,6 +57,85 @@ def ativar_dev_view(request):
             messages.error(request, "Senha incorreta.")
     
     return render(request, 'core/ativar_dev.html')
+
+
+@login_required
+@user_passes_test(lambda u: u.is_superuser)
+def gerenciar_email_destinatarios(request):
+    """Gerencia os destinatários e o agendamento do relatório do Controle Diário por e-mail."""
+    from core.models import EmailDestinatario, AgendamentoEmail
+
+    agendamento = AgendamentoEmail.get_config()
+
+    if request.method == 'POST':
+        action = request.POST.get('action')
+
+        if action == 'add':
+            nome = request.POST.get('nome', '').strip()
+            email = request.POST.get('email', '').strip()
+            if nome and email:
+                obj, created = EmailDestinatario.objects.get_or_create(
+                    email=email,
+                    defaults={'nome': nome, 'adicionado_por': request.user}
+                )
+                if created:
+                    messages.success(request, f"✅ {nome} ({email}) adicionado com sucesso!")
+                else:
+                    messages.warning(request, f"⚠️ O e-mail {email} já estava cadastrado.")
+            else:
+                messages.error(request, "Preencha o nome e o e-mail.")
+
+        elif action == 'toggle':
+            pk = request.POST.get('pk')
+            dest = get_object_or_404(EmailDestinatario, pk=pk)
+            dest.ativo = not dest.ativo
+            dest.save()
+            status = "ativado" if dest.ativo else "desativado"
+            messages.info(request, f"E-mail de {dest.nome} {status}.")
+
+        elif action == 'delete':
+            pk = request.POST.get('pk')
+            dest = get_object_or_404(EmailDestinatario, pk=pk)
+            nome = dest.nome
+            dest.delete()
+            messages.success(request, f"🗑️ {nome} removido da lista.")
+
+        elif action == 'salvar_agendamento':
+            agendamento.segunda = 'segunda' in request.POST
+            agendamento.terca   = 'terca'   in request.POST
+            agendamento.quarta  = 'quarta'  in request.POST
+            agendamento.quinta  = 'quinta'  in request.POST
+            agendamento.sexta   = 'sexta'   in request.POST
+            agendamento.sabado  = 'sabado'  in request.POST
+            agendamento.domingo = 'domingo' in request.POST
+            horario = request.POST.get('horario_envio', '18:00')
+            agendamento.horario_envio = horario
+            agendamento.ativo = 'ativo' in request.POST
+            agendamento.atualizado_por = request.user
+            agendamento.save()
+            messages.success(request, "⏰ Agendamento salvo com sucesso!")
+
+        return redirect('core:gerenciar_email_destinatarios')
+
+    destinatarios = EmailDestinatario.objects.all()
+    return render(request, 'core/gerenciar_email_destinatarios.html', {
+        'destinatarios': destinatarios,
+        'agendamento': agendamento,
+    })
+
+
+@login_required
+@user_passes_test(lambda u: u.is_superuser)
+def enviar_email_agora(request):
+    """Dispara o e-mail do Controle Diário imediatamente, ignorando o agendamento."""
+    if request.method == 'POST':
+        from django.core.management import call_command
+        try:
+            call_command('enviar_resumo_diario', force=True)
+            messages.success(request, "✅ E-mail do Controle Diário enviado com sucesso!")
+        except Exception as e:
+            messages.error(request, f"❌ Erro ao enviar: {str(e)}")
+    return redirect('core:gerenciar_email_destinatarios')
 
 
 @login_required
@@ -289,8 +369,9 @@ class AuditLogListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
         return context
 class LoginSuccessRedirectView(LoginRequiredMixin, View):
     def get(self, request):
-        if request.user.is_superuser:
-            # Forçar a escolha do contexto após login se for superuser
+        user = request.user
+        if user.is_superuser or (hasattr(user, 'profile') and not user.profile.escola and user.profile.nivel_acesso in ['ADMIN_CP', 'ADMIN_UDITECH']):
+            # Forçar a escolha do contexto após login se for superuser ou administrador de segmento sem escola fixa
             return redirect('escolas:selecionar_contexto')
         return redirect('escolas:dashboard')
 
@@ -303,13 +384,49 @@ def get_active_escola(request):
     if not user.is_authenticated:
         return None
         
+    sistema = request.session.get('sistema', 'cp').upper()
+
     if user.is_superuser:
         escola_id = request.session.get('active_escola_id')
         if escola_id:
             from escolas.models import Escola
-            return Escola.objects.filter(id=escola_id).first()
+            return Escola.objects.filter(id=escola_id, tipo=sistema).first()
         return None
         
     if hasattr(user, 'profile') and user.profile.escola:
-        return user.profile.escola
+        if user.profile.escola.tipo == sistema:
+            return user.profile.escola
     return None
+
+class CustomLoginView(LoginView):
+    template_name = 'registration/login.html'
+
+    def form_valid(self, form):
+        user = form.get_user()
+        
+        sistema = 'cp' # Default fallback for superusers without specific profile config
+
+        if not user.is_superuser:
+            profile = getattr(user, 'profile', None)
+            if profile:
+                if profile.nivel_acesso == 'ADMIN_UDITECH' or (profile.escola and profile.escola.tipo == 'UDITECH'):
+                    sistema = 'uditech'
+                elif profile.nivel_acesso == 'ADMIN_CP' or (profile.escola and profile.escola.tipo == 'CP'):
+                    sistema = 'cp'
+            else:
+                form.add_error(None, "Esta conta não possui um perfil de acesso configurado no sistema.")
+                return self.form_invalid(form)
+
+        # Salva o sistema validado na sessão do usuário
+        self.request.session['sistema'] = sistema
+        return super().form_valid(form)
+
+
+def custom_logout_view(request):
+    from django.contrib.auth import logout as auth_logout
+    # Efetua o logout e limpa a sessão
+    auth_logout(request)
+    # Redireciona para o login sem parâmetro de sistema
+    return redirect('login')
+
+

@@ -3,12 +3,15 @@ from django.urls import path, include
 from django.contrib.auth import views as auth_views
 from django.conf import settings
 from django.conf.urls.static import static
+from django.views.generic import RedirectView
+from core import views as core_views
 from escolas import views as escolas_views
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('contas/login/', core_views.CustomLoginView.as_view(), name='login'),
     path('contas/', include('django.contrib.auth.urls')),
-    path('logout/', auth_views.LogoutView.as_view(), name='logout'),
+    path('logout/', core_views.custom_logout_view, name='logout'),
 
     path('escolas/', include('escolas.urls', namespace='escolas')),
     path('cursos/', include('cursos.urls', namespace='cursos')),
@@ -22,7 +25,7 @@ urlpatterns = [
     path('treinamento/', include('treinamento.urls', namespace='treinamento')),
 
     path('core/', include('core.urls', namespace='core')),
-    path('', escolas_views.DashboardView.as_view(), name='dashboard_root'),
+    path('', RedirectView.as_view(pattern_name='escolas:dashboard', permanent=False), name='home'),
 ]
 
 if settings.DEBUG:
