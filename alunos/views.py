@@ -66,47 +66,56 @@ class AlunoVerificarCPFView(StaffRequiredMixin, View):
             from core.utils import clean_digits
             cpf_limpo = clean_digits(cpf)
             user = request.user
-            
+            active_escola = getattr(request, 'active_escola', None)
+            sistema = request.session.get('sistema', 'cp').upper()
+
+            escola_atual = None
             if user.is_superuser:
-                # Superuser creates for any school? Usually superuser flow is different, 
-                # but let's assume they can proceed to create.
-                # For simplicity, superuser just goes to create view with CPF
-                return redirect(f"{reverse_lazy('alunos:criar_aluno')}?cpf={cpf_limpo}")
+                escola_atual = active_escola
+            elif hasattr(user, 'profile') and user.profile.escola:
+                escola_atual = user.profile.escola
 
-            if not hasattr(user, 'profile') or not user.profile.escola:
-                messages.error(request, "Você não está vinculado a nenhuma escola.")
+            if not escola_atual:
+                messages.error(request, "Você não está vinculado a nenhuma escola ou não possui uma escola ativa no momento.")
                 return redirect('home')
-
-            escola_atual = user.profile.escola
 
             # Check if exists in current school
             if Aluno.objects.filter(escola=escola_atual, cpf=cpf_limpo).exists():
                 messages.error(request, f"O Aluno com CPF {cpf} já está cadastrado nesta escola ({escola_atual.nome}).")
                 return render(request, self.template_name, {'form': form})
             
-            # Check if exists in ANY other school
-            aluno_existente = Aluno.objects.filter(cpf=cpf_limpo).first()
+            # Check if exists in ANY other school of the active system
+            aluno_existente = Aluno.objects.filter(cpf=cpf_limpo, escola__tipo=sistema).first()
             if aluno_existente:
-                # Found in another school -> Offer to clone
+                # Found in another school of the same system -> Offer to clone
                 return render(request, self.template_name, {
                     'form': form,
                     'aluno_existente': aluno_existente,
                     'mostrar_opcao_clonar': True
                 })
             
-            # Not found anywhere -> Redirect to Create with CPF pre-filled
+            # Not found anywhere in this system -> Redirect to Create with CPF pre-filled
             return redirect(f"{reverse_lazy('alunos:criar_aluno')}?cpf={cpf_limpo}")
             
         return render(request, self.template_name, {'form': form})
 
 class AlunoClonarView(AuditLogMixin, StaffRequiredMixin, View):
     def post(self, request, pk):
-        # Get original student
-        aluno_original = get_object_or_404(Aluno, pk=pk)
+        sistema = request.session.get('sistema', 'cp').upper()
+        # Get original student ensuring it belongs to the active system
+        aluno_original = get_object_or_404(Aluno, pk=pk, escola__tipo=sistema)
         
         user = request.user
-        if not hasattr(user, 'profile') or not user.profile.escola:
-             messages.error(request, "Você não está vinculado a nenhuma escola para importar o aluno.")
+        active_escola = getattr(request, 'active_escola', None)
+        
+        escola_destino = None
+        if user.is_superuser:
+            escola_destino = active_escola
+        elif hasattr(user, 'profile') and user.profile.escola:
+            escola_destino = user.profile.escola
+
+        if not escola_destino:
+             messages.error(request, "Você não está vinculado a nenhuma escola ou não possui uma escola ativa para importar o aluno.")
              return redirect('alunos:verificar_cpf')
 
         escola_destino = user.profile.escola
@@ -204,15 +213,20 @@ class AlunoListView(LoginRequiredMixin, ListView):
 
     def get_queryset(self):
         user = self.request.user
-        queryset = Aluno.objects.all().order_by('-data_criacao', 'nome_completo') # Order by enrollment date/time
+        sistema = self.request.session.get('sistema', 'cp').upper()
+        queryset = Aluno.objects.filter(escola__tipo=sistema).order_by('-data_criacao', 'nome_completo') # Order by enrollment date/time
 
+        profile = getattr(user, 'profile', None)
         active_escola = getattr(self.request, 'active_escola', None)
+        active_escola_is_fallback = getattr(self.request, 'active_escola_is_fallback', False)
 
-        if user.is_superuser:
+        is_global_admin = user.is_superuser or (profile and not profile.escola and profile.nivel_acesso in ['ADMIN_CP', 'ADMIN_UDITECH'])
+
+        if is_global_admin:
             escola_filter = self.request.GET.get('escola')
             if escola_filter:
                 queryset = queryset.filter(escola__id=escola_filter)
-            elif active_escola:
+            elif active_escola and not active_escola_is_fallback:
                 queryset = queryset.filter(escola=active_escola)
         elif active_escola:
             queryset = queryset.filter(escola=active_escola)
@@ -250,19 +264,20 @@ class AlunoListView(LoginRequiredMixin, ListView):
         context = super().get_context_data(**kwargs)
         user = self.request.user
         active_escola = getattr(self.request, 'active_escola', None)
+        sistema = self.request.session.get('sistema', 'cp').upper()
         
         if user.is_superuser:
             context['escola_selecionada'] = self.request.GET.get('escola', str(active_escola.id) if active_escola else '')
         
         from escolas.models import Escola
         if user.is_superuser:
-            context['todas_escolas'] = Escola.objects.all().order_by('nome')
-            context['todos_cursos_interesse'] = TipoCurso.objects.all().order_by('nome')
+            context['todas_escolas'] = Escola.objects.filter(tipo=sistema).order_by('nome')
+            context['todos_cursos_interesse'] = TipoCurso.objects.filter(escola__tipo=sistema).order_by('nome')
             # Se houver uma escola selecionada ou ativa, filtrar cursos de interesse por ela? 
             # (Opcional, mas vamos manter a lógica anterior de 'tudo' para admin global)
             current_escola = None
             if context.get('escola_selecionada'):
-                current_escola = Escola.objects.filter(id=context['escola_selecionada']).first()
+                current_escola = Escola.objects.filter(id=context['escola_selecionada'], tipo=sistema).first()
             
             if current_escola:
                  context['todos_cursos_interesse'] = TipoCurso.objects.filter(escola=current_escola).order_by('nome')
@@ -275,6 +290,9 @@ class AlunoListView(LoginRequiredMixin, ListView):
         return context
 
 class AlunoDetailView(StaffRequiredMixin, DetailView):
+    def get_queryset(self):
+        sistema = self.request.session.get('sistema', 'cp').upper()
+        return Aluno.objects.filter(escola__tipo=sistema)
     model = Aluno
     template_name = 'alunos/aluno_detail.html'
     context_object_name = 'aluno'
@@ -290,7 +308,19 @@ class AlunoCreateView(AuditLogMixin, StaffRequiredMixin, CreateView):
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
         kwargs['user'] = self.request.user
-        kwargs['active_escola'] = getattr(self.request, 'active_escola', None)
+        
+        user = self.request.user
+        profile = getattr(user, 'profile', None)
+        is_restricted_admin = False
+        if user.is_superuser or (profile and not profile.escola and profile.nivel_acesso in ['ADMIN_CP', 'ADMIN_UDITECH']):
+            is_restricted_admin = 'active_escola_id' in self.request.session
+        
+        if not (user.is_superuser or (profile and not profile.escola and profile.nivel_acesso in ['ADMIN_CP', 'ADMIN_UDITECH'])) or is_restricted_admin:
+            kwargs['active_escola'] = getattr(self.request, 'active_escola', None)
+        else:
+            kwargs['active_escola'] = None
+            
+        kwargs['sistema'] = self.request.session.get('sistema', 'cp').upper()
         return kwargs
     
     def get_initial(self):
@@ -304,11 +334,18 @@ class AlunoCreateView(AuditLogMixin, StaffRequiredMixin, CreateView):
         return initial
 
     def form_valid(self, form):
-        active_escola = getattr(self.request, 'active_escola', None)
-        if not self.request.user.is_superuser:
+        user = self.request.user
+        profile = getattr(user, 'profile', None)
+        is_restricted_admin = False
+        if user.is_superuser or (profile and not profile.escola and profile.nivel_acesso in ['ADMIN_CP', 'ADMIN_UDITECH']):
+            is_restricted_admin = 'active_escola_id' in self.request.session
+
+        if not (user.is_superuser or (profile and not profile.escola and profile.nivel_acesso in ['ADMIN_CP', 'ADMIN_UDITECH'])):
             form.instance.escola = self.request.user.profile.escola
-        elif active_escola:
-            form.instance.escola = active_escola
+        elif is_restricted_admin:
+            active_escola = getattr(self.request, 'active_escola', None)
+            if active_escola:
+                form.instance.escola = active_escola
         return super().form_valid(form)
 
 class AlunoCadastroSucessoView(StaffRequiredMixin, DetailView):
@@ -336,6 +373,10 @@ class AlunoUpdateView(AuditLogMixin, StaffRequiredMixin, UpdateView):
     template_name = 'alunos/aluno_form.html'
     success_url = reverse_lazy('alunos:lista_alunos')
 
+    def get_queryset(self):
+        sistema = self.request.session.get('sistema', 'cp').upper()
+        return Aluno.objects.filter(escola__tipo=sistema)
+
     def get_form_class(self):
         """
         Retorna o formulário apropriado com base no grupo do usuário.
@@ -347,7 +388,19 @@ class AlunoUpdateView(AuditLogMixin, StaffRequiredMixin, UpdateView):
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
         kwargs['user'] = self.request.user
-        kwargs['active_escola'] = getattr(self.request, 'active_escola', None)
+        
+        user = self.request.user
+        profile = getattr(user, 'profile', None)
+        is_restricted_admin = False
+        if user.is_superuser or (profile and not profile.escola and profile.nivel_acesso in ['ADMIN_CP', 'ADMIN_UDITECH']):
+            is_restricted_admin = 'active_escola_id' in self.request.session
+        
+        if not (user.is_superuser or (profile and not profile.escola and profile.nivel_acesso in ['ADMIN_CP', 'ADMIN_UDITECH'])) or is_restricted_admin:
+            kwargs['active_escola'] = getattr(self.request, 'active_escola', None)
+        else:
+            kwargs['active_escola'] = None
+            
+        kwargs['sistema'] = self.request.session.get('sistema', 'cp').upper()
         return kwargs
 
 class AlunoDeleteView(AuditLogMixin, StaffRequiredMixin, DeleteView):
@@ -358,7 +411,9 @@ class AlunoDeleteView(AuditLogMixin, StaffRequiredMixin, DeleteView):
 
     success_url = reverse_lazy('alunos:lista_alunos')
 
-
+    def get_queryset(self):
+        sistema = self.request.session.get('sistema', 'cp').upper()
+        return Aluno.objects.filter(escola__tipo=sistema)
 
     def test_func(self):
 
@@ -376,6 +431,10 @@ class AlunoHistoricoView(StaffRequiredMixin, DetailView):
     model = Aluno
     template_name = 'alunos/aluno_historico.html'
     context_object_name = 'aluno'
+
+    def get_queryset(self):
+        sistema = self.request.session.get('sistema', 'cp').upper()
+        return Aluno.objects.filter(escola__tipo=sistema)
 
     def get_template_names(self):
         if self.request.GET.get('popup'):
@@ -436,7 +495,8 @@ class AlunoHistoricoView(StaffRequiredMixin, DetailView):
 
 class AlunoUpdateObservacoesView(AuditLogMixin, StaffRequiredMixin, View):
     def post(self, request, pk):
-        aluno = get_object_or_404(Aluno, pk=pk)
+        sistema = request.session.get('sistema', 'cp').upper()
+        aluno = get_object_or_404(Aluno, pk=pk, escola__tipo=sistema)
         observacoes = request.POST.get('observacoes')
         from core.utils import audit_context
         with audit_context(skip=True):
@@ -454,7 +514,8 @@ class AlunoUpdateObservacoesView(AuditLogMixin, StaffRequiredMixin, View):
 
 class AlunoUpdateCursosInteresseView(AuditLogMixin, StaffRequiredMixin, View):
     def post(self, request, pk):
-        aluno = get_object_or_404(Aluno, pk=pk)
+        sistema = request.session.get('sistema', 'cp').upper()
+        aluno = get_object_or_404(Aluno, pk=pk, escola__tipo=sistema)
         cursos_ids = request.POST.getlist('cursos_interesse')
         
         # Validar se os cursos pertencem à mesma escola ou se é superuser
@@ -522,10 +583,11 @@ class AlunoCSVUploadView(LoginRequiredMixin, SuperuserRequiredMixin, View): # Ap
                 escola_nome = row.get('escola_nome')
                 if not escola_nome:
                     raise ValueError("Coluna 'escola_nome' é obrigatória.")
+                sistema = self.request.session.get('sistema', 'cp').upper()
                 try:
-                    escola = Escola.objects.get(nome=escola_nome)
+                    escola = Escola.objects.get(nome=escola_nome, tipo=sistema)
                 except Escola.DoesNotExist:
-                    raise ValueError(f"Escola '{escola_nome}' não encontrada. A escola deve existir previamente.")
+                    raise ValueError(f"Escola '{escola_nome}' não encontrada no portal {sistema}. A escola deve existir previamente neste portal.")
 
                 # Mapeamento e Conversão dos dados
                 aluno_data = {
@@ -599,9 +661,8 @@ class AlunoCSVUploadView(LoginRequiredMixin, SuperuserRequiredMixin, View): # Ap
                         else:
                             raise ValueError(f"Campo obrigatório '{field_name}' está faltando ou é inválido.")
 
-
-                # Tenta encontrar um aluno existente pelo CPF (assumindo CPF como único identificador)
-                aluno_instance = Aluno.objects.filter(cpf=aluno_data['cpf']).first()
+                # Tenta encontrar um aluno existente pelo CPF na mesma escola
+                aluno_instance = Aluno.objects.filter(cpf=aluno_data['cpf'], escola=escola).first()
 
                 if aluno_instance:
                     # Se o aluno existe, atualiza os dados
@@ -683,7 +744,8 @@ class AlunoCSVUploadView(LoginRequiredMixin, SuperuserRequiredMixin, View): # Ap
 
 class AlunoArquivoAjaxUploadView(LoginRequiredMixin, StaffRequiredMixin, View):
     def post(self, request, pk):
-        aluno = get_object_or_404(Aluno, pk=pk)
+        sistema = request.session.get('sistema', 'cp').upper()
+        aluno = get_object_or_404(Aluno, pk=pk, escola__tipo=sistema)
         arquivo = request.FILES.get('arquivo')
         nome = request.POST.get('nome', '')
 
@@ -714,7 +776,8 @@ class AlunoArquivoAjaxUploadView(LoginRequiredMixin, StaffRequiredMixin, View):
 class AlunoArquivoActionView(LoginRequiredMixin, StaffRequiredMixin, View):
     def delete(self, request, pk, file_id):
         from .models import ArquivoAluno
-        arquivo_obj = get_object_or_404(ArquivoAluno, id=file_id, aluno_id=pk)
+        sistema = request.session.get('sistema', 'cp').upper()
+        arquivo_obj = get_object_or_404(ArquivoAluno, id=file_id, aluno_id=pk, aluno__escola__tipo=sistema)
         
         # Remover arquivo físico
         if arquivo_obj.arquivo:
@@ -726,7 +789,8 @@ class AlunoArquivoActionView(LoginRequiredMixin, StaffRequiredMixin, View):
 
     def post(self, request, pk, file_id):
         from .models import ArquivoAluno
-        arquivo_obj = get_object_or_404(ArquivoAluno, id=file_id, aluno_id=pk)
+        sistema = request.session.get('sistema', 'cp').upper()
+        arquivo_obj = get_object_or_404(ArquivoAluno, id=file_id, aluno_id=pk, aluno__escola__tipo=sistema)
         novo_nome = request.POST.get('novo_nome')
         if novo_nome:
             arquivo_obj.nome = novo_nome
@@ -735,7 +799,8 @@ class AlunoArquivoActionView(LoginRequiredMixin, StaffRequiredMixin, View):
         return JsonResponse({'sucesso': False, 'erro': 'Nome inválido.'}, status=400)
 
     def get(self, request, pk):
-        aluno = get_object_or_404(Aluno, pk=pk)
+        sistema = request.session.get('sistema', 'cp').upper()
+        aluno = get_object_or_404(Aluno, pk=pk, escola__tipo=sistema)
         arquivos = aluno.arquivos.all()
         data = []
         for a in arquivos:
@@ -757,7 +822,8 @@ class WebSocialListView(LoginRequiredMixin, SuperuserRequiredMixin, ListView):
     paginate_by = 50
 
     def get_queryset(self):
-        queryset = WebSocialMember.objects.select_related('aluno', 'aluno__escola').all()
+        sistema = self.request.session.get('sistema', 'cp').upper()
+        queryset = WebSocialMember.objects.filter(aluno__escola__tipo=sistema).select_related('aluno', 'aluno__escola').all()
         
         # Filtro de Ano
         self.ano_atual = timezone.now().year
@@ -795,8 +861,9 @@ class WebSocialListView(LoginRequiredMixin, SuperuserRequiredMixin, ListView):
 
 class WebSocialExportExcelView(LoginRequiredMixin, SuperuserRequiredMixin, View):
     def get(self, request):
+        sistema = request.session.get('sistema', 'cp').upper()
         # Aplicar os mesmos filtros da AlunoListView
-        queryset = WebSocialMember.objects.select_related('aluno', 'aluno__escola').all()
+        queryset = WebSocialMember.objects.filter(aluno__escola__tipo=sistema).select_related('aluno', 'aluno__escola').all()
         
         ano_selecionado = request.GET.get('ano')
         if ano_selecionado:

@@ -27,7 +27,8 @@ class DocumentoListView(LoginRequiredMixin, HasEscolaOrSuperuserMixin, ListView)
 
     def get_queryset(self):
         user = self.request.user
-        queryset = DocumentoUnidade.objects.all().select_related('escola', 'uploaded_by', 'pasta')
+        sistema = self.request.session.get('sistema', 'cp').upper()
+        queryset = DocumentoUnidade.objects.filter(Q(escola__tipo=sistema) | Q(escola__isnull=True)).select_related('escola', 'uploaded_by', 'pasta')
         
         # Filtro de Escola (Obrigatório para usuários comuns, opcional para Admin)
         if not user.is_superuser:
@@ -70,8 +71,9 @@ class DocumentoListView(LoginRequiredMixin, HasEscolaOrSuperuserMixin, ListView)
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         user = self.request.user
+        sistema = self.request.session.get('sistema', 'cp').upper()
         if user.is_superuser:
-            context['escolas'] = Escola.objects.all().order_by('nome')
+            context['escolas'] = Escola.objects.filter(tipo=sistema).order_by('nome')
         context['q'] = self.request.GET.get('q', '')
         context['escola_selecionada'] = self.request.GET.get('escola', '')
         
@@ -79,7 +81,7 @@ class DocumentoListView(LoginRequiredMixin, HasEscolaOrSuperuserMixin, ListView)
         pasta_atual = None
         
         # Filtrar Pastas
-        pastas_qs = Pasta.objects.all()
+        pastas_qs = Pasta.objects.filter(Q(escola__tipo=sistema) | Q(escola__isnull=True))
         if not user.is_superuser:
             if hasattr(user, 'profile') and user.profile.escola:
                 pastas_qs = pastas_qs.filter(Q(escola=user.profile.escola) | Q(escola__isnull=True))
@@ -96,7 +98,7 @@ class DocumentoListView(LoginRequiredMixin, HasEscolaOrSuperuserMixin, ListView)
                 pastas_qs = pastas_qs.filter(escola__isnull=True)
         
         if pasta_id:
-            pasta_atual = get_object_or_404(Pasta, id=pasta_id)
+            pasta_atual = get_object_or_404(Pasta.objects.filter(Q(escola__tipo=sistema) | Q(escola__isnull=True)), id=pasta_id)
             context['pasta_atual'] = pasta_atual
             context['caminho'] = pasta_atual.get_caminho()
             if not context['q']:
@@ -116,13 +118,14 @@ class DocumentoUploadView(LoginRequiredMixin, HasEscolaOrSuperuserMixin, CreateV
     def get_form(self, form_class=None):
         form = super().get_form(form_class)
         user = self.request.user
+        sistema = self.request.session.get('sistema', 'cp').upper()
         # Se não for superuser, trava a escola do usuário
         if not user.is_superuser:
             if hasattr(user, 'profile') and user.profile.escola:
-                form.fields['escola'].queryset = Escola.objects.filter(id=user.profile.escola.id)
+                form.fields['escola'].queryset = Escola.objects.filter(id=user.profile.escola.id, tipo=sistema)
                 form.fields['escola'].initial = user.profile.escola
-                # Em Django forms normais, marcar como disabled às vezes causa problema no submit (campo vazio).
-                # Pode usar initial e ocultar ou apenas restringir o queryset (já feito).
+        else:
+            form.fields['escola'].queryset = Escola.objects.filter(tipo=sistema)
         return form
 
     def form_valid(self, form):
@@ -137,10 +140,11 @@ class DocumentoDeleteView(LoginRequiredMixin, HasEscolaOrSuperuserMixin, DeleteV
     
     def get_queryset(self):
         user = self.request.user
+        sistema = self.request.session.get('sistema', 'cp').upper()
         if user.is_superuser:
-            return DocumentoUnidade.objects.all()
+            return DocumentoUnidade.objects.filter(Q(escola__tipo=sistema) | Q(escola__isnull=True))
         if hasattr(user, 'profile') and user.profile.escola:
-            return DocumentoUnidade.objects.filter(escola=user.profile.escola)
+            return DocumentoUnidade.objects.filter(escola=user.profile.escola, escola__tipo=sistema)
         return DocumentoUnidade.objects.none()
 
     def delete(self, request, *args, **kwargs):
@@ -160,14 +164,15 @@ class PastaCreateView(LoginRequiredMixin, UserPassesTestMixin, View):
         nome = request.POST.get('nome')
         escola_id = request.POST.get('escola')
         pasta_pai_id = request.POST.get('pasta_pai')
+        sistema = request.session.get('sistema', 'cp').upper()
         
         if not nome:
             messages.error(request, "Nome é obrigatórios para criar a pasta.")
         else:
-            pasta_pai = get_object_or_404(Pasta, id=pasta_pai_id) if pasta_pai_id else None
+            pasta_pai = get_object_or_404(Pasta.objects.filter(Q(escola__tipo=sistema) | Q(escola__isnull=True)), id=pasta_pai_id) if pasta_pai_id else None
             escola = None
             if escola_id and escola_id != 'todas':
-                escola = get_object_or_404(Escola, id=escola_id)
+                escola = get_object_or_404(Escola, id=escola_id, tipo=sistema)
             
             Pasta.objects.create(
                 nome=nome,
@@ -191,6 +196,10 @@ class PastaDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
     def test_func(self):
         return self.request.user.is_superuser
 
+    def get_queryset(self):
+        sistema = self.request.session.get('sistema', 'cp').upper()
+        return Pasta.objects.filter(Q(escola__tipo=sistema) | Q(escola__isnull=True))
+
     def delete(self, request, *args, **kwargs):
         messages.success(self.request, "Pasta removida com sucesso.")
         return super().delete(request, *args, **kwargs)
@@ -202,6 +211,7 @@ class DocumentoAjaxUploadView(LoginRequiredMixin, HasEscolaOrSuperuserMixin, Vie
         pasta_id = request.POST.get('pasta_id')
         
         user = request.user
+        sistema = request.session.get('sistema', 'cp').upper()
         
         if not arquivo:
             return JsonResponse({'sucesso': False, 'erro': 'Nenhum arquivo enviado.'}, status=400)
@@ -211,15 +221,17 @@ class DocumentoAjaxUploadView(LoginRequiredMixin, HasEscolaOrSuperuserMixin, Vie
             if escola_id == 'todas' or not escola_id:
                  escola = None
             else:
-                 escola = get_object_or_404(Escola, id=escola_id)
+                 escola = get_object_or_404(Escola, id=escola_id, tipo=sistema)
         else:
             if not hasattr(user, 'profile') or not user.profile.escola:
                 return JsonResponse({'sucesso': False, 'erro': 'Usuário sem escola vinculada.'}, status=403)
+            if user.profile.escola.tipo != sistema:
+                return JsonResponse({'sucesso': False, 'erro': 'Escola do usuário não pertence ao portal ativo.'}, status=403)
             escola = user.profile.escola
             
         pasta = None
         if pasta_id:
-            pasta = get_object_or_404(Pasta, id=pasta_id)
+            pasta = get_object_or_404(Pasta.objects.filter(Q(escola__tipo=sistema) | Q(escola__isnull=True)), id=pasta_id)
             # Se não for superuser, verifica se a pasta é compatível (seja da escola dele ou Global)
             if not user.is_superuser:
                  if pasta.escola and pasta.escola != escola:

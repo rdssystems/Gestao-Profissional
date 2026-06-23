@@ -1,0 +1,512 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Envio de E-mail — Destinatários{% endblock %}
+
+{% block extra_css %}
+<style>
+    .page-header {
+        background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%);
+        border-radius: 16px;
+        padding: 28px 32px;
+        color: white;
+        margin-bottom: 28px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        box-shadow: 0 8px 30px rgba(37, 99, 235, 0.25);
+    }
+    .page-header h1 { font-size: 1.6rem; font-weight: 800; margin: 0; letter-spacing: -0.4px; }
+    .page-header p { margin: 6px 0 0; opacity: 0.85; font-size: 0.9rem; }
+
+    .section-card {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 14px;
+        padding: 24px 28px;
+        margin-bottom: 24px;
+        box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+    }
+    .section-card h5 {
+        font-weight: 700;
+        color: #0f172a;
+        margin-bottom: 20px;
+        font-size: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding-bottom: 14px;
+        border-bottom: 1px solid #f1f5f9;
+    }
+
+    .form-label-custom {
+        font-size: 0.78rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: #64748b;
+        margin-bottom: 6px;
+    }
+    .form-control-custom {
+        border: 1.5px solid #e2e8f0;
+        border-radius: 10px;
+        padding: 11px 14px;
+        font-size: 0.93rem;
+        transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .form-control-custom:focus {
+        border-color: #2563eb;
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+        outline: none;
+    }
+    .btn-primary-custom {
+        background: linear-gradient(135deg, #2563eb, #1e40af);
+        color: white;
+        border: none;
+        border-radius: 10px;
+        padding: 11px 24px;
+        font-weight: 700;
+        font-size: 0.9rem;
+        transition: all 0.2s;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .btn-primary-custom:hover { transform: translateY(-1px); box-shadow: 0 6px 16px rgba(37, 99, 235, 0.3); }
+
+    /* Dias da semana — seletor visual */
+    .days-picker { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 4px; }
+    .day-btn {
+        position: relative;
+    }
+    .day-btn input[type="checkbox"] {
+        position: absolute;
+        opacity: 0;
+        width: 0;
+        height: 0;
+    }
+    .day-btn label {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 48px;
+        height: 48px;
+        border-radius: 12px;
+        border: 2px solid #e2e8f0;
+        background: #f8fafc;
+        font-weight: 700;
+        font-size: 0.78rem;
+        color: #94a3b8;
+        cursor: pointer;
+        transition: all 0.18s;
+        user-select: none;
+    }
+    .day-btn input:checked + label {
+        background: #2563eb;
+        border-color: #2563eb;
+        color: white;
+        box-shadow: 0 4px 10px rgba(37, 99, 235, 0.3);
+    }
+    .day-btn label:hover { border-color: #2563eb; color: #2563eb; background: #eff6ff; }
+    .day-btn input:checked + label:hover { background: #1d4ed8; }
+
+    /* Toggle de ativo geral */
+    .toggle-switch { display: flex; align-items: center; gap: 12px; }
+    .toggle-switch input { display: none; }
+    .toggle-switch label {
+        position: relative;
+        width: 48px; height: 26px;
+        background: #e2e8f0;
+        border-radius: 100px;
+        cursor: pointer;
+        transition: background 0.2s;
+    }
+    .toggle-switch label::after {
+        content: '';
+        position: absolute;
+        top: 3px; left: 3px;
+        width: 20px; height: 20px;
+        border-radius: 50%;
+        background: white;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        transition: transform 0.2s;
+    }
+    .toggle-switch input:checked + label { background: #22c55e; }
+    .toggle-switch input:checked + label::after { transform: translateX(22px); }
+    .toggle-label { font-weight: 600; font-size: 0.9rem; color: #374151; }
+
+    .status-banner {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 12px 16px;
+        border-radius: 10px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        margin-top: 16px;
+    }
+    .status-banner.on { background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; }
+    .status-banner.off { background: #f1f5f9; color: #64748b; border: 1px solid #e2e8f0; }
+
+    /* Lista de destinatários */
+    .recipient-list {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 14px;
+        overflow: hidden;
+        box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+        margin-bottom: 24px;
+    }
+    .recipient-list-header {
+        padding: 16px 24px;
+        border-bottom: 1px solid #e5e7eb;
+        background: #f8fafc;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+    .recipient-list-header h5 { font-weight: 700; font-size: 0.95rem; color: #0f172a; margin: 0; display: flex; align-items: center; gap: 8px; }
+    .count-badge { background: #dbeafe; color: #1e40af; font-size: 0.75rem; font-weight: 700; padding: 3px 10px; border-radius: 100px; }
+
+    .recipient-item {
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 16px 24px;
+        border-bottom: 1px solid #f1f5f9;
+        transition: background 0.15s;
+        gap: 12px;
+    }
+    .recipient-item:last-child { border-bottom: none; }
+    .recipient-item:hover { background: #f8fafc; }
+
+    .recipient-avatar {
+        width: 42px; height: 42px; border-radius: 50%;
+        background: linear-gradient(135deg, #2563eb, #1e40af);
+        color: white; display: flex; align-items: center; justify-content: center;
+        font-weight: 800; font-size: 1rem; flex-shrink: 0; text-transform: uppercase;
+    }
+    .recipient-info { flex: 1; min-width: 0; }
+    .recipient-name { font-weight: 700; color: #0f172a; font-size: 0.93rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .recipient-email { font-size: 0.8rem; color: #64748b; margin-top: 2px; }
+    .recipient-meta { font-size: 0.72rem; color: #94a3b8; margin-top: 2px; }
+
+    .status-pill {
+        display: inline-flex; align-items: center; gap: 5px;
+        font-size: 0.75rem; font-weight: 700; padding: 4px 10px; border-radius: 100px; white-space: nowrap;
+    }
+    .status-pill.active { background: #dcfce7; color: #166534; }
+    .status-pill.inactive { background: #f1f5f9; color: #94a3b8; text-decoration: line-through; }
+
+    .action-btns { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+    .btn-sm-icon {
+        width: 34px; height: 34px; border-radius: 8px;
+        border: 1.5px solid transparent; background: transparent;
+        display: flex; align-items: center; justify-content: center;
+        cursor: pointer; font-size: 0.9rem; transition: all 0.2s;
+    }
+    .btn-sm-icon.toggle-btn { border-color: #d1fae5; color: #059669; }
+    .btn-sm-icon.toggle-btn:hover { background: #d1fae5; }
+    .btn-sm-icon.toggle-btn.off { border-color: #e2e8f0; color: #94a3b8; }
+    .btn-sm-icon.toggle-btn.off:hover { background: #f1f5f9; }
+    .btn-sm-icon.delete-btn { border-color: #fee2e2; color: #dc2626; }
+    .btn-sm-icon.delete-btn:hover { background: #fee2e2; }
+
+    .empty-state { text-align: center; padding: 50px 20px; }
+    .empty-state i { font-size: 2.5rem; color: #cbd5e1; margin-bottom: 14px; display: block; }
+    .empty-state p { color: #94a3b8; font-size: 0.9rem; }
+
+    .info-box {
+        background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 10px;
+        padding: 14px 18px; margin-bottom: 24px; font-size: 0.85rem; color: #1e40af;
+        display: flex; align-items: flex-start; gap: 10px;
+    }
+    .info-box i { margin-top: 1px; flex-shrink: 0; }
+
+    .time-input-wrapper { position: relative; display: inline-block; }
+    .time-input-wrapper input[type="time"] {
+        border: 1.5px solid #e2e8f0;
+        border-radius: 10px;
+        padding: 11px 14px 11px 44px;
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: #0f172a;
+        width: 160px;
+        transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .time-input-wrapper input[type="time"]:focus {
+        border-color: #2563eb;
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+        outline: none;
+    }
+    .time-input-wrapper .clock-icon {
+        position: absolute; left: 14px; top: 50%; transform: translateY(-50%);
+        color: #64748b; font-size: 1rem; pointer-events: none;
+    }
+
+    .save-btn {
+        background: linear-gradient(135deg, #059669, #047857);
+        color: white; border: none; border-radius: 10px;
+        padding: 12px 28px; font-weight: 700; font-size: 0.9rem;
+        transition: all 0.2s; cursor: pointer;
+        display: inline-flex; align-items: center; gap: 8px;
+    }
+    .save-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 16px rgba(5, 150, 105, 0.3); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div style="max-width: 900px; margin: 0 auto;">
+
+    <!-- Cabeçalho -->
+    <div class="page-header">
+        <div>
+            <h1><i class="bi bi-envelope-at me-2"></i>Envio de E-mail</h1>
+            <p>Gerencie destinatários e configure o agendamento do Controle Diário</p>
+        </div>
+        <a href="{% url 'core:lista_auditoria' %}" class="btn btn-light btn-sm rounded-pill px-3 fw-bold">
+            <i class="bi bi-arrow-left me-1"></i> Voltar
+        </a>
+    </div>
+
+    <!-- Mensagens -->
+    {% if messages %}
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} alert-dismissible fade show rounded-3 mb-3" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        {% endfor %}
+    {% endif %}
+
+    <!-- ===================== -->
+    <!--   SEÇÃO AGENDAMENTO   -->
+    <!-- ===================== -->
+    <div class="section-card">
+        <h5>
+            <i class="bi bi-clock-history text-primary"></i>
+            Agendamento de Envio Automático
+        </h5>
+        <form method="post" id="form-agendamento">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="salvar_agendamento">
+
+            <!-- Toggle geral ativo/inativo -->
+            <div class="mb-4">
+                <label class="form-label-custom">Status do Envio Automático</label>
+                <div class="toggle-switch">
+                    <input type="checkbox" name="ativo" id="toggle-ativo"
+                           {% if agendamento.ativo %}checked{% endif %}>
+                    <label for="toggle-ativo"></label>
+                    <span class="toggle-label" id="toggle-label-text">
+                        {% if agendamento.ativo %}Envio automático <strong>Ativado</strong>{% else %}Envio automático <strong>Pausado</strong>{% endif %}
+                    </span>
+                </div>
+            </div>
+
+            <div class="row g-4 align-items-start">
+                <!-- Dias da semana -->
+                <div class="col-md-7">
+                    <label class="form-label-custom">Dias de Envio</label>
+                    <div class="days-picker">
+                        {% with dias=agendamento %}
+                        <div class="day-btn">
+                            <input type="checkbox" name="segunda" id="dia-seg" {% if dias.segunda %}checked{% endif %}>
+                            <label for="dia-seg">Seg</label>
+                        </div>
+                        <div class="day-btn">
+                            <input type="checkbox" name="terca" id="dia-ter" {% if dias.terca %}checked{% endif %}>
+                            <label for="dia-ter">Ter</label>
+                        </div>
+                        <div class="day-btn">
+                            <input type="checkbox" name="quarta" id="dia-qua" {% if dias.quarta %}checked{% endif %}>
+                            <label for="dia-qua">Qua</label>
+                        </div>
+                        <div class="day-btn">
+                            <input type="checkbox" name="quinta" id="dia-qui" {% if dias.quinta %}checked{% endif %}>
+                            <label for="dia-qui">Qui</label>
+                        </div>
+                        <div class="day-btn">
+                            <input type="checkbox" name="sexta" id="dia-sex" {% if dias.sexta %}checked{% endif %}>
+                            <label for="dia-sex">Sex</label>
+                        </div>
+                        <div class="day-btn">
+                            <input type="checkbox" name="sabado" id="dia-sab" {% if dias.sabado %}checked{% endif %}>
+                            <label for="dia-sab">Sáb</label>
+                        </div>
+                        <div class="day-btn">
+                            <input type="checkbox" name="domingo" id="dia-dom" {% if dias.domingo %}checked{% endif %}>
+                            <label for="dia-dom">Dom</label>
+                        </div>
+                        {% endwith %}
+                    </div>
+                    <div class="mt-2 text-muted" style="font-size: 0.8rem;">
+                        <i class="bi bi-info-circle me-1"></i>
+                        Configure o Task Scheduler (Windows) ou cron para rodar
+                        <code>python manage.py enviar_resumo_diario</code> a cada hora.
+                        O sistema enviará somente no dia e horário definidos aqui.
+                    </div>
+                </div>
+
+                <!-- Horário -->
+                <div class="col-md-5">
+                    <label class="form-label-custom">Horário de Envio</label>
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="time-input-wrapper">
+                            <i class="bi bi-clock clock-icon"></i>
+                            <input type="time" name="horario_envio"
+                                   value="{{ agendamento.horario_envio|time:'H:i' }}">
+                        </div>
+                        <div class="text-muted" style="font-size: 0.78rem; line-height: 1.4;">
+                            Fuso horário:<br>
+                            <strong>America/Sao_Paulo</strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Status calculado -->
+            {% if agendamento.ativo %}
+            <div class="status-banner on mt-3">
+                <i class="bi bi-check-circle-fill"></i>
+                Envio ativo — <strong>{{ agendamento.dias_ativos_display }}</strong>
+                às <strong>{{ agendamento.horario_envio|time:"H:i" }}</strong>.
+                {% if agendamento.atualizado_por %}
+                Última alteração por {{ agendamento.atualizado_por.get_full_name|default:agendamento.atualizado_por.username }}
+                em {{ agendamento.atualizado_em|date:"d/m/Y H:i" }}.
+                {% endif %}
+            </div>
+            {% else %}
+            <div class="status-banner off mt-3">
+                <i class="bi bi-pause-circle-fill"></i>
+                Envio automático está <strong>pausado</strong>. Ative o toggle acima para retomar.
+            </div>
+            {% endif %}
+
+            <div class="mt-4 d-flex align-items-center gap-3">
+                <button type="submit" class="save-btn">
+                    <i class="bi bi-floppy2-fill"></i> Salvar Agendamento
+                </button>
+                <form method="post" style="display:inline;" onsubmit="return confirm('Disparar o e-mail agora, independente do agendamento?')">
+                    {% csrf_token %}
+                    <button type="submit"
+                            formaction="{% url 'core:enviar_email_agora' %}"
+                            class="btn btn-outline-secondary rounded-pill px-3 fw-bold" style="font-size: 0.85rem;">
+                        <i class="bi bi-send me-1"></i> Testar Envio Agora
+                    </button>
+                </form>
+            </div>
+        </form>
+    </div>
+
+    <!-- Info geral -->
+    <div class="info-box">
+        <i class="bi bi-info-circle-fill"></i>
+        <div>
+            Os e-mails cadastrados aqui receberão o <strong>relatório do Controle Diário</strong> nos dias e horário definidos acima.
+            Use <strong>"Testar Envio Agora"</strong> para verificar se o e-mail está chegando corretamente.
+        </div>
+    </div>
+
+    <!-- ======================== -->
+    <!--  SEÇÃO ADICIONAR EMAIL   -->
+    <!-- ======================== -->
+    <div class="section-card">
+        <h5><i class="bi bi-person-plus-fill text-primary"></i> Adicionar Destinatário</h5>
+        <form method="post" id="form-add">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="add">
+            <div class="row g-3 align-items-end">
+                <div class="col-md-4">
+                    <label class="form-label-custom">Nome</label>
+                    <input type="text" name="nome" class="form-control form-control-custom"
+                           placeholder="Ex: Klisman Rodrigues" required id="input-nome">
+                </div>
+                <div class="col-md-5">
+                    <label class="form-label-custom">E-mail</label>
+                    <input type="email" name="email" class="form-control form-control-custom"
+                           placeholder="Ex: klismanrds@gmail.com" required id="input-email">
+                </div>
+                <div class="col-md-3">
+                    <button type="submit" class="btn-primary-custom w-100">
+                        <i class="bi bi-plus-lg"></i> Adicionar
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- ======================== -->
+    <!--   LISTA DE DESTINATÁRIOS -->
+    <!-- ======================== -->
+    <div class="recipient-list">
+        <div class="recipient-list-header">
+            <h5><i class="bi bi-people-fill text-primary"></i> Destinatários Cadastrados</h5>
+            <span class="count-badge">{{ destinatarios.count }} cadastrado{{ destinatarios.count|pluralize }}</span>
+        </div>
+
+        {% if destinatarios %}
+            {% for dest in destinatarios %}
+            <div class="recipient-item">
+                <div class="recipient-avatar" style="{% if not dest.ativo %}opacity: 0.4; filter: grayscale(1);{% endif %}">
+                    {{ dest.nome|slice:":1" }}
+                </div>
+                <div class="recipient-info">
+                    <div class="recipient-name {% if not dest.ativo %}text-muted{% endif %}">{{ dest.nome }}</div>
+                    <div class="recipient-email">{{ dest.email }}</div>
+                    <div class="recipient-meta">
+                        Adicionado em {{ dest.adicionado_em|date:"d/m/Y" }}
+                        {% if dest.adicionado_por %} por {{ dest.adicionado_por.get_full_name|default:dest.adicionado_por.username }}{% endif %}
+                    </div>
+                </div>
+                <span class="status-pill {% if dest.ativo %}active{% else %}inactive{% endif %}">
+                    <i class="bi {% if dest.ativo %}bi-check-circle-fill{% else %}bi-pause-circle{% endif %}"></i>
+                    {% if dest.ativo %}Ativo{% else %}Pausado{% endif %}
+                </span>
+                <div class="action-btns">
+                    <form method="post" style="display:inline;">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="toggle">
+                        <input type="hidden" name="pk" value="{{ dest.pk }}">
+                        <button type="submit" class="btn-sm-icon toggle-btn {% if not dest.ativo %}off{% endif %}"
+                                title="{% if dest.ativo %}Pausar{% else %}Ativar{% endif %}">
+                            <i class="bi {% if dest.ativo %}bi-pause-fill{% else %}bi-play-fill{% endif %}"></i>
+                        </button>
+                    </form>
+                    <form method="post" style="display:inline;"
+                          onsubmit="return confirm('Remover {{ dest.nome }} da lista?')">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="delete">
+                        <input type="hidden" name="pk" value="{{ dest.pk }}">
+                        <button type="submit" class="btn-sm-icon delete-btn" title="Remover">
+                            <i class="bi bi-trash3"></i>
+                        </button>
+                    </form>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="empty-state">
+                <i class="bi bi-envelope-x"></i>
+                <p>Nenhum destinatário cadastrado ainda.<br>Adicione o primeiro e-mail acima.</p>
+            </div>
+        {% endif %}
+    </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Toggle label dinâmico
+    const toggleAtivo = document.getElementById('toggle-ativo');
+    const toggleLabel = document.getElementById('toggle-label-text');
+    if (toggleAtivo) {
+        toggleAtivo.addEventListener('change', function() {
+            toggleLabel.innerHTML = this.checked
+                ? 'Envio automático <strong>Ativado</strong>'
+                : 'Envio automático <strong>Pausado</strong>';
+        });
+    }
+</script>
+{% endblock %}

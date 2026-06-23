@@ -107,7 +107,11 @@
     <div class="container-print">
         <div class="header-print">
             <img src="{% static 'core/logopmu.png' %}" alt="Logo PMU">
+            {% if escola.tipo == 'UDITECH' %}
+            <p style="font-weight: bold; font-size: 1.1rem; color: #18529D;">UDITECH - Escola de Tecnologia e Inovação</p>
+            {% else %}
             <p>Diretoria de Qualificação Profissional, Geração de Trabalho e Renda</p>
+            {% endif %}
             <hr style="width: 50%; margin: 20px auto; border-top: 1px solid #eee;">
         </div>
 

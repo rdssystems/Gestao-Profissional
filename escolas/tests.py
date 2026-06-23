@@ -12,12 +12,15 @@ class EscolaListViewTest(TestCase):
             email='admin@example.com'
         )
 
+        from django.contrib.auth.models import Group
         # Criar um usuário coordenador
         self.coordenador_user = User.objects.create_user(
             username='coordenador', 
             password='password123', 
             email='coordenador@escola1.com'
         )
+        group_coordenador, _ = Group.objects.get_or_create(name='Coordenador')
+        self.coordenador_user.groups.add(group_coordenador)
 
         # Criar duas escolas
         self.escola1 = Escola.objects.create(
@@ -25,6 +28,9 @@ class EscolaListViewTest(TestCase):
             email='coordenador@escola1.com', 
             coordenador_user=self.coordenador_user
         )
+        self.coordenador_user.profile.escola = self.escola1
+        self.coordenador_user.profile.save()
+        
         self.escola2 = Escola.objects.create(
             nome='Escola Teste 2', 
             email='outro@escola2.com'
@@ -84,7 +90,7 @@ class EscolaCrudViewTest(TestCase):
 
     def test_superuser_can_create_escola(self):
         self.client.login(username='admin_crud', password='password123')
-        form_data = {'nome': 'Nova Escola Via Teste', 'email': 'nova@teste.com', 'endereco': 'Rua Teste', 'telefone': '12345', 'coordenador': 'Teste'}
+        form_data = {'nome': 'Nova Escola Via Teste', 'email': 'nova@teste.com', 'endereco': 'Rua Teste', 'telefone': '11999999999'}
         response = self.client.post(self.create_url, data=form_data)
         self.assertEqual(response.status_code, 302) # Redireciona após sucesso
         self.assertTrue(Escola.objects.filter(nome='Nova Escola Via Teste').exists())

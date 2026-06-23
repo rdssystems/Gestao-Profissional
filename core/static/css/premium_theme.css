@@ -612,4 +612,135 @@ label.form-label-premium {
     font-weight: 500;
     padding: 10px;
 }
+
+/* ==========================================================================
+   TEMA UDITECH - OVERRIDES DOS CARDS, BOTÕES E ELEMENTOS
+   ========================================================================== */
+.theme-uditech {
+    /* Ajuste da marca primária do tema */
+    --brand-primary: #18529D !important;
+}
+
+/* Bordas superiores azuis nos cards premium da Uditech */
+.theme-uditech .premium-card {
+    border-top: 4px solid #18529D !important;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    box-shadow: 0 4px 10px rgba(14, 50, 98, 0.05) !important;
+}
+
+/* Hover com efeito de brilho azul e elevação */
+.theme-uditech .premium-card:hover {
+    transform: translateY(-6px) !important;
+    box-shadow: 0 16px 30px rgba(24, 82, 157, 0.12) !important;
+    border-color: #18529D !important;
+}
+
+/* Valores e rótulos numéricos */
+.theme-uditech .metric-value {
+    color: #0E3262 !important; /* Azul escuro da paleta */
+    font-weight: 800 !important;
+    letter-spacing: -0.5px !important;
+}
+
+.theme-uditech .metric-label {
+    color: #64748b !important;
+    font-weight: 600 !important;
+    text-transform: uppercase !important;
+    font-size: 0.75rem !important;
+    letter-spacing: 0.5px !important;
+}
+
+/* Estilo unificado para os wrappers de ícones dos cards no portal Uditech */
+.theme-uditech .icon-wrapper {
+    width: 48px !important;
+    height: 48px !important;
+    border-radius: 12px !important; /* Formato squircle moderno */
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    font-size: 1.25rem !important;
+    transition: all 0.3s ease !important;
+}
+
+.theme-uditech .premium-card:hover .icon-wrapper {
+    transform: scale(1.1) rotate(5deg) !important;
+}
+
+/* Mapeamento de cores premium para os ícones */
+.theme-uditech .bg-purple-soft, 
+.theme-uditech .bg-blue-soft, 
+.theme-uditech .bg-indigo-soft,
+.theme-uditech .bg-slate-soft {
+    background: rgba(24, 82, 157, 0.08) !important;
+    color: #18529D !important;
+}
+
+.theme-uditech .bg-green-soft {
+    background: rgba(16, 185, 129, 0.08) !important;
+    color: #10b981 !important;
+}
+
+.theme-uditech .bg-amber-soft {
+    background: rgba(241, 181, 20, 0.08) !important;
+    color: #F1B514 !important;
+}
+
+.theme-uditech .bg-red-soft {
+    background: rgba(244, 63, 94, 0.08) !important;
+    color: #f43f5e !important;
+}
+
+/* Botões de Ação no Tema Uditech */
+.theme-uditech .btn-premium {
+    background: #18529D !important;
+    box-shadow: 0 4px 10px rgba(24, 82, 157, 0.2) !important;
+    border: 1px solid #18529D !important;
+}
+
+.theme-uditech .btn-premium:hover {
+    background: #0E3262 !important;
+    border-color: #0E3262 !important;
+    box-shadow: 0 6px 15px rgba(14, 50, 98, 0.3) !important;
+}
+
+.theme-uditech .btn-premium-outline {
+    color: #18529D !important;
+    border-color: #18529D !important;
+}
+
+.theme-uditech .btn-premium-outline:hover {
+    background: rgba(24, 82, 157, 0.05) !important;
+    color: #0E3262 !important;
+    border-color: #0E3262 !important;
+}
+
+/* Ajustes nos Filtros e Formulários focados */
+.theme-uditech .form-control-premium:focus,
+.theme-uditech .form-select-premium:focus,
+.theme-uditech .custom-input input:focus,
+.theme-uditech .custom-input select:focus,
+.theme-uditech .custom-input textarea:focus {
+    border-color: #18529D !important;
+    box-shadow: 0 0 0 4px rgba(24, 82, 157, 0.15) !important;
+}
+
+/* Títulos de cabeçalho no portal Uditech */
+.theme-uditech .text-primary {
+    color: #18529D !important;
+}
+
+/* Feed Modal headers */
+.theme-uditech .modal-header.bg-warning {
+    background: #18529D !important;
+    color: #ffffff !important;
+}
+
+.theme-uditech .modal-header.bg-warning .modal-title,
+.theme-uditech .modal-header.bg-warning .modal-title i {
+    color: #ffffff !important;
+}
+
+.theme-uditech .modal-header.bg-warning .btn-close {
+    filter: invert(1) grayscale(1) brightness(2) !important;
+}
 

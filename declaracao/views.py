@@ -17,14 +17,15 @@ from .utils import get_aluno_status_para_inscricao, generate_declaration_text
 
 @login_required
 def buscar_aluno_view(request):
+    sistema = request.session.get('sistema', 'cp').upper()
     if request.method == 'POST':
         form = VerificarCPFForm(request.POST)
         if form.is_valid():
             cpf = form.cleaned_data['cpf']
             cpf_digits = ''.join(filter(str.isdigit, cpf))
             
-            # Start with all students
-            alunos_query = Aluno.objects.filter(cpf=cpf_digits)
+            # Start with students in the active portal
+            alunos_query = Aluno.objects.filter(cpf=cpf_digits, escola__tipo=sistema)
 
             # Filter by school if not superuser and has a profile with school
             if not request.user.is_superuser and hasattr(request.user, 'profile') and request.user.profile.escola:
@@ -43,7 +44,8 @@ def buscar_aluno_view(request):
 
 @login_required
 def listar_cursos_view(request, aluno_id):
-    aluno_query = Aluno.objects.filter(id=aluno_id)
+    sistema = request.session.get('sistema', 'cp').upper()
+    aluno_query = Aluno.objects.filter(id=aluno_id, escola__tipo=sistema)
 
     # Filter Aluno by school if not superuser
     if not request.user.is_superuser and hasattr(request.user, 'profile') and request.user.profile.escola:
@@ -52,7 +54,7 @@ def listar_cursos_view(request, aluno_id):
     aluno = get_object_or_404(aluno_query) # Use the filtered query
 
     # Filter inscricoes by school of the current user
-    inscricoes = Inscricao.objects.filter(aluno=aluno).exclude(status='desistente').select_related('curso')
+    inscricoes = Inscricao.objects.filter(aluno=aluno, curso__escola__tipo=sistema).exclude(status='desistente').select_related('curso')
     if not request.user.is_superuser and hasattr(request.user, 'profile') and request.user.profile.escola:
         inscricoes = inscricoes.filter(curso__escola=request.user.profile.escola)
     
@@ -91,7 +93,8 @@ def listar_cursos_view(request, aluno_id):
     })
 
 def _check_inscricao_permission(request, inscricao_id, block_auxiliar=False):
-    inscricao = get_object_or_404(Inscricao, id=inscricao_id)
+    sistema = request.session.get('sistema', 'cp').upper()
+    inscricao = get_object_or_404(Inscricao, id=inscricao_id, curso__escola__tipo=sistema)
 
     # If requested, block Auxiliar Administrativo from issuing certificates
     if block_auxiliar and request.user.groups.filter(name='Auxiliar Administrativo').exists():
@@ -174,13 +177,15 @@ def salvar_declaracao_view(request, inscricao_id):
 
 @login_required
 def declaracao_sucesso_view(request, declaracao_id):
-    declaracao = get_object_or_404(Declaracao, id=declaracao_id)
+    sistema = request.session.get('sistema', 'cp').upper()
+    declaracao = get_object_or_404(Declaracao, id=declaracao_id, inscricao__curso__escola__tipo=sistema)
     return render(request, 'declaracao/declaracao_sucesso.html', {'declaracao': declaracao})
 
 
 @login_required
 def imprimir_declaracao_view(request, hash_validacao):
-    declaracao = get_object_or_404(Declaracao, hash_validacao=hash_validacao)
+    sistema = request.session.get('sistema', 'cp').upper()
+    declaracao = get_object_or_404(Declaracao, hash_validacao=hash_validacao, inscricao__curso__escola__tipo=sistema)
     
     escola = declaracao.inscricao.aluno.escola # Get the school object
     

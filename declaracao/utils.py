@@ -59,9 +59,14 @@ def generate_declaration_text(status, inscricao):
     else:
         periodo_texto += ", "
 
+    if curso.escola.tipo == 'UDITECH':
+        emissor_nome = "UDITECH - Escola de Tecnologia e Inovação"
+    else:
+        emissor_nome = "Diretoria de Qualificação Profissional, Geração de Trabalho e Renda"
+
     text = (f"Declaramos para os devidos fins que, {aluno.nome_completo.upper()}, portador(a) do CPF nº {aluno.cpf}, "
             f"{verbo} o curso de {curso.nome}, com carga horária de {curso.carga_horaria} horas, "
             f"{periodo_texto}"
-            f"ministrado pela Diretoria de Qualificação Profissional, Geração de Trabalho e Renda.")
+            f"ministrado pela {emissor_nome}.")
     
     return text

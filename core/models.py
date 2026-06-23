@@ -8,6 +8,28 @@ class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
     escola = models.ForeignKey(Escola, on_delete=models.SET_NULL, null=True, blank=True, related_name='user_profiles')
     is_developer = models.BooleanField(default=False, verbose_name="Desenvolvedor (Acesso a Updates)")
+    
+    NIVEL_ACESSO_CHOICES = (
+        ('ADMIN_CP', 'Administrador de CPs'),
+        ('ADMIN_UDITECH', 'Administrador de Uditechs'),
+        ('SUPERUSER', 'Superusuário Global'),
+    )
+
+    nivel_acesso = models.CharField(
+        max_length=20,
+        choices=NIVEL_ACESSO_CHOICES,
+        default='ADMIN_CP',
+        verbose_name="Nível de Acesso Administrativo"
+    )
+
+    @property
+    def is_admin_uditech(self):
+        return self.nivel_acesso == 'ADMIN_UDITECH'
+
+    @property
+    def is_admin_cp(self):
+        return self.nivel_acesso == 'ADMIN_CP'
+
 
     def __str__(self):
         return f'Perfil de {self.user.username}'
@@ -105,3 +127,107 @@ class AuditLog(models.Model):
         if self.content_object:
             nome_objeto = f" ({str(self.content_object)[:30]})"
         return f"<strong>{usuario_nome}</strong> {acao_str} um registro em <strong>{tabela}</strong>{nome_objeto}"
+
+
+class EmailDestinatario(models.Model):
+    """Destinatários cadastrados para receber o relatório do Controle Diário"""
+    nome = models.CharField(max_length=100, verbose_name="Nome")
+    email = models.EmailField(unique=True, verbose_name="E-mail")
+    ativo = models.BooleanField(default=True, verbose_name="Ativo")
+    adicionado_em = models.DateTimeField(auto_now_add=True)
+    adicionado_por = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True,
+        verbose_name="Adicionado por"
+    )
+
+    class Meta:
+        ordering = ['nome']
+        verbose_name = "Destinatário de E-mail"
+        verbose_name_plural = "Destinatários de E-mail"
+
+    def __str__(self):
+        return f"{self.nome} <{self.email}>"
+
+
+class AgendamentoEmail(models.Model):
+    """
+    Configuração de agendamento para o envio do relatório do Controle Diário.
+    Modelo Singleton — deve existir apenas 1 registro no banco.
+    """
+    # Dias da semana como campos booleanos individuais (mais fácil de consultar)
+    segunda = models.BooleanField(default=True, verbose_name="Segunda-feira")
+    terca = models.BooleanField(default=True, verbose_name="Terça-feira")
+    quarta = models.BooleanField(default=True, verbose_name="Quarta-feira")
+    quinta = models.BooleanField(default=True, verbose_name="Quinta-feira")
+    sexta = models.BooleanField(default=True, verbose_name="Sexta-feira")
+    sabado = models.BooleanField(default=False, verbose_name="Sábado")
+    domingo = models.BooleanField(default=False, verbose_name="Domingo")
+
+    horario_envio = models.TimeField(default='18:00', verbose_name="Horário de Envio")
+    ativo = models.BooleanField(default=True, verbose_name="Envio Automático Ativo")
+
+    atualizado_em = models.DateTimeField(auto_now=True)
+    atualizado_por = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True,
+        verbose_name="Atualizado por"
+    )
+
+    class Meta:
+        verbose_name = "Agendamento de E-mail"
+        verbose_name_plural = "Agendamento de E-mail"
+
+    def __str__(self):
+        return f"Agendamento: {self.horario_envio.strftime('%H:%M')}"
+
+    @classmethod
+    def get_config(cls):
+        """Retorna a configuração existente ou cria uma com valores padrão."""
+        obj, _ = cls.objects.get_or_create(pk=1)
+        return obj
+
+    def deve_enviar_agora(self):
+        """
+        Verifica se o envio deve ocorrer agora com base no dia e hora configurados.
+        Considera uma janela de tolerância de 59 minutos a partir do horário configurado.
+        """
+        if not self.ativo:
+            return False
+
+        agora = timezone.localtime(timezone.now())
+        dia_semana = agora.weekday()  # 0=Seg, 1=Ter, ..., 6=Dom
+
+        DIAS = {
+            0: self.segunda,
+            1: self.terca,
+            2: self.quarta,
+            3: self.quinta,
+            4: self.sexta,
+            5: self.sabado,
+            6: self.domingo,
+        }
+
+        if not DIAS.get(dia_semana, False):
+            return False
+
+        hora_atual = agora.time().replace(second=0, microsecond=0)
+        hora_config = self.horario_envio.replace(second=0, microsecond=0)
+
+        from datetime import datetime, timedelta
+        # Janela: do horário configurado até 59min depois
+        dt_base = datetime.combine(agora.date(), hora_config)
+        dt_limite = dt_base + timedelta(minutes=59)
+        dt_agora = datetime.combine(agora.date(), hora_atual)
+
+        return dt_base <= dt_agora <= dt_limite
+
+    @property
+    def dias_ativos_display(self):
+        nomes = []
+        if self.segunda: nomes.append("Seg")
+        if self.terca:   nomes.append("Ter")
+        if self.quarta:  nomes.append("Qua")
+        if self.quinta:  nomes.append("Qui")
+        if self.sexta:   nomes.append("Sex")
+        if self.sabado:  nomes.append("Sáb")
+        if self.domingo: nomes.append("Dom")
+        return ", ".join(nomes) if nomes else "Nenhum dia"

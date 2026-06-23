@@ -7,6 +7,15 @@ class Escola(models.Model):
     email = models.EmailField(unique=True)
     telefone = models.CharField(max_length=20)
     whatsapp = models.CharField(max_length=20, blank=True, null=True, verbose_name="WhatsApp")
+    tipo = models.CharField(
+        max_length=15, 
+        choices=(
+            ('CP', 'Centro Profissionalizante'),
+            ('UDITECH', 'Uditech'),
+        ), 
+        default='CP', 
+        verbose_name="Tipo de Escola"
+    )
     coordenador_user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='escola_coordenada')
     data_atualizacao = models.DateTimeField(auto_now=True, null=True, blank=True)
 

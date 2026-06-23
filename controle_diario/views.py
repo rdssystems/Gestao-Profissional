@@ -66,6 +66,7 @@ def preencher_controle_diario_view(request):
 @login_required
 @user_passes_test(lambda u: u.is_superuser) # Apenas superusuários
 def controle_diario_admin_view(request):
+    sistema = request.session.get('sistema', 'cp').upper()
     data_selecionada_str = request.GET.get('data')
     escola_id = request.GET.get('escola')
     
@@ -77,7 +78,7 @@ def controle_diario_admin_view(request):
         data_selecionada = hoje
 
     # Filtro base para os dados individuais
-    controles_diarios_qs = ControleDiario.objects.filter(data=data_selecionada).select_related('escola', 'usuario')
+    controles_diarios_qs = ControleDiario.objects.filter(data=data_selecionada, escola__tipo=sistema).select_related('escola', 'usuario')
 
     # Aplicar filtro de escola se fornecido
     if escola_id:
@@ -97,6 +98,6 @@ def controle_diario_admin_view(request):
         'totais': totais,
         'data_selecionada': data_selecionada,
         'escola_id_selecionada': escola_id,
-        'todas_escolas': Escola.objects.all().order_by('nome'), # Para o filtro de escola
+        'todas_escolas': Escola.objects.filter(tipo=sistema).order_by('nome'), # Para o filtro de escola
     }
     return render(request, 'controle_diario/controle_diario_admin.html', context)

@@ -17,6 +17,16 @@ import os
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+# Carregar arquivo .env se existir (sem sobrepor variaveis ja existentes)
+env_file = BASE_DIR / '.env'
+if env_file.exists():
+    with open(env_file, 'r', encoding='utf-8') as f:
+        for line in f:
+            line = line.strip()
+            if line and not line.startswith('#') and '=' in line:
+                key, val = line.split('=', 1)
+                os.environ.setdefault(key.strip(), val.strip())
+
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
@@ -206,8 +216,14 @@ LOGIN_URL = 'login'
 LOGIN_REDIRECT_URL = 'core:login_success'
 LOGOUT_REDIRECT_URL = '/'
 
-# Email backend for development (shows emails in console)
-EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+# --- CONFIGURAÇÃO DE E-MAIL ---
+EMAIL_BACKEND = os.getenv('EMAIL_BACKEND', 'django.core.mail.backends.console.EmailBackend')
+EMAIL_HOST = os.getenv('EMAIL_HOST', 'smtp.resend.com')
+EMAIL_PORT = int(os.getenv('EMAIL_PORT', '587'))
+EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS', 'True') == 'True'
+EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER', 'resend')
+EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', '')
+DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', 'onboarding@resend.dev')
 
 # --- CONFIGURAÇÃO DE BACKUP (django-dbbackup + Google Cloud Storage) ---
 from google.oauth2 import service_account
@@ -234,25 +250,7 @@ STORAGES = {
 DBBACKUP_CLEANUP_KEEP = 1 
 DBBACKUP_CLEANUP_KEEP_MEDIA = 1
 
-# --- CONFIGURAÇÃO PARA ENVIO DE E-MAIL REAL (PRODUÇÃO) ---
-# Para usar, comente a linha acima (EMAIL_BACKEND = '...console...')
-# e descomente as linhas abaixo, preenchendo com seus dados.
-
-# Exemplo para GMAIL:
-# EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-# EMAIL_HOST = 'smtp.gmail.com'
-# EMAIL_PORT = 587
-# EMAIL_USE_TLS = True
-# EMAIL_HOST_USER = 'seu_email@gmail.com'
-# EMAIL_HOST_PASSWORD = 'sua_senha_de_app_do_google' # Não é a senha normal, é a "Senha de App"
-
-# Exemplo para OUTLOOK / HOTMAIL:
-# EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-# EMAIL_HOST = 'smtp-mail.outlook.com'
-# EMAIL_PORT = 587
-# EMAIL_USE_TLS = True
-# EMAIL_HOST_USER = 'seu_email@outlook.com'
-# EMAIL_HOST_PASSWORD = 'sua_senha'
+# --- CONFIGURAÇÃO DE E-MAIL REAL FINALIZADA ---
 
 from django.contrib.messages import constants as messages_constants
 

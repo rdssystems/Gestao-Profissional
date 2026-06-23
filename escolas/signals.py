@@ -50,3 +50,15 @@ def criar_ou_atualizar_usuario_coordenador(sender, instance, created, **kwargs):
         post_save.disconnect(criar_ou_atualizar_usuario_coordenador, sender=Escola)
         escola.save()
         post_save.connect(criar_ou_atualizar_usuario_coordenador, sender=Escola)
+
+@receiver(post_save, sender=Escola)
+def sync_coordenador_profile_and_group(sender, instance, **kwargs):
+    from django.contrib.auth.models import Group
+    if instance.coordenador_user:
+        group_coordenador, _ = Group.objects.get_or_create(name='Coordenador')
+        instance.coordenador_user.groups.add(group_coordenador)
+        
+        profile = getattr(instance.coordenador_user, 'profile', None)
+        if profile and profile.escola != instance:
+            profile.escola = instance
+            profile.save()

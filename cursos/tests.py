@@ -195,8 +195,11 @@ class CursoCrudViewTest(TestCase):
             'tipo_curso': self.tipo_art_escola2.pk, # Adicionado
             'nome': 'Novo Curso Admin', 
             'carga_horaria': 30, 
+            'vagas': 30,
             'data_inicio': '2023-04-01', 
             'data_fim': '2023-04-30', 
+            'turno': 'Manhã',
+            'horario': '08:00',
             'status': 'Aberta'
         }
         response = self.client.post(self.create_url, data=form_data)
@@ -210,8 +213,11 @@ class CursoCrudViewTest(TestCase):
             'tipo_curso': self.tipo_info_escola1.pk, # Adicionado
             'nome': 'Novo Curso Coord1', 
             'carga_horaria': 25, 
+            'vagas': 20,
             'data_inicio': '2023-05-01', 
             'data_fim': '2023-05-31', 
+            'turno': 'Tarde',
+            'horario': '14:00',
             'status': 'Em Andamento'
         }
         response = self.client.post(self.create_url, data=form_data)
@@ -242,8 +248,11 @@ class CursoCrudViewTest(TestCase):
             'tipo_curso': self.tipo_prog_escola1.pk, # Adicionado
             'nome': 'Curso Admin Atualizado', 
             'carga_horaria': 12, 
+            'vagas': 10,
             'data_inicio': '2023-01-01', 
             'data_fim': '2023-01-31', 
+            'turno': 'Noite',
+            'horario': '19:00',
             'status': 'Concluído'
         }
         response = self.client.post(self.update_url_escola1, data=form_data)
@@ -258,8 +267,11 @@ class CursoCrudViewTest(TestCase):
             'tipo_curso': self.tipo_info_escola1.pk, # Adicionado
             'nome': 'Curso Coord1 Atualizado', 
             'carga_horaria': 15, 
+            'vagas': 15,
             'data_inicio': '2023-01-01', 
             'data_fim': '2023-01-31', 
+            'turno': 'Manhã',
+            'horario': '08:00',
             'status': 'Aberta'
         }
         response = self.client.post(self.update_url_escola1, data=form_data)
@@ -274,8 +286,11 @@ class CursoCrudViewTest(TestCase):
             'tipo_curso': self.tipo_art_escola2.pk, # Adicionado
             'nome': 'Curso Invasor', 
             'carga_horaria': 99, 
+            'vagas': 10,
             'data_inicio': '2023-01-01', 
             'data_fim': '2023-01-31', 
+            'turno': 'Manhã',
+            'horario': '08:00',
             'status': 'Aberta'
         }
         response = self.client.post(self.update_url_escola2, data=form_data)
