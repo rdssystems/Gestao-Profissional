@@ -1,29 +1,68 @@
 #!/bin/bash
 
-echo "--- Iniciando Atualização do Sistema ---"
+echo "--- Iniciando Atualizacao do Sistema ---"
 
-# 1. Baixar as últimas mudanças do GitHub
-echo ">>> Puxando mudanças do Git..."
+# ──────────────────────────────────────────────────
+# 0. BACKUP PRE-UPDATE (GCS + Google Drive)
+# ──────────────────────────────────────────────────
+echo ">>> [PRE-UPDATE] Gerando backup do banco..."
+BACKUP_DATE=$(date +%Y%m%d_%H%M%S)
+BACKUP_FILE="pre_update_${BACKUP_DATE}.dump"
+TEMP="/tmp/${BACKUP_FILE}"
+GDRIVE="/media/qualificacaoudia_google_drive_1777986114/Gestao-Profissional/backups"
+
+# Dump
+sudo docker exec gq-db pg_dump -U gestao_user -Fc gestao_db > "$TEMP"
+
+# Enviar para GCS
+sudo docker cp "$TEMP" "gq-app:/tmp/${BACKUP_FILE}"
+sudo docker exec gq-app python /app/backup_upload.py "$BACKUP_FILE"
+
+# Salvar no Google Drive
+mkdir -p "$GDRIVE"
+cp "$TEMP" "$GDRIVE/$BACKUP_FILE"
+
+# Manter apenas os 10 mais recentes no Drive
+TOTAL=$(ls -1 "$GDRIVE"/*.dump 2>/dev/null | wc -l)
+if [ "$TOTAL" -gt 10 ]; then
+    TO_DELETE=$((TOTAL - 10))
+    ls -1t "$GDRIVE"/*.dump | tail -n "$TO_DELETE" | xargs rm -f
+fi
+
+rm -f "$TEMP"
+echo ">>> [PRE-UPDATE] Backup salvo: GCS + Google Drive ($BACKUP_FILE)"
+
+# ──────────────────────────────────────────────────
+# 1. Git pull
+# ──────────────────────────────────────────────────
+echo ">>> Puxando mudancas do Git..."
 git pull origin main
 
-# 2. Reconstruir e subir os containers (com fix para ZimaOS Read-Only)
-echo ">>> Reconstruindo containers (Docker Build)..."
+# ──────────────────────────────────────────────────
+# 2. Rebuild containers
+# ──────────────────────────────────────────────────
+echo ">>> Reconstruindo containers..."
 export DOCKER_CONFIG=/tmp/.docker
 sudo -E docker compose up -d --build
 
-# 3. Rodar as migrações do Django
-echo ">>> Verificando migrações (makemigrations)..."
+# ──────────────────────────────────────────────────
+# 3. Migrations
+# ──────────────────────────────────────────────────
+echo ">>> Verificando migrations..."
 sudo docker exec gq-app python manage.py makemigrations
-
-echo ">>> Aplicando migrações (migrate)..."
+echo ">>> Aplicando migrations..."
 sudo docker exec gq-app python manage.py migrate
 
-# 4. Coletar arquivos estáticos
-echo ">>> Coletando arquivos estáticos (collectstatic)..."
+# ──────────────────────────────────────────────────
+# 4. Static files
+# ──────────────────────────────────────────────────
+echo ">>> Coletando arquivos estaticos..."
 sudo docker exec gq-app python manage.py collectstatic --no-input
 
-# 5. Limpeza de imagens antigas
+# ──────────────────────────────────────────────────
+# 5. Limpeza
+# ──────────────────────────────────────────────────
 echo ">>> Limpando imagens antigas..."
 sudo docker image prune -f
 
-echo "--- Atualização concluída com sucesso! ---"
+echo "--- Atualizacao concluida com sucesso! ---"

@@ -43,6 +43,7 @@ Thumbs.db
 # My custom files
 *.csv
 *.xlsx
+*.bak
 venv_new/
 staticfiles/
 backups/
@@ -50,23 +51,30 @@ backups/
 *.bat
 *.pptx
 *.png
-!logopmu.png
+!core/static/**/*.png
 !logologin.png
+
+# Editor / IDE pessoal
+.obsidian/
+
+# Pastas de dados e scripts descartáveis
+scratch/
+scripts/
+"Bancos dados"/
+test_*.txt
 
 # Database and sensitive local files
 *.sql
 *.db
-backup_manual.sql
-banco_cadastro.db
+*.sqlite3.bak
 
 # Media and Uploads
 media/
 documentos_alunos/
+documentos_escola/
 
 # Backup and Security
 google_drive_key.json
 test_gdrive.py
 check_bucket.py
 help_dbbackup.txt
-test_verify.txt
-test_write.txt
