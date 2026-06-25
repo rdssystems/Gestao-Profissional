@@ -36,15 +36,15 @@ def upload_and_cleanup(filename):
     blob.upload_from_filename(local_path)
     print(f"    Upload concluído!")
 
-    # Política de retenção: mantém apenas os 20 mais recentes
+    # Política de retenção: mantém apenas os 10 mais recentes
     blobs = sorted(bucket.list_blobs(), key=lambda b: b.time_created)
-    if len(blobs) > 20:
-        to_delete = blobs[:-20]
+    if len(blobs) > 10:
+        to_delete = blobs[:-10]
         for b in to_delete:
             b.delete()
             print(f"    Backup antigo removido: {b.name}")
     else:
-        print(f"    Total de backups no bucket: {len(blobs)} (dentro do limite de 20).")
+        print(f"    Total de backups no bucket: {len(blobs)} (dentro do limite de 10).")
 
     # Limpa o arquivo temporário dentro do container
     if os.path.exists(local_path):
