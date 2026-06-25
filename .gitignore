@@ -73,6 +73,11 @@ media/
 documentos_alunos/
 documentos_escola/
 
+# Desenvolvimento local
+.env.dev
+dev_restore.dump
+postgres_data_dev/
+
 # Backup and Security
 google_drive_key.json
 test_gdrive.py

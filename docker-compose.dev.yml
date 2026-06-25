@@ -1,0 +1,19 @@
+# Ambiente de desenvolvimento — sobrepõe o docker-compose.yml
+# Iniciar: docker compose -f docker-compose.yml -f docker-compose.dev.yml --env-file .env.dev up -d
+# Parar:   docker compose -f docker-compose.yml -f docker-compose.dev.yml down
+
+services:
+  db:
+    volumes:
+      - postgres_data_dev:/var/lib/postgresql/data  # volume isolado, não toca os dados de produção
+
+  web:
+    environment:
+      - DEBUG=True  # ativa runserver com hot-reload automático
+    # O volume .:/app já está no docker-compose.yml base
+    # Qualquer alteração em .py, .html, .css é detectada sem reiniciar o container
+
+volumes:
+  static_volume:
+  media_volume:
+  postgres_data_dev:
