@@ -5,6 +5,7 @@ from django.core.mail import EmailMultiAlternatives
 from django.utils import timezone
 from django.conf import settings
 from django.db.models import Sum
+from django.core.cache import cache
 
 # Modelos para coletar dados
 from controle_diario.models import ControleDiario
@@ -28,11 +29,20 @@ class Command(BaseCommand):
         from core.models import AgendamentoEmail
 
         # Verificar agendamento (a menos que --force seja usado)
-        if not options.get('force'):
+        is_force = options.get('force')
+        if not is_force:
             agendamento = AgendamentoEmail.get_config()
             if not agendamento.deve_enviar_agora():
                 self.stdout.write(self.style.NOTICE(
                     'Envio ignorado: fora do horário/dia configurado. Use --force para forçar o envio.'
+                ))
+                return
+            # Guarda anti-duplicata: ignora se já enviou hoje
+            hoje_str = timezone.localtime(timezone.now()).date().isoformat()
+            cache_key = f'email_resumo_diario_sent_{hoje_str}'
+            if cache.get(cache_key):
+                self.stdout.write(self.style.NOTICE(
+                    'Envio ignorado: e-mail de resumo já foi enviado hoje.'
                 ))
                 return
 
@@ -500,3 +510,7 @@ class Command(BaseCommand):
         
         if sucessos:
             self.stdout.write(self.style.SUCCESS(f'Sucesso: E-mail de resumo diário enviado para {sucessos}'))
+            if not is_force:
+                hoje_str = timezone.localtime(timezone.now()).date().isoformat()
+                cache_key = f'email_resumo_diario_sent_{hoje_str}'
+                cache.set(cache_key, True, timeout=86400)

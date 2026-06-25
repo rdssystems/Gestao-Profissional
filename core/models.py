@@ -188,13 +188,14 @@ class AgendamentoEmail(models.Model):
     def deve_enviar_agora(self):
         """
         Verifica se o envio deve ocorrer agora com base no dia e hora configurados.
-        Considera uma janela de tolerância de 59 minutos a partir do horário configurado.
+        Janela de 59 minutos a partir do horário configurado, com suporte a
+        horários que cruzam a meia-noite (ex: 23:55 -> janela vai ate 00:54).
         """
         if not self.ativo:
             return False
 
-        agora = timezone.localtime(timezone.now())
-        dia_semana = agora.weekday()  # 0=Seg, 1=Ter, ..., 6=Dom
+        from django.utils import timezone
+        from datetime import timedelta
 
         DIAS = {
             0: self.segunda,
@@ -206,19 +207,26 @@ class AgendamentoEmail(models.Model):
             6: self.domingo,
         }
 
-        if not DIAS.get(dia_semana, False):
-            return False
+        agora = timezone.localtime(timezone.now()).replace(second=0, microsecond=0)
 
-        hora_atual = agora.time().replace(second=0, microsecond=0)
-        hora_config = self.horario_envio.replace(second=0, microsecond=0)
+        # Janela de hoje: horario_envio → horario_envio + 59min
+        inicio_hoje = agora.replace(
+            hour=self.horario_envio.hour,
+            minute=self.horario_envio.minute,
+            second=0,
+            microsecond=0
+        )
+        fim_hoje = inicio_hoje + timedelta(minutes=59)
+        if inicio_hoje <= agora <= fim_hoje:
+            return DIAS.get(inicio_hoje.weekday(), False)
 
-        from datetime import datetime, timedelta
-        # Janela: do horário configurado até 59min depois
-        dt_base = datetime.combine(agora.date(), hora_config)
-        dt_limite = dt_base + timedelta(minutes=59)
-        dt_agora = datetime.combine(agora.date(), hora_atual)
+        # Janela de ontem (cobre cruzamento de meia-noite, ex: config 23:55 → envia até 00:54)
+        inicio_ontem = inicio_hoje - timedelta(days=1)
+        fim_ontem = inicio_ontem + timedelta(minutes=59)
+        if inicio_ontem <= agora <= fim_ontem:
+            return DIAS.get(inicio_ontem.weekday(), False)
 
-        return dt_base <= dt_agora <= dt_limite
+        return False
 
     @property
     def dias_ativos_display(self):

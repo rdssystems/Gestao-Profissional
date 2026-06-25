@@ -46,6 +46,8 @@ CSRF_TRUSTED_ORIGINS = [
     'http://100.93.40.101:8000',
     'http://100.93.40.101:7681',
     'https://servidor-qualificacao.tailbeb7d5.ts.net',
+    'https://app.gestaoqualificacao.com.br',
+    'https://*.gestaoqualificacao.com.br',
 ]
 
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
