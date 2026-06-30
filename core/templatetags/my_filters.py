@@ -10,8 +10,11 @@ def startswith(text, starts):
 
 @register.filter
 def can_access_controle_diario(user):
-    # Retorna True se o usuário é superusuário OU se tem um perfil e esse perfil está associado a uma escola
-    return user.is_superuser or (hasattr(user, 'profile') and user.profile and user.profile.escola)
+    # Retorna True se o usuário é superusuário, administrador de segmento, ou se tem perfil associado a uma escola
+    if not user or not user.is_authenticated:
+        return False
+    profile = getattr(user, 'profile', None)
+    return user.is_superuser or (profile and (profile.escola or profile.nivel_acesso in ['ADMIN_CP', 'ADMIN_UDITECH']))
 
 @register.filter
 def nome_curto(nome_completo):

@@ -64,7 +64,7 @@ def preencher_controle_diario_view(request):
     })
 
 @login_required
-@user_passes_test(lambda u: u.is_superuser) # Apenas superusuários
+@user_passes_test(lambda u: u.is_superuser or (hasattr(u, 'profile') and u.profile.nivel_acesso in ['ADMIN_CP', 'ADMIN_UDITECH'])) # Superusuários e Administradores de Segmento
 def controle_diario_admin_view(request):
     sistema = request.session.get('sistema', 'cp').upper()
     data_selecionada_str = request.GET.get('data')

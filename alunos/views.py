@@ -20,7 +20,7 @@ from django.http import HttpResponse, JsonResponse
 
 from .models import Aluno, ArquivoAluno, WebSocialMember
 from .forms import AlunoForm, AuxiliarAlunoForm, AlunoCSVUploadForm, VerificarCPFForm
-from core.mixins import StaffRequiredMixin, AuditLogMixin
+from core.mixins import StaffRequiredMixin, AuditLogMixin, SegmentAdminRequiredMixin
 from escolas.models import Escola
 from cursos.models import TipoCurso # Para cursos de interesse, se for o caso
 
@@ -815,7 +815,7 @@ class AlunoArquivoActionView(LoginRequiredMixin, StaffRequiredMixin, View):
         return JsonResponse({'sucesso': True, 'arquivos': data})
 
 
-class WebSocialListView(LoginRequiredMixin, SuperuserRequiredMixin, ListView):
+class WebSocialListView(LoginRequiredMixin, SegmentAdminRequiredMixin, ListView):
     model = WebSocialMember
     template_name = 'alunos/web_social_list.html'
     context_object_name = 'membros'
@@ -859,7 +859,7 @@ class WebSocialListView(LoginRequiredMixin, SuperuserRequiredMixin, ListView):
         return context
 
 
-class WebSocialExportExcelView(LoginRequiredMixin, SuperuserRequiredMixin, View):
+class WebSocialExportExcelView(LoginRequiredMixin, SegmentAdminRequiredMixin, View):
     def get(self, request):
         sistema = request.session.get('sistema', 'cp').upper()
         # Aplicar os mesmos filtros da AlunoListView
