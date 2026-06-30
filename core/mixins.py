@@ -108,6 +108,15 @@ class CoordenadorRequiredMixin(UserPassesTestMixin):
         return bool(profile.escola) and is_coordenador
 
 
+class SegmentAdminRequiredMixin(UserPassesTestMixin):
+    """
+    Mixin que verifica se o usuário é superusuário OU administrador de segmento (ADMIN_CP/ADMIN_UDITECH).
+    """
+    def test_func(self):
+        user = self.request.user
+        return user.is_superuser or (hasattr(user, 'profile') and user.profile.nivel_acesso in ['ADMIN_CP', 'ADMIN_UDITECH'])
+
+
 class AuditLogMixin:
     """
     Mixin para registrar logs de auditoria automaticamente em CreateView, UpdateView e DeleteView.

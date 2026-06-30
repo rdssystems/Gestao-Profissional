@@ -237,8 +237,10 @@ class CursoStatusUpdateView(LoginRequiredMixin, StaffRequiredMixin, View):
         curso = get_object_or_404(Curso, pk=pk, escola__tipo=sistema)
         novo_status = request.POST.get('status')
         
-        # Bloqueia alteração se o curso estiver Concluído/Arquivado e o usuário não for superusuário
-        if curso.status in ['Concluído', 'Arquivado'] and not request.user.is_superuser:
+        # Bloqueia alteração se o curso estiver Concluído/Arquivado e o usuário não for superusuário ou administrador de segmento
+        profile = getattr(request.user, 'profile', None)
+        is_admin = request.user.is_superuser or (profile and profile.nivel_acesso in ['ADMIN_CP', 'ADMIN_UDITECH'])
+        if curso.status in ['Concluído', 'Arquivado'] and not is_admin:
             messages.error(request, "Apenas administradores podem alterar o status de um curso concluído ou arquivado.")
             return redirect('cursos:lista_cursos')
 
@@ -338,8 +340,8 @@ class ExportarAlunosView(LoginRequiredMixin, StaffRequiredMixin, View):
             messages.error(request, "Selecione ao menos um campo para exportar.")
             return redirect('cursos:detalhe_curso', pk=pk)
 
-        # Filtrar alunos matriculados (cursando)
-        inscricoes = curso.inscricao_set.filter(status='cursando').select_related('aluno')
+        # Filtrar alunos matriculados (cursando ou concluído)
+        inscricoes = curso.inscricao_set.filter(status__in=['cursando', 'concluido']).select_related('aluno').order_by('aluno__nome_completo')
         
         data = []
         for insc in inscricoes:
@@ -434,7 +436,7 @@ class ExportarAlunosView(LoginRequiredMixin, StaffRequiredMixin, View):
             data.append(row)
             
         if not data:
-            messages.warning(request, "Não há alunos cursando neste curso para exportar.")
+            messages.warning(request, "Não há alunos cursando ou concluídos neste curso para exportar.")
             return redirect('cursos:detalhe_curso', pk=pk)
 
         df = pd.DataFrame(data)

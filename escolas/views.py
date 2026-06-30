@@ -8,7 +8,7 @@ from django.urls import reverse_lazy
 from datetime import date, timedelta
 from django.db import models
 from django.db.models import Count, Q # Adicionados Count e Q
-from core.mixins import AuditLogMixin
+from core.mixins import AuditLogMixin, SegmentAdminRequiredMixin
 
 from django.contrib.contenttypes.models import ContentType
 
@@ -23,10 +23,6 @@ class SuperuserRequiredMixin(UserPassesTestMixin):
     def test_func(self):
         return self.request.user.is_superuser
 
-class SegmentAdminRequiredMixin(UserPassesTestMixin):
-    def test_func(self):
-        user = self.request.user
-        return user.is_superuser or (hasattr(user, 'profile') and user.profile.nivel_acesso in ['ADMIN_CP', 'ADMIN_UDITECH'])
 
 class DashboardView(LoginRequiredMixin, TemplateView):
     template_name = 'escolas/dashboard.html'
@@ -517,7 +513,7 @@ class EscolaListView(LoginRequiredMixin, ListView):
             
         return qs.none()
 
-class ConcluintesGlobalView(LoginRequiredMixin, SuperuserRequiredMixin, ListView):
+class ConcluintesGlobalView(LoginRequiredMixin, SegmentAdminRequiredMixin, ListView):
     model = Curso
     template_name = 'escolas/concluintes_global.html'
     context_object_name = 'cursos_concluintes'

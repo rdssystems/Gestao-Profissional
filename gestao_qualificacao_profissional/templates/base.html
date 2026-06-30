@@ -513,7 +513,7 @@
                         <a class="nav-link {% if request.path == alunos_url or request.path|startswith:alunos_url %}active-nav-link{% endif %}"
                             href="{{ alunos_url }}">Alunos</a>
                     </li>
-                    {% if user.is_superuser or user|has_group:'Coordenador' or user|has_group:'Auxiliar Administrativo' %}
+                    {% if user.is_superuser or user|has_group:'Coordenador' or user|has_group:'Auxiliar Administrativo' or user.profile.nivel_acesso == 'ADMIN_CP' or user.profile.nivel_acesso == 'ADMIN_UDITECH' %}
                     <li class="nav-item">
                         {% url 'cursos:matricula' as matriculas_url %}
                         <a class="nav-link {% if request.path == matriculas_url or request.path|startswith:matriculas_url %}active-nav-link{% endif %}"
@@ -524,7 +524,7 @@
 
                     {% if user.is_authenticated and user|can_access_controle_diario %}
                     <li class="nav-item">
-                        {% if user.is_superuser %}
+                        {% if user.is_superuser or user.profile.nivel_acesso == 'ADMIN_CP' or user.profile.nivel_acesso == 'ADMIN_UDITECH' %}
                         {% url 'controle_diario:admin_view' as controle_diario_url %}
                         {% else %}
                         {% url 'controle_diario:preencher' as controle_diario_url %}
@@ -534,7 +534,7 @@
                     </li>
                     {% endif %}
 
-                    {% if user.is_superuser %}
+                    {% if user.is_superuser or user.profile.nivel_acesso == 'ADMIN_CP' or user.profile.nivel_acesso == 'ADMIN_UDITECH' %}
                     <li class="nav-item">
                         {% url 'escolas:concluintes_global' as concluintes_url %}
                         <a class="nav-link {% if request.path == concluintes_url %}active-nav-link{% endif %}"
