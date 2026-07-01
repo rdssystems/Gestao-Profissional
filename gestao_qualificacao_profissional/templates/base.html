@@ -440,7 +440,7 @@
     </style>
 </head>
 
-<body class="d-flex flex-column min-vh-100 {% if request.session.sistema == 'uditech' or request.active_escola and request.active_escola.tipo == 'UDITECH' %}theme-uditech{% else %}theme-cp{% endif %}">
+<body class="d-flex flex-column min-vh-100 {% if request.sistema == 'UDITECH' or request.active_escola and request.active_escola.tipo == 'UDITECH' %}theme-uditech{% else %}theme-cp{% endif %}">
 
     {% if not hide_navbar %}
     <!-- ================================ -->
@@ -452,7 +452,7 @@
             <a class="navbar-brand navbar-brand-custom d-flex align-items-center" href="{% url 'escolas:dashboard' %}">
                 <img src="{% static 'core/logopmu.png' %}" alt="Logo PMU">
                 <div class="navbar-brand-text ms-2">
-                    {% if request.active_escola and request.active_escola.tipo == 'UDITECH' %}
+                    {% if request.sistema == 'UDITECH' or request.active_escola and request.active_escola.tipo == 'UDITECH' %}
                         <span class="badge bg-warning text-dark px-2 py-1 rounded-pill" style="font-size: 0.72rem; letter-spacing: 0.05em; font-weight: 750; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">UDITECH</span>
                     {% endif %}
                 </div>
@@ -468,8 +468,30 @@
                 <!-- MENU ESQUERDO -->
                 <ul class="navbar-nav">
                     {% if user.is_authenticated %}
-                    {% if not user.is_superuser %}
-                    {% if user.profile and user.profile.escola %}
+                    {# --- Dropdown de contexto: superuser e admins de segmento --- #}
+                    {% if user.is_superuser or user.profile.nivel_acesso == 'ADMIN_CP' or user.profile.nivel_acesso == 'ADMIN_UDITECH' %}
+                    <li class="nav-item dropdown">
+                        {% url 'escolas:dashboard' as dashboard_url %}
+                        <a class="nav-link dropdown-toggle {% if request.path == dashboard_url %}active-nav-link{% endif %}"
+                           href="#" id="navbarContextDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false"
+                           style="color: {% if request.active_escola %}#0dcaf0{% else %}#4C7DF0{% endif %} !important; font-weight: 700;">
+                            {% if request.active_escola %}
+                                <i class="bi bi-building-fill-check me-1"></i> {{ request.active_escola.nome }}
+                            {% else %}
+                                <i class="bi bi-globe2 me-1"></i> Geral
+                            {% endif %}
+                        </a>
+                        <ul class="dropdown-menu shadow border-0 rounded-3 mt-2" aria-labelledby="navbarContextDropdown">
+                            <li><a class="dropdown-item" href="{{ dashboard_url }}"><i class="bi bi-speedometer2 me-2"></i> Dashboard</a></li>
+                            <li><a class="dropdown-item" href="{% url 'escolas:selecionar_contexto' %}"><i class="bi bi-door-open me-2"></i> Selecionar Unidade</a></li>
+                            {% if request.active_escola %}
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item text-primary fw-bold" href="{% url 'escolas:resetar_contexto' %}"><i class="bi bi-globe2 me-2"></i> Voltar p/ Geral</a></li>
+                            {% endif %}
+                        </ul>
+                    </li>
+                    {# --- Nome da escola para coord/auxiliar sem dropdown --- #}
+                    {% elif not user.is_superuser and user.profile and user.profile.escola %}
                     <li class="nav-item">
                         {% url 'escolas:dashboard' as dashboard_url %}
                         <a class="nav-link school-name-highlight {% if request.path == dashboard_url %}active-nav-link{% endif %}"
@@ -478,29 +500,6 @@
                             href="{{ dashboard_url }}">{{ user.profile.escola.nome }}</a>
                     </li>
                     {% endif %}
-                    {% endif %}
-                    {% endif %}
-                    {% if user.is_superuser or user.profile and not user.profile.escola and user.profile.nivel_acesso in "ADMIN_CP,ADMIN_UDITECH" %}
-                    <li class="nav-item dropdown">
-                        {% url 'escolas:dashboard' as dashboard_url %}
-                        <a class="nav-link dropdown-toggle {% if request.path == dashboard_url %}active-nav-link{% endif %}" 
-                           href="#" id="navbarContextDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false"
-                           style="color: {% if request.active_escola %}#0dcaf0{% else %}#4C7DF0{% endif %} !important; font-weight: 700;">
-                            {% if request.active_escola %}
-                                <i class="bi bi-building-fill-check me-1"></i> {{ request.active_escola.nome }}
-                            {% else %}
-                                <i class="bi bi-globe2 me-1"></i> Visão Global
-                            {% endif %}
-                        </a>
-                        <ul class="dropdown-menu shadow border-0 rounded-3 mt-2" aria-labelledby="navbarContextDropdown">
-                            <li><a class="dropdown-item" href="{{ dashboard_url }}"><i class="bi bi-speedometer2 me-2"></i> Dashboard</a></li>
-                            <li><a class="dropdown-item" href="{% url 'escolas:selecionar_contexto' %}"><i class="bi bi-door-open me-2"></i> Trocar Escola</a></li>
-                            {% if user.is_superuser and request.active_escola %}
-                            <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item text-primary fw-bold" href="{% url 'escolas:resetar_contexto' %}"><i class="bi bi-globe2 me-2"></i> Voltar p/ Global</a></li>
-                            {% endif %}
-                        </ul>
-                    </li>
                     {% endif %}
 
                     <li class="nav-item">
