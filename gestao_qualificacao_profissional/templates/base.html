@@ -523,7 +523,7 @@
 
                     {% if user.is_authenticated and user|can_access_controle_diario %}
                     <li class="nav-item">
-                        {% if user.is_superuser or user.profile.nivel_acesso == 'ADMIN_CP' or user.profile.nivel_acesso == 'ADMIN_UDITECH' %}
+                        {% if user|is_global_admin %}
                         {% url 'controle_diario:admin_view' as controle_diario_url %}
                         {% else %}
                         {% url 'controle_diario:preencher' as controle_diario_url %}
@@ -533,7 +533,7 @@
                     </li>
                     {% endif %}
 
-                    {% if user.is_superuser or user.profile.nivel_acesso == 'ADMIN_CP' or user.profile.nivel_acesso == 'ADMIN_UDITECH' %}
+                    {% if user|is_global_admin %}
                     <li class="nav-item">
                         {% url 'escolas:concluintes_global' as concluintes_url %}
                         <a class="nav-link {% if request.path == concluintes_url %}active-nav-link{% endif %}"
