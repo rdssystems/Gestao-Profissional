@@ -469,7 +469,7 @@
                 <ul class="navbar-nav">
                     {% if user.is_authenticated %}
                     {# --- Dropdown de contexto: superuser e admins de segmento --- #}
-                    {% if user.is_superuser or user.profile.nivel_acesso == 'ADMIN_CP' or user.profile.nivel_acesso == 'ADMIN_UDITECH' %}
+                    {% if user|is_global_admin %}
                     <li class="nav-item dropdown">
                         {% url 'escolas:dashboard' as dashboard_url %}
                         <a class="nav-link dropdown-toggle {% if request.path == dashboard_url %}active-nav-link{% endif %}"

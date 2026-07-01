@@ -110,7 +110,14 @@ class SegmentAdminRequiredMixin(UserPassesTestMixin):
     """
     def test_func(self):
         user = self.request.user
-        return user.is_superuser or (hasattr(user, 'profile') and user.profile.nivel_acesso in ['ADMIN_CP', 'ADMIN_UDITECH'])
+        if user.is_superuser:
+            return True
+        profile = getattr(user, 'profile', None)
+        if not profile:
+            return False
+        if user.groups.filter(name__in=['Coordenador', 'Auxiliar Administrativo']).exists():
+            return False
+        return profile.nivel_acesso in ['ADMIN_CP', 'ADMIN_UDITECH']
 
 
 class AuditLogMixin:
