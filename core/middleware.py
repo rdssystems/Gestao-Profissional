@@ -59,8 +59,8 @@ class AdminContextMiddleware:
             sistema = request.session.get('sistema', 'cp').upper()
             request.sistema = sistema
 
-            # Se for superuser ou administrador de segmento (sem escola fixa no perfil)
-            if request.user.is_superuser or (profile and not profile.escola and profile.nivel_acesso in ['ADMIN_CP', 'ADMIN_UDITECH']):
+            # Se for superuser ou administrador de segmento
+            if request.user.is_superuser or (profile and profile.nivel_acesso in ['ADMIN_CP', 'ADMIN_UDITECH']):
                 escola_id = request.session.get('active_escola_id')
                 if escola_id and str(escola_id).isdigit():
                     from django.apps import apps

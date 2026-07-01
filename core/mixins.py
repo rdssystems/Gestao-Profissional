@@ -29,15 +29,13 @@ class StaffRequiredMixin(UserPassesTestMixin):
 
         sistema = self.request.session.get('sistema', 'cp').upper()
 
-        # Administradores de Segmento
-        if not profile.escola:
-            if profile.nivel_acesso == 'ADMIN_CP' and sistema == 'CP':
-                return True
-            if profile.nivel_acesso == 'ADMIN_UDITECH' and sistema == 'UDITECH':
-                return True
-            if profile.nivel_acesso == 'SUPERUSER':
-                return True
-            return False
+        # Administradores de Segmento — acesso total ao seu segmento
+        if profile.nivel_acesso == 'ADMIN_CP':
+            return sistema == 'CP'
+        if profile.nivel_acesso == 'ADMIN_UDITECH':
+            return sistema == 'UDITECH'
+        if profile.nivel_acesso == 'SUPERUSER':
+            return True
         
         # Coordenador local / Auxiliar
         is_staff = user.groups.filter(name__in=['Coordenador', 'Auxiliar Administrativo']).exists()
@@ -93,15 +91,13 @@ class CoordenadorRequiredMixin(UserPassesTestMixin):
 
         sistema = self.request.session.get('sistema', 'cp').upper()
 
-        # Administradores de Segmento
-        if not profile.escola:
-            if profile.nivel_acesso == 'ADMIN_CP' and sistema == 'CP':
-                return True
-            if profile.nivel_acesso == 'ADMIN_UDITECH' and sistema == 'UDITECH':
-                return True
-            if profile.nivel_acesso == 'SUPERUSER':
-                return True
-            return False
+        # Administradores de Segmento — acesso total ao seu segmento
+        if profile.nivel_acesso == 'ADMIN_CP':
+            return sistema == 'CP'
+        if profile.nivel_acesso == 'ADMIN_UDITECH':
+            return sistema == 'UDITECH'
+        if profile.nivel_acesso == 'SUPERUSER':
+            return True
 
         # Coordenador local
         is_coordenador = user.groups.filter(name='Coordenador').exists()
