@@ -519,11 +519,17 @@ class ConcluintesGlobalView(LoginRequiredMixin, SegmentAdminRequiredMixin, ListV
     context_object_name = 'cursos_concluintes'
 
     def get_queryset(self):
+        user = self.request.user
         sistema = self.request.session.get('sistema', 'cp').upper()
         escola_id = self.request.GET.get('escola_id')
-        queryset = Curso.objects.filter(escola__tipo=sistema).annotate(
-            num_concluintes=Count('inscricao', filter=Q(inscricao__status__in=['concluido', 'cursando']))
-        ).filter(num_concluintes__gt=0).order_by('-data_fim', 'nome')
+        if user.is_superuser:
+            queryset = Curso.objects.annotate(
+                num_concluintes=Count('inscricao', filter=Q(inscricao__status__in=['concluido', 'cursando']))
+            ).filter(num_concluintes__gt=0).order_by('-data_fim', 'nome')
+        else:
+            queryset = Curso.objects.filter(escola__tipo=sistema).annotate(
+                num_concluintes=Count('inscricao', filter=Q(inscricao__status__in=['concluido', 'cursando']))
+            ).filter(num_concluintes__gt=0).order_by('-data_fim', 'nome')
         
         if escola_id and escola_id != 'all':
             queryset = queryset.filter(escola_id=escola_id)
@@ -532,11 +538,15 @@ class ConcluintesGlobalView(LoginRequiredMixin, SegmentAdminRequiredMixin, ListV
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        user = self.request.user
         sistema = self.request.session.get('sistema', 'cp').upper()
         queryset = self.get_queryset()
         total_concluintes = queryset.aggregate(total=models.Sum('num_concluintes'))['total'] or 0
         context['total_concluintes'] = total_concluintes
-        context['todas_escolas'] = Escola.objects.filter(tipo=sistema).order_by('nome')
+        if user.is_superuser:
+            context['todas_escolas'] = Escola.objects.all().order_by('tipo', 'nome')
+        else:
+            context['todas_escolas'] = Escola.objects.filter(tipo=sistema).order_by('nome')
         context['selected_escola_id'] = self.request.GET.get('escola_id', 'all')
         return context
 
@@ -577,6 +587,7 @@ class AdminContextSwitchView(SegmentAdminRequiredMixin, View):
             if user.is_superuser:
                 escola = get_object_or_404(Escola, id=escola_id)
                 request.session['active_escola_id'] = escola_id
+                request.session['sistema'] = escola.tipo.lower()
             else:
                 escola = get_object_or_404(Escola, id=escola_id, tipo=sistema)
                 profile = getattr(user, 'profile', None)
@@ -600,11 +611,17 @@ class ConcluinteUnificadoView(LoginRequiredMixin, ListView):
     context_object_name = 'concluintes'
 
     def get_queryset(self):
+        user = self.request.user
         sistema = self.request.session.get('sistema', 'cp').upper()
         escola_id = self.request.GET.get('escola_id')
-        queryset = Inscricao.objects.filter(status='concluido', curso__escola__tipo=sistema).select_related(
-            'aluno', 'curso', 'curso__escola', 'curso__escola__coordenador_user'
-        ).order_by('curso__escola__nome', 'aluno__nome_completo')
+        if user.is_superuser:
+            queryset = Inscricao.objects.filter(status='concluido').select_related(
+                'aluno', 'curso', 'curso__escola', 'curso__escola__coordenador_user'
+            ).order_by('curso__escola__nome', 'aluno__nome_completo')
+        else:
+            queryset = Inscricao.objects.filter(status='concluido', curso__escola__tipo=sistema).select_related(
+                'aluno', 'curso', 'curso__escola', 'curso__escola__coordenador_user'
+            ).order_by('curso__escola__nome', 'aluno__nome_completo')
         
         if escola_id and escola_id != 'all':
             queryset = queryset.filter(curso__escola_id=escola_id)
@@ -628,6 +645,10 @@ class ConcluinteUnificadoView(LoginRequiredMixin, ListView):
             })
             
         context['grouped_concluintes'] = grouped
-        context['todas_escolas'] = Escola.objects.filter(tipo=sistema).order_by('nome')
+        user = self.request.user
+        if user.is_superuser:
+            context['todas_escolas'] = Escola.objects.all().order_by('tipo', 'nome')
+        else:
+            context['todas_escolas'] = Escola.objects.filter(tipo=sistema).order_by('nome')
         context['selected_escola_id'] = self.request.GET.get('escola_id', 'all')
         return context

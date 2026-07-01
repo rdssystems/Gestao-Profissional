@@ -185,6 +185,40 @@ class AgendamentoEmail(models.Model):
         obj, _ = cls.objects.get_or_create(pk=1)
         return obj
 
+    @property
+    def alerta_envio(self):
+        """Retorna True quando estamos ate 1h antes do horario de envio e o dia esta agendado."""
+        if not self.ativo:
+            return False
+        from django.utils import timezone
+        from datetime import timedelta, datetime
+
+        DIAS = {
+            0: self.segunda, 1: self.terca, 2: self.quarta,
+            3: self.quinta, 4: self.sexta, 5: self.sabado, 6: self.domingo,
+        }
+        agora = timezone.localtime(timezone.now()).replace(second=0, microsecond=0)
+        if not DIAS.get(agora.weekday(), False):
+            return False
+
+        envio_hoje = datetime.combine(agora.date(), self.horario_envio)
+        envio_hoje = timezone.make_aware(envio_hoje) if timezone.is_naive(envio_hoje) else envio_hoje
+        inicio_alerta = envio_hoje - timedelta(hours=1)
+        return inicio_alerta <= agora <= envio_hoje
+
+    @classmethod
+    def get_alert_context(cls):
+        try:
+            config = cls.get_config()
+            if config.alerta_envio:
+                return {
+                    'alerta_controle_email': True,
+                    'alerta_horario': config.horario_envio.strftime('%H:%M'),
+                }
+        except Exception:
+            pass
+        return {'alerta_controle_email': False}
+
     def deve_enviar_agora(self):
         """
         Verifica se o envio deve ocorrer agora com base no dia e hora configurados.

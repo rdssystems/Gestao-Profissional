@@ -214,7 +214,10 @@ class AlunoListView(LoginRequiredMixin, ListView):
     def get_queryset(self):
         user = self.request.user
         sistema = self.request.session.get('sistema', 'cp').upper()
-        queryset = Aluno.objects.filter(escola__tipo=sistema).order_by('-data_criacao', 'nome_completo') # Order by enrollment date/time
+        if user.is_superuser:
+            queryset = Aluno.objects.all().order_by('-data_criacao', 'nome_completo')
+        else:
+            queryset = Aluno.objects.filter(escola__tipo=sistema).order_by('-data_criacao', 'nome_completo')
 
         profile = getattr(user, 'profile', None)
         active_escola = getattr(self.request, 'active_escola', None)
@@ -271,8 +274,8 @@ class AlunoListView(LoginRequiredMixin, ListView):
         
         from escolas.models import Escola
         if user.is_superuser:
-            context['todas_escolas'] = Escola.objects.filter(tipo=sistema).order_by('nome')
-            context['todos_cursos_interesse'] = TipoCurso.objects.filter(escola__tipo=sistema).order_by('nome')
+            context['todas_escolas'] = Escola.objects.all().order_by('tipo', 'nome')
+            context['todos_cursos_interesse'] = TipoCurso.objects.all().order_by('nome')
             # Se houver uma escola selecionada ou ativa, filtrar cursos de interesse por ela? 
             # (Opcional, mas vamos manter a lógica anterior de 'tudo' para admin global)
             current_escola = None
@@ -291,6 +294,9 @@ class AlunoListView(LoginRequiredMixin, ListView):
 
 class AlunoDetailView(StaffRequiredMixin, DetailView):
     def get_queryset(self):
+        user = self.request.user
+        if user.is_superuser:
+            return Aluno.objects.all()
         sistema = self.request.session.get('sistema', 'cp').upper()
         return Aluno.objects.filter(escola__tipo=sistema)
     model = Aluno

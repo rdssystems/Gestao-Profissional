@@ -15,6 +15,6 @@ def is_global_admin(user):
     if user.groups.filter(name__in=['Coordenador', 'Auxiliar Administrativo']).exists():
         return False
     profile = getattr(user, 'profile', None)
-    if profile and not profile.escola and profile.nivel_acesso in ['ADMIN_CP', 'ADMIN_UDITECH']:
+    if profile and profile.nivel_acesso in ['ADMIN_CP', 'ADMIN_UDITECH']:
         return True
     return False
