@@ -1,5 +1,6 @@
 Automat==25.4.16
 Django==5.2.8
+whitenoise==6.9.0
 Incremental==24.11.0
 Markdown==3.10
 Twisted==25.5.0
