@@ -1725,16 +1725,17 @@ class CursoAvaliacaoDashboardView(LoginRequiredMixin, StaffRequiredMixin, Detail
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         curso = self.object
-        inscricoes_concluidas = curso.inscricao_set.filter(status='concluido').select_related('aluno')
-        total_concluintes = inscricoes_concluidas.count()
+        # Alunos aptos = todos que não desistiram (cursando + concluido)
+        inscricoes_aptas = curso.inscricao_set.filter(status__in=['cursando', 'concluido']).select_related('aluno')
+        total_aptos = inscricoes_aptas.count()
         avaliacoes_prof = AvaliacaoProfessorAluno.objects.filter(inscricao__curso=curso).count()
         avaliacoes_aluno = AvaliacaoAlunoCurso.objects.filter(inscricao__curso=curso).count()
-        context['inscricoes'] = inscricoes_concluidas
-        context['total_concluintes'] = total_concluintes
+        context['inscricoes'] = inscricoes_aptas
+        context['total_concluintes'] = total_aptos
         context['avaliacoes_prof_count'] = avaliacoes_prof
         context['avaliacoes_aluno_count'] = avaliacoes_aluno
-        context['perc_prof'] = int((avaliacoes_prof / total_concluintes * 100)) if total_concluintes > 0 else 0
-        context['perc_aluno'] = int((avaliacoes_aluno / total_concluintes * 100)) if total_concluintes > 0 else 0
+        context['perc_prof'] = int((avaliacoes_prof / total_aptos * 100)) if total_aptos > 0 else 0
+        context['perc_aluno'] = int((avaliacoes_aluno / total_aptos * 100)) if total_aptos > 0 else 0
         return context
 
 class AvaliarProfessorAcessoView(View):
@@ -1760,8 +1761,9 @@ class AvaliarProfessorListaView(View):
         curso = get_object_or_404(Curso, token_acesso=token)
         if not request.session.get(f'prof_auth_{curso.pk}'):
             return redirect('cursos:avaliacao_professor_acesso', token=token)
-        concluintes = curso.inscricao_set.filter(status='concluido').select_related('aluno').prefetch_related('avaliacao_professor')
-        return render(request, self.template_name, {'curso': curso, 'concluintes': concluintes, 'hide_navbar': True})
+        # Alunos aptos = cursando + concluido (não desistentes)
+        aptos = curso.inscricao_set.filter(status__in=['cursando', 'concluido']).select_related('aluno').prefetch_related('avaliacao_professor')
+        return render(request, self.template_name, {'curso': curso, 'concluintes': aptos, 'hide_navbar': True})
 
 class AvaliarEstudanteAjaxView(View):
     def get(self, request, inscricao_pk):

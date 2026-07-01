@@ -522,7 +522,7 @@ class ConcluintesGlobalView(LoginRequiredMixin, SegmentAdminRequiredMixin, ListV
         sistema = self.request.session.get('sistema', 'cp').upper()
         escola_id = self.request.GET.get('escola_id')
         queryset = Curso.objects.filter(escola__tipo=sistema).annotate(
-            num_concluintes=Count('inscricao', filter=Q(inscricao__status='concluido'))
+            num_concluintes=Count('inscricao', filter=Q(inscricao__status__in=['concluido', 'cursando']))
         ).filter(num_concluintes__gt=0).order_by('-data_fim', 'nome')
         
         if escola_id and escola_id != 'all':
