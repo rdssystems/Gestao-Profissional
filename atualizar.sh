@@ -36,7 +36,9 @@ echo ">>> [PRE-UPDATE] Backup salvo: GCS + Google Drive ($BACKUP_FILE)"
 # 1. Git pull
 # ──────────────────────────────────────────────────
 echo ">>> Puxando mudancas do Git..."
-git pull origin main
+git fetch origin main
+git reset --hard origin/main
+git clean -fd
 
 # ──────────────────────────────────────────────────
 # 2. Rebuild containers
