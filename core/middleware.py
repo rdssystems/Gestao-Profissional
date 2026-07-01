@@ -57,8 +57,9 @@ class AdminContextMiddleware:
                     request.session['sistema'] = profile.escola.tipo.lower()
 
             sistema = request.session.get('sistema', 'cp').upper()
-            
-            # Se for superuser ou se for administrador de segmento (sem escola fixa no perfil)
+            request.sistema = sistema
+
+            # Se for superuser ou administrador de segmento (sem escola fixa no perfil)
             if request.user.is_superuser or (profile and not profile.escola and profile.nivel_acesso in ['ADMIN_CP', 'ADMIN_UDITECH']):
                 escola_id = request.session.get('active_escola_id')
                 if escola_id and str(escola_id).isdigit():
@@ -69,7 +70,7 @@ class AdminContextMiddleware:
                             escola = Escola.objects.filter(id=escola_id).first()
                         else:
                             escola = Escola.objects.filter(id=escola_id, tipo=sistema).first()
-                            
+
                         if escola:
                             if request.user.is_superuser:
                                 request.active_escola = escola
@@ -79,29 +80,11 @@ class AdminContextMiddleware:
                                 request.active_escola = escola
                     except:
                         request.active_escola = None
-                
-                # Se não tem escola ativa definida na sessão, define a primeira escola permitida como padrão
-                if not request.active_escola:
-                    from django.apps import apps
-                    Escola = apps.get_model('escolas', 'Escola')
-                    try:
-                        if request.user.is_superuser:
-                            request.active_escola = Escola.objects.first()
-                            if request.active_escola:
-                                request.active_escola_is_fallback = True
-                        elif profile.nivel_acesso == 'ADMIN_UDITECH' and sistema == 'UDITECH':
-                            request.active_escola = Escola.objects.filter(tipo='UDITECH').first()
-                            if request.active_escola:
-                                request.active_escola_is_fallback = True
-                        elif profile.nivel_acesso == 'ADMIN_CP' and sistema == 'CP':
-                            request.active_escola = Escola.objects.filter(tipo='CP').first()
-                            if request.active_escola:
-                                request.active_escola_is_fallback = True
-                    except:
-                        request.active_escola = None
+                # Nenhum fallback automático — sem escola selecionada, active_escola fica None
+                # e a navbar exibirá "Visão Global"
             elif profile and profile.escola:
-                # Coordenador local / Auxiliar: fixado na escola do perfil se corresponder ao portal ativo
+                # Coordenador local / Auxiliar: fixado na escola do perfil
                 if profile.escola.tipo == sistema:
                     request.active_escola = profile.escola
-            
+
         return self.get_response(request)
