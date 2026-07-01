@@ -73,6 +73,9 @@ media/
 documentos_alunos/
 documentos_escola/
 
+# Dados do PostgreSQL (Docker bind mount)
+postgres_data/
+
 # Desenvolvimento local
 .env.dev
 dev_restore.dump

@@ -310,6 +310,16 @@
             vertical-align: middle;
         }
 
+        /* Badge de alerta de envio de e-mail (Controle Diario) */
+        @keyframes pulse-alerta-anim {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.6; transform: scale(1.1); }
+        }
+        .pulse-alerta {
+            animation: pulse-alerta-anim 1.5s infinite;
+            font-size: 0.7rem !important;
+        }
+
 
         /* =========================== */
         /*         MENSAGENS           */
@@ -529,7 +539,14 @@
                         {% url 'controle_diario:preencher' as controle_diario_url %}
                         {% endif %}
                         <a class="nav-link {% if request.path == controle_diario_url or request.path|startswith:controle_diario_url %}active-nav-link{% endif %}"
-                            href="{{ controle_diario_url }}">Controle Diário</a>
+                            href="{{ controle_diario_url }}">
+                            Controle Diário
+                            {% if alerta_controle_email %}
+                            <span class="badge rounded-pill bg-warning text-dark ms-1 pulse-alerta" title="Envio de e-mail agendado para {{ alerta_horario }}">
+                                <i class="bi bi-bell-fill"></i> {{ alerta_horario }}
+                            </span>
+                            {% endif %}
+                        </a>
                     </li>
                     {% endif %}
 

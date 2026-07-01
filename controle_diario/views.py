@@ -78,7 +78,12 @@ def controle_diario_admin_view(request):
         data_selecionada = hoje
 
     # Filtro base para os dados individuais
-    controles_diarios_qs = ControleDiario.objects.filter(data=data_selecionada, escola__tipo=sistema).select_related('escola', 'usuario')
+    if request.user.is_superuser:
+        controles_diarios_qs = ControleDiario.objects.filter(data=data_selecionada).select_related('escola', 'usuario')
+        todas_escolas = Escola.objects.all().order_by('tipo', 'nome')
+    else:
+        controles_diarios_qs = ControleDiario.objects.filter(data=data_selecionada, escola__tipo=sistema).select_related('escola', 'usuario')
+        todas_escolas = Escola.objects.filter(tipo=sistema).order_by('nome')
 
     # Aplicar filtro de escola se fornecido
     if escola_id:
@@ -98,6 +103,6 @@ def controle_diario_admin_view(request):
         'totais': totais,
         'data_selecionada': data_selecionada,
         'escola_id_selecionada': escola_id,
-        'todas_escolas': Escola.objects.filter(tipo=sistema).order_by('nome'), # Para o filtro de escola
+        'todas_escolas': todas_escolas,
     }
     return render(request, 'controle_diario/controle_diario_admin.html', context)

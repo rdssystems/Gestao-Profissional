@@ -59,8 +59,10 @@ class AdminContextMiddleware:
             sistema = request.session.get('sistema', 'cp').upper()
             request.sistema = sistema
 
-            # Se for superuser ou administrador de segmento (sem escola fixa no perfil)
-            if request.user.is_superuser or (profile and not profile.escola and profile.nivel_acesso in ['ADMIN_CP', 'ADMIN_UDITECH']):
+            # Se for superuser ou administrador de segmento (nao estando nos grupos de escola)
+            is_segment_admin = (profile and profile.nivel_acesso in ['ADMIN_CP', 'ADMIN_UDITECH']
+                                and not request.user.groups.filter(name__in=['Coordenador', 'Auxiliar Administrativo']).exists())
+            if request.user.is_superuser or is_segment_admin:
                 escola_id = request.session.get('active_escola_id')
                 if escola_id and str(escola_id).isdigit():
                     from django.apps import apps
@@ -74,6 +76,7 @@ class AdminContextMiddleware:
                         if escola:
                             if request.user.is_superuser:
                                 request.active_escola = escola
+                                request.session['sistema'] = escola.tipo.lower()
                             elif profile.nivel_acesso == 'ADMIN_UDITECH' and sistema == 'UDITECH':
                                 request.active_escola = escola
                             elif profile.nivel_acesso == 'ADMIN_CP' and sistema == 'CP':

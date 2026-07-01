@@ -78,7 +78,10 @@ class CursoListView(LoginRequiredMixin, ListView):
     def get_queryset(self):
         user = self.request.user
         sistema = self.request.session.get('sistema', 'cp').upper()
-        base_queryset = super().get_queryset().filter(escola__tipo=sistema)
+        if user.is_superuser:
+            base_queryset = super().get_queryset()
+        else:
+            base_queryset = super().get_queryset().filter(escola__tipo=sistema)
 
         # Automatização de Status: Curso 'Aberta' na data de início vira 'Em Andamento'
         from datetime import date
@@ -152,7 +155,7 @@ class CursoListView(LoginRequiredMixin, ListView):
         user = self.request.user
         sistema = self.request.session.get('sistema', 'cp').upper()
         if user.is_superuser:
-            context['tipos_curso'] = TipoCurso.objects.filter(escola__tipo=sistema)
+            context['tipos_curso'] = TipoCurso.objects.all().order_by('nome')
         elif hasattr(user, 'profile') and user.profile.escola:
             context['tipos_curso'] = TipoCurso.objects.filter(escola=user.profile.escola, escola__tipo=sistema)
         else:
@@ -161,7 +164,7 @@ class CursoListView(LoginRequiredMixin, ListView):
         # Adiciona escolas para o filtro de admin
         active_escola = getattr(self.request, 'active_escola', None)
         if user.is_superuser:
-            context['escolas'] = Escola.objects.filter(tipo=sistema).order_by('nome')
+            context['escolas'] = Escola.objects.all().order_by('nome')
             context['escola_selecionada'] = self.request.GET.get('escola', str(active_escola.id) if active_escola else '')
             
         return context
@@ -176,7 +179,11 @@ class CursoDetailView(LoginRequiredMixin, DetailView):
         sistema = self.request.session.get('sistema', 'cp').upper()
         active_escola = getattr(self.request, 'active_escola', None)
         is_segment_admin = hasattr(user, 'profile') and user.profile.nivel_acesso in ['ADMIN_CP', 'ADMIN_UDITECH']
-        if user.is_superuser or is_segment_admin:
+        if user.is_superuser:
+            if active_escola:
+                return Curso.objects.filter(escola=active_escola)
+            return Curso.objects.all()
+        if is_segment_admin:
             if active_escola:
                 return Curso.objects.filter(escola=active_escola, escola__tipo=sistema)
             return Curso.objects.filter(escola__tipo=sistema)
