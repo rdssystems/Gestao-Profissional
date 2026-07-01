@@ -220,7 +220,7 @@ class AlunoListView(LoginRequiredMixin, ListView):
         active_escola = getattr(self.request, 'active_escola', None)
         active_escola_is_fallback = getattr(self.request, 'active_escola_is_fallback', False)
 
-        is_global_admin = user.is_superuser or (profile and not profile.escola and profile.nivel_acesso in ['ADMIN_CP', 'ADMIN_UDITECH'])
+        is_global_admin = user.is_superuser or (profile and profile.nivel_acesso in ['ADMIN_CP', 'ADMIN_UDITECH'])
 
         if is_global_admin:
             escola_filter = self.request.GET.get('escola')

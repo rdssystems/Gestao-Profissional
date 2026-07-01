@@ -90,7 +90,7 @@ class CursoListView(LoginRequiredMixin, ListView):
         active_escola_is_fallback = getattr(self.request, 'active_escola_is_fallback', False)
         profile = getattr(user, 'profile', None)
 
-        is_global_admin = user.is_superuser or (profile and not profile.escola and profile.nivel_acesso in ['ADMIN_CP', 'ADMIN_UDITECH'])
+        is_global_admin = user.is_superuser or (profile and profile.nivel_acesso in ['ADMIN_CP', 'ADMIN_UDITECH'])
 
         if is_global_admin:
             qs = base_queryset
@@ -175,7 +175,8 @@ class CursoDetailView(LoginRequiredMixin, DetailView):
         user = self.request.user
         sistema = self.request.session.get('sistema', 'cp').upper()
         active_escola = getattr(self.request, 'active_escola', None)
-        if user.is_superuser:
+        is_segment_admin = hasattr(user, 'profile') and user.profile.nivel_acesso in ['ADMIN_CP', 'ADMIN_UDITECH']
+        if user.is_superuser or is_segment_admin:
             if active_escola:
                 return Curso.objects.filter(escola=active_escola, escola__tipo=sistema)
             return Curso.objects.filter(escola__tipo=sistema)
@@ -464,7 +465,7 @@ class CursoImprimirListaView(LoginRequiredMixin, StaffRequiredMixin, DetailView)
         
         # Verificar permissão de escola se não for superuser
         user = self.request.user
-        if not user.is_superuser and hasattr(user, 'profile') and user.profile.escola != curso.escola:
+        if not user.is_superuser and hasattr(user, 'profile') and user.profile.escola and user.profile.escola != curso.escola and user.profile.nivel_acesso not in ['ADMIN_CP', 'ADMIN_UDITECH']:
             raise PermissionDenied("Você não tem permissão para acessar esta funcionalidade.")
 
         context['inscricoes'] = Inscricao.objects.filter(curso=curso, status='cursando').order_by('aluno__nome_completo').select_related('aluno')
@@ -483,7 +484,7 @@ class TipoCursoListView(LoginRequiredMixin, StaffRequiredMixin, ListView):
         profile = getattr(self.request.user, 'profile', None)
         qs = TipoCurso.objects.filter(escola__tipo=sistema).annotate(num_interessados=Count('aluno'))
         
-        is_global_admin = self.request.user.is_superuser or (profile and not profile.escola and profile.nivel_acesso in ['ADMIN_CP', 'ADMIN_UDITECH'])
+        is_global_admin = self.request.user.is_superuser or (profile and profile.nivel_acesso in ['ADMIN_CP', 'ADMIN_UDITECH'])
 
         if is_global_admin:
             if active_escola and not active_escola_is_fallback:
@@ -861,7 +862,7 @@ class FazerChamadaView(LoginRequiredMixin, StaffRequiredMixin, View):
         curso = get_object_or_404(Curso, pk=curso_pk, escola__tipo=sistema)
         
         # Verificar permissão de escola se não for superuser
-        if not request.user.is_superuser and hasattr(request.user, 'profile') and request.user.profile.escola != curso.escola:
+        if not request.user.is_superuser and hasattr(request.user, 'profile') and request.user.profile.escola and request.user.profile.escola != curso.escola and request.user.profile.nivel_acesso not in ['ADMIN_CP', 'ADMIN_UDITECH']:
             raise PermissionDenied("Você não tem permissão para acessar chamadas deste curso.")
 
         registro_aula = None
@@ -952,7 +953,7 @@ class FazerChamadaView(LoginRequiredMixin, StaffRequiredMixin, View):
         curso = get_object_or_404(Curso, pk=curso_pk, escola__tipo=sistema)
 
         # Verificar permissão de escola se não for superuser
-        if not request.user.is_superuser and hasattr(request.user, 'profile') and request.user.profile.escola != curso.escola:
+        if not request.user.is_superuser and hasattr(request.user, 'profile') and request.user.profile.escola and request.user.profile.escola != curso.escola and request.user.profile.nivel_acesso not in ['ADMIN_CP', 'ADMIN_UDITECH']:
             raise PermissionDenied("Você não tem permissão para acessar chamadas deste curso.")
 
         # 1. Tentar encontrar ou definir o RegistroAula com base na data do POST
@@ -1128,7 +1129,7 @@ class HistoricoChamadasCursoView(LoginRequiredMixin, StaffRequiredMixin, ListVie
         
         # Verificar permissão de escola se não for superuser
         user = self.request.user
-        if not user.is_superuser and hasattr(user, 'profile') and user.profile.escola != self.curso.escola:
+        if not user.is_superuser and hasattr(user, 'profile') and user.profile.escola and user.profile.escola != self.curso.escola and user.profile.nivel_acesso not in ['ADMIN_CP', 'ADMIN_UDITECH']:
             raise PermissionDenied("Você não tem permissão para acessar o histórico de chamadas deste curso.")
             
         return RegistroAula.objects.filter(curso=self.curso).order_by('-data_aula')
@@ -1159,7 +1160,7 @@ class RelatorioFrequenciaView(LoginRequiredMixin, StaffRequiredMixin, DetailView
         
         # Verificar permissão de escola
         user = self.request.user
-        if not user.is_superuser and hasattr(user, 'profile') and user.profile.escola != curso.escola:
+        if not user.is_superuser and hasattr(user, 'profile') and user.profile.escola and user.profile.escola != curso.escola and user.profile.nivel_acesso not in ['ADMIN_CP', 'ADMIN_UDITECH']:
             raise PermissionDenied("Você não tem permissão para acessar o relatório deste curso.")
 
         # Buscar todos os registros de aula do curso ordendos por data (antigas para novas)
@@ -1259,7 +1260,7 @@ class ExcluirRegistroAulaView(LoginRequiredMixin, StaffRequiredMixin, View):
         
         # Verificar permissão de escola se não for superuser
         user = request.user
-        if not user.is_superuser and hasattr(user, 'profile') and user.profile.escola != curso.escola:
+        if not user.is_superuser and hasattr(user, 'profile') and user.profile.escola and user.profile.escola != curso.escola and user.profile.nivel_acesso not in ['ADMIN_CP', 'ADMIN_UDITECH']:
             raise PermissionDenied("Você não tem permissão para excluir registros desta escola.")
             
         data_formatada = registro.data_aula.strftime('%d/%m/%Y')
@@ -1616,7 +1617,7 @@ class ParceiroListView(LoginRequiredMixin, StaffRequiredMixin, ListView):
         active_escola_is_fallback = getattr(self.request, 'active_escola_is_fallback', False)
         profile = getattr(self.request.user, 'profile', None)
 
-        is_global_admin = self.request.user.is_superuser or (profile and not profile.escola and profile.nivel_acesso in ['ADMIN_CP', 'ADMIN_UDITECH'])
+        is_global_admin = self.request.user.is_superuser or (profile and profile.nivel_acesso in ['ADMIN_CP', 'ADMIN_UDITECH'])
 
         if is_global_admin:
             if active_escola and not active_escola_is_fallback:

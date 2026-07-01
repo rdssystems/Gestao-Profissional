@@ -503,7 +503,7 @@ class EscolaListView(LoginRequiredMixin, ListView):
         qs = Escola.objects.filter(tipo=sistema).order_by('nome')
         
         profile = getattr(self.request.user, 'profile', None)
-        is_global_admin = self.request.user.is_superuser or (profile and not profile.escola and profile.nivel_acesso in ['ADMIN_CP', 'ADMIN_UDITECH'])
+        is_global_admin = self.request.user.is_superuser or (profile and profile.nivel_acesso in ['ADMIN_CP', 'ADMIN_UDITECH'])
         
         if is_global_admin:
             return qs
