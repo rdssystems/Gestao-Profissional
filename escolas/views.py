@@ -7,7 +7,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.urls import reverse_lazy
 from datetime import date, timedelta
 from django.db import models
-from django.db.models import Count, Q # Adicionados Count e Q
+from django.db.models import Count, Q, F, Exists, OuterRef # Adicionados Count e Q
 from core.mixins import AuditLogMixin, SegmentAdminRequiredMixin
 
 from django.contrib.contenttypes.models import ContentType
@@ -15,7 +15,7 @@ from django.contrib.contenttypes.models import ContentType
 # Modelos importados localmente ou por classes
 from escolas.models import Escola
 from cursos.models import Curso, Inscricao, Chamada, AvaliacaoAlunoCurso
-from alunos.models import Aluno
+from alunos.models import Aluno, InteresseLog
 from core.models import Profile, AuditLog
 from .forms import EscolaForm
 
@@ -119,6 +119,9 @@ class DashboardView(LoginRequiredMixin, TemplateView):
 
         context['mes_ano_selected'] = period_filter
 
+        # Guarda scope completo antes do filtro mensal — usado nos cards de totais
+        curso_scope_all = curso_scope
+
         # Filtramos curso_scope para o mês (para uso nos gráficos Ocupação/Assiduidade/Demográfico que precisam dos cursos ativos no período)
         curso_scope = curso_scope.filter(
             data_inicio__lte=end_date,
@@ -129,11 +132,11 @@ class DashboardView(LoginRequiredMixin, TemplateView):
         try:
             context['total_alunos'] = aluno_scope.count()
             context['alunos_cursando'] = inscricao_scope.filter(curso__in=curso_scope, status='cursando').distinct().count()
-            context['alunos_concluintes'] = inscricao_scope.filter(status='concluido', data_conclusao__year=year, data_conclusao__month=month).count()
-            context['alunos_concluintes_unicos'] = inscricao_scope.filter(status='concluido', data_conclusao__year=year, data_conclusao__month=month).values('aluno__cpf').distinct().count()
-            context['alunos_desistentes'] = inscricao_scope.filter(status='desistente', data_desistencia__year=year, data_desistencia__month=month, chamadas__status_presenca='P').distinct().count()
+            context['alunos_concluintes'] = inscricao_scope.filter(status='concluido').count()
+            context['alunos_concluintes_unicos'] = inscricao_scope.filter(status='concluido').values('aluno__cpf').distinct().count()
+            context['alunos_desistentes'] = inscricao_scope.filter(status='desistente', curso__in=curso_scope).distinct().count()
             context['cursos_ativos'] = curso_scope.filter(status__in=['Aberta', 'Em Andamento']).count()
-            context['cursos_concluidos'] = curso_scope.filter(status='Concluído', data_fim__year=year, data_fim__month=month).count()
+            context['cursos_concluidos'] = curso_scope_all.filter(status='Concluído').count()
             
             # Inscrições no mês (Apenas alunos criados no mês para manter retrocompatibilidade se necessário, mas o card 'Hoje' usará outra variável)
             context['inscricoes_mes'] = aluno_scope.filter(data_criacao__year=year, data_criacao__month=month).count()
@@ -205,13 +208,12 @@ class DashboardView(LoginRequiredMixin, TemplateView):
             kpi_inscricoes_hoje_g = aluno_scope.filter(data_criacao__year=year, data_criacao__month=month).count()
             kpi_total_alunos_g = aluno_scope.count()
             kpi_alunos_cursando_g = inscricao_scope.filter(curso__in=curso_scope, status='cursando').distinct().count()
-            kpi_alunos_concluintes_g = inscricao_scope.filter(status='concluido', data_conclusao__year=year, data_conclusao__month=month).count()
-            kpi_alunos_concluintes_unicos_g = inscricao_scope.filter(status='concluido', data_conclusao__year=year, data_conclusao__month=month).values('aluno__cpf').distinct().count()
-            kpi_alunos_desistentes_g = inscricao_scope.filter(status='desistente', data_desistencia__year=year, data_desistencia__month=month, chamadas__status_presenca='P').distinct().count()
-            kpi_cursos_ativos_g = curso_scope.filter(status__in=['Aberta', 'Em Andamento']).count()
-            kpi_cursos_concluidos_g = curso_scope.filter(status='Concluído', data_fim__year=year, data_fim__month=month).count()
-
+            kpi_alunos_concluintes_g = inscricao_scope.filter(status='concluido').count()
+            kpi_alunos_concluintes_unicos_g = inscricao_scope.filter(status='concluido').values('aluno__cpf').distinct().count()
             cursos_ativos_g = curso_scope.filter(status__in=['Aberta', 'Em Andamento'])
+            kpi_alunos_desistentes_g = inscricao_scope.filter(status='desistente', curso__in=cursos_ativos_g).distinct().count()
+            kpi_cursos_ativos_g = cursos_ativos_g.count()
+            kpi_cursos_concluidos_g = curso_scope_all.filter(status='Concluído').count()
             vagas_g = cursos_ativos_g.aggregate(total=models.Sum('vagas'))['total'] or 0
             vagas_ociosas_g = max(0, vagas_g - kpi_alunos_cursando_g)
 
@@ -237,24 +239,24 @@ class DashboardView(LoginRequiredMixin, TemplateView):
             fem_query_g = alunos_ativos_g.filter(sexo='F')
             
             # Cálculo KPI Hoje Global
-            aluno_ct = ContentType.objects.get_for_model(Aluno)
             count_novos_alunos_g = aluno_scope.filter(data_criacao__date=today).count()
-            count_novas_inscricoes_g = inscricao_scope.filter(data_inscricao__date=today).count()
-            
-            # Interesses e Migrações via AuditLog (Global)
-            audit_hoje_g = AuditLog.objects.filter(data_hora__date=today, content_type=aluno_ct, acao='UPDATE')
-            count_interesses_g = 0
-            count_migracoes_g = 0
-            for log in audit_hoje_g:
-                if log.detalhes:
-                    try:
-                        detalhes = json.loads(log.detalhes)
-                        alteracoes = detalhes.get('alteracoes', {})
-                        if 'cursos_interesse' in alteracoes: count_interesses_g += 1
-                        if 'escola' in alteracoes: count_migracoes_g += 1
-                    except: pass
-            
-            kpi_hoje_g = count_novos_alunos_g + count_novas_inscricoes_g + count_interesses_g + count_migracoes_g
+
+            interes_logs_qs = InteresseLog.objects.filter(data=today)
+            if not user.is_superuser:
+                interes_logs_qs = interes_logs_qs.filter(aluno__escola__tipo=sistema)
+
+            count_interesses_add_g = interes_logs_qs.filter(acao='add').count()
+
+            removes_cancelados_g = interes_logs_qs.filter(acao='remove').filter(
+                Exists(InteresseLog.objects.filter(
+                    acao='add', data=today,
+                    aluno=OuterRef('aluno'),
+                    tipo_curso=OuterRef('tipo_curso'),
+                ))
+            ).count()
+
+            count_interesses_g = count_interesses_add_g - removes_cancelados_g
+            kpi_hoje_g = count_novos_alunos_g + count_interesses_g
 
             escolas_dados.append({
                 'id': 'global',
@@ -288,6 +290,7 @@ class DashboardView(LoginRequiredMixin, TemplateView):
         for esc in escolas_chart:
             # 1. Dados de Ocupação (Rosca)
             esc_cursos_ativos = curso_scope.filter(escola=esc, status__in=['Aberta', 'Em Andamento'])
+            esc_cursos_ativos_all = curso_scope_all.filter(escola=esc, status__in=['Aberta', 'Em Andamento'])
             vagas = esc_cursos_ativos.aggregate(total=models.Sum('vagas'))['total'] or 0
             cursando = inscricao_scope.filter(curso__escola=esc, status='cursando', curso__status__in=['Aberta', 'Em Andamento']).count()
             vagas_ociosas = max(0, vagas - cursando)
@@ -330,38 +333,29 @@ class DashboardView(LoginRequiredMixin, TemplateView):
             media_idade_f = calcular_media_idade(fem_query)
             
             # Cálculo KPI Hoje Individual (Escola)
-            aluno_ct = ContentType.objects.get_for_model(Aluno)
             count_novos_alunos = aluno_scope.filter(escola=esc, data_criacao__date=today).count()
-            count_novas_inscricoes = inscricao_scope.filter(curso__escola=esc, data_inscricao__date=today).count()
-            
-            # Interesses e Migrações via AuditLog (Escola)
-            # Filtramos ações feitas por usuários desta escola
-            audit_hoje_esc = AuditLog.objects.filter(
-                data_hora__date=today, 
-                content_type=aluno_ct, 
-                acao='UPDATE',
-                usuario__profile__escola=esc
-            )
-            count_interesses = 0
-            count_migracoes = 0
-            for log in audit_hoje_esc:
-                if log.detalhes:
-                    try:
-                        detalhes = json.loads(log.detalhes)
-                        alteracoes = detalhes.get('alteracoes', {})
-                        if 'cursos_interesse' in alteracoes: count_interesses += 1
-                        if 'escola' in alteracoes: count_migracoes += 1
-                    except: pass
-            
-            kpi_hoje = count_novos_alunos + count_novas_inscricoes + count_interesses + count_migracoes
+
+            interes_logs_esc = InteresseLog.objects.filter(data=today, aluno__escola=esc)
+            count_interesses_add = interes_logs_esc.filter(acao='add').count()
+
+            removes_cancelados = interes_logs_esc.filter(acao='remove').filter(
+                Exists(InteresseLog.objects.filter(
+                    acao='add', data=today,
+                    aluno=OuterRef('aluno'),
+                    tipo_curso=OuterRef('tipo_curso'),
+                ))
+            ).count()
+
+            count_interesses = count_interesses_add - removes_cancelados
+            kpi_hoje = count_novos_alunos + count_interesses
  
             kpi_total_alunos = aluno_scope.filter(escola=esc).count()
             kpi_alunos_cursando = inscricao_scope.filter(curso__escola=esc, curso__in=esc_cursos_ativos, status='cursando').distinct().count()
-            kpi_alunos_concluintes = inscricao_scope.filter(curso__escola=esc, status='concluido', data_conclusao__year=year, data_conclusao__month=month).count()
-            kpi_alunos_concluintes_unicos = inscricao_scope.filter(curso__escola=esc, status='concluido', data_conclusao__year=year, data_conclusao__month=month).values('aluno__cpf').distinct().count()
-            kpi_alunos_desistentes = inscricao_scope.filter(curso__escola=esc, status='desistente', data_desistencia__year=year, data_desistencia__month=month, chamadas__status_presenca='P').distinct().count()
-            kpi_cursos_ativos = esc_cursos_ativos.count()
-            kpi_cursos_concluidos = curso_scope.filter(escola=esc, status='Concluído', data_fim__year=year, data_fim__month=month).count()
+            kpi_alunos_concluintes = inscricao_scope.filter(curso__escola=esc, status='concluido').count()
+            kpi_alunos_concluintes_unicos = inscricao_scope.filter(curso__escola=esc, status='concluido').values('aluno__cpf').distinct().count()
+            kpi_alunos_desistentes = inscricao_scope.filter(curso__escola=esc, status='desistente', curso__in=esc_cursos_ativos_all).distinct().count()
+            kpi_cursos_ativos = esc_cursos_ativos_all.count()
+            kpi_cursos_concluidos = curso_scope_all.filter(escola=esc, status='Concluído').count()
  
             # Só exibir escolas que tem ao menos um aluno ou curso rodando
             if vagas > 0 or cursando > 0 or len(assiduidade_series) > 0 or escolas_chart.count() == 1:
@@ -503,7 +497,7 @@ class EscolaListView(LoginRequiredMixin, ListView):
         qs = Escola.objects.filter(tipo=sistema).order_by('nome')
         
         profile = getattr(self.request.user, 'profile', None)
-        is_global_admin = self.request.user.is_superuser or (profile and profile.nivel_acesso in ['ADMIN_CP', 'ADMIN_UDITECH'])
+        is_global_admin = self.request.user.is_superuser or (profile and not profile.escola and profile.nivel_acesso in ['ADMIN_CP', 'ADMIN_UDITECH'])
         
         if is_global_admin:
             return qs
@@ -524,11 +518,11 @@ class ConcluintesGlobalView(LoginRequiredMixin, SegmentAdminRequiredMixin, ListV
         escola_id = self.request.GET.get('escola_id')
         if user.is_superuser:
             queryset = Curso.objects.annotate(
-                num_concluintes=Count('inscricao', filter=Q(inscricao__status__in=['concluido', 'cursando']))
+                num_concluintes=Count('inscricao', filter=Q(inscricao__status='concluido'))
             ).filter(num_concluintes__gt=0).order_by('-data_fim', 'nome')
         else:
             queryset = Curso.objects.filter(escola__tipo=sistema).annotate(
-                num_concluintes=Count('inscricao', filter=Q(inscricao__status__in=['concluido', 'cursando']))
+                num_concluintes=Count('inscricao', filter=Q(inscricao__status='concluido'))
             ).filter(num_concluintes__gt=0).order_by('-data_fim', 'nome')
         
         if escola_id and escola_id != 'all':

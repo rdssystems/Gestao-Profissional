@@ -223,7 +223,7 @@ class AlunoListView(LoginRequiredMixin, ListView):
         active_escola = getattr(self.request, 'active_escola', None)
         active_escola_is_fallback = getattr(self.request, 'active_escola_is_fallback', False)
 
-        is_global_admin = user.is_superuser or (profile and profile.nivel_acesso in ['ADMIN_CP', 'ADMIN_UDITECH'])
+        is_global_admin = user.is_superuser or (profile and not profile.escola and profile.nivel_acesso in ['ADMIN_CP', 'ADMIN_UDITECH'])
 
         if is_global_admin:
             escola_filter = self.request.GET.get('escola')
@@ -828,8 +828,12 @@ class WebSocialListView(LoginRequiredMixin, SegmentAdminRequiredMixin, ListView)
     paginate_by = 50
 
     def get_queryset(self):
+        user = self.request.user
         sistema = self.request.session.get('sistema', 'cp').upper()
-        queryset = WebSocialMember.objects.filter(aluno__escola__tipo=sistema).select_related('aluno', 'aluno__escola').all()
+        if user.is_superuser:
+            queryset = WebSocialMember.objects.select_related('aluno', 'aluno__escola').all()
+        else:
+            queryset = WebSocialMember.objects.filter(aluno__escola__tipo=sistema).select_related('aluno', 'aluno__escola').all()
         
         # Filtro de Ano
         self.ano_atual = timezone.now().year

@@ -93,7 +93,7 @@ class CursoListView(LoginRequiredMixin, ListView):
         active_escola_is_fallback = getattr(self.request, 'active_escola_is_fallback', False)
         profile = getattr(user, 'profile', None)
 
-        is_global_admin = user.is_superuser or (profile and profile.nivel_acesso in ['ADMIN_CP', 'ADMIN_UDITECH'])
+        is_global_admin = user.is_superuser or (profile and not profile.escola and profile.nivel_acesso in ['ADMIN_CP', 'ADMIN_UDITECH'])
 
         if is_global_admin:
             qs = base_queryset
@@ -292,6 +292,9 @@ class CursoConcluintesView(LoginRequiredMixin, StaffRequiredMixin, DetailView):
     context_object_name = 'curso'
 
     def get_queryset(self):
+        user = self.request.user
+        if user.is_superuser:
+            return Curso.objects.all()
         sistema = self.request.session.get('sistema', 'cp').upper()
         return Curso.objects.filter(escola__tipo=sistema)
 
@@ -311,7 +314,10 @@ class CursoConcluintesView(LoginRequiredMixin, StaffRequiredMixin, DetailView):
 class CursoConcluintesXLSXView(LoginRequiredMixin, StaffRequiredMixin, View):
     def get(self, request, pk):
         sistema = request.session.get('sistema', 'cp').upper()
-        curso = get_object_or_404(Curso, pk=pk, escola__tipo=sistema)
+        if request.user.is_superuser:
+            curso = get_object_or_404(Curso, pk=pk)
+        else:
+            curso = get_object_or_404(Curso, pk=pk, escola__tipo=sistema)
         concluintes = curso.inscricao_set.filter(status='concluido').select_related('aluno').order_by('aluno__nome_completo')
         
         # Preparar dados para o DataFrame
@@ -491,7 +497,7 @@ class TipoCursoListView(LoginRequiredMixin, StaffRequiredMixin, ListView):
         profile = getattr(self.request.user, 'profile', None)
         qs = TipoCurso.objects.filter(escola__tipo=sistema).annotate(num_interessados=Count('aluno'))
         
-        is_global_admin = self.request.user.is_superuser or (profile and profile.nivel_acesso in ['ADMIN_CP', 'ADMIN_UDITECH'])
+        is_global_admin = self.request.user.is_superuser or (profile and not profile.escola and profile.nivel_acesso in ['ADMIN_CP', 'ADMIN_UDITECH'])
 
         if is_global_admin:
             if active_escola and not active_escola_is_fallback:
@@ -1624,7 +1630,7 @@ class ParceiroListView(LoginRequiredMixin, StaffRequiredMixin, ListView):
         active_escola_is_fallback = getattr(self.request, 'active_escola_is_fallback', False)
         profile = getattr(self.request.user, 'profile', None)
 
-        is_global_admin = self.request.user.is_superuser or (profile and profile.nivel_acesso in ['ADMIN_CP', 'ADMIN_UDITECH'])
+        is_global_admin = self.request.user.is_superuser or (profile and not profile.escola and profile.nivel_acesso in ['ADMIN_CP', 'ADMIN_UDITECH'])
 
         if is_global_admin:
             if active_escola and not active_escola_is_fallback:

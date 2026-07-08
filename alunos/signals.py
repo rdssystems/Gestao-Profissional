@@ -1,7 +1,7 @@
-from django.db.models.signals import post_save
+from django.db.models.signals import post_save, m2m_changed
 from django.dispatch import receiver
 from django.utils import timezone
-from .models import Aluno, WebSocialMember
+from .models import Aluno, WebSocialMember, InteresseLog
 from .score import calcular_score_aluno
 
 
@@ -33,4 +33,22 @@ def incluir_aluno_web_social(sender, instance, created, **kwargs):
                 aluno=aluno,
                 ano_inclusao=timezone.now().year
             )
+
+
+@receiver(m2m_changed, sender=Aluno.cursos_interesse.through)
+def log_interesse_change(sender, instance, action, reverse, model, pk_set, **kwargs):
+    if action not in ['post_add', 'post_remove']:
+        return
+    from core.utils import get_current_user
+    usuario = get_current_user()
+    hoje = timezone.now().date()
+    acao = 'add' if action == 'post_add' else 'remove'
+    for tipo_curso_id in pk_set or []:
+        InteresseLog.objects.create(
+            aluno=instance,
+            tipo_curso_id=tipo_curso_id,
+            acao=acao,
+            data=hoje,
+            usuario=usuario if usuario and usuario.is_authenticated else None,
+        )
 

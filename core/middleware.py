@@ -59,9 +59,8 @@ class AdminContextMiddleware:
             sistema = request.session.get('sistema', 'cp').upper()
             request.sistema = sistema
 
-            # Se for superuser ou administrador de segmento (nao estando nos grupos de escola)
-            is_segment_admin = (profile and profile.nivel_acesso in ['ADMIN_CP', 'ADMIN_UDITECH']
-                                and not request.user.groups.filter(name__in=['Coordenador', 'Auxiliar Administrativo']).exists())
+            # Se for superuser ou administrador de segmento
+            is_segment_admin = (profile and profile.nivel_acesso in ['ADMIN_CP', 'ADMIN_UDITECH'])
             if request.user.is_superuser or is_segment_admin:
                 escola_id = request.session.get('active_escola_id')
                 if escola_id and str(escola_id).isdigit():
@@ -83,8 +82,11 @@ class AdminContextMiddleware:
                                 request.active_escola = escola
                     except:
                         request.active_escola = None
-                # Nenhum fallback automático — sem escola selecionada, active_escola fica None
-                # e a navbar exibirá "Visão Global"
+                elif profile and profile.escola and not request.user.is_superuser:
+                    # Admin de segmento com escola vinculada — default para sua escola
+                    if profile.escola.tipo == sistema:
+                        request.active_escola = profile.escola
+                        request.active_escola_is_fallback = True
             elif profile and profile.escola:
                 # Coordenador local / Auxiliar: fixado na escola do perfil
                 if profile.escola.tipo == sistema:

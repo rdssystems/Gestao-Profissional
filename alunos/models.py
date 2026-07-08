@@ -1,4 +1,5 @@
 from django.db import models
+from django.utils import timezone
 from escolas.models import Escola
 from cursos.models import TipoCurso
 from datetime import date
@@ -193,4 +194,18 @@ class WebSocialMember(models.Model):
         ordering = ['-data_inclusao']
 
     def __str__(self):
-        return f"{self.aluno.nome_completo} ({self.ano_inclusao})"
+        return f"{self.aluno.nome_completo} ({self.ano_inclusao})"
+
+
+class InteresseLog(models.Model):
+    ACAO_CHOICES = (('add', 'Adicionado'), ('remove', 'Removido'))
+    aluno = models.ForeignKey(Aluno, on_delete=models.CASCADE, related_name='interesse_logs')
+    tipo_curso = models.ForeignKey(TipoCurso, on_delete=models.CASCADE)
+    acao = models.CharField(max_length=10, choices=ACAO_CHOICES)
+    data = models.DateField(default=timezone.now)
+    usuario = models.ForeignKey('auth.User', on_delete=models.SET_NULL, null=True, blank=True)
+
+    class Meta:
+        ordering = ['-data', '-id']
+        verbose_name = 'Log de Interesse'
+        verbose_name_plural = 'Logs de Interesses'
