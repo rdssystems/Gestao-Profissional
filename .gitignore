@@ -52,6 +52,7 @@ backups/
 *.pptx
 *.png
 !core/static/**/*.png
+!publico/static/**/*.png
 !logologin.png
 
 # Editor / IDE pessoal
