@@ -23,6 +23,7 @@ urlpatterns = [
     # path('whatsapp/', include('whatsapp.urls', namespace='whatsapp')),
     path('documentos/', include('documentos.urls', namespace='documentos')),
     path('treinamento/', include('treinamento.urls', namespace='treinamento')),
+    path('publico/', include('publico.urls', namespace='publico')),
 
     path('core/', include('core.urls', namespace='core')),
     path('', RedirectView.as_view(pattern_name='escolas:dashboard', permanent=False), name='home'),

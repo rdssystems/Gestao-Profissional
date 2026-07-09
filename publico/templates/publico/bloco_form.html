@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+{% load widget_tweaks %}
+
+{% block title %}{% if form.instance.pk %}Editar{% else %}Novo{% endif %} Bloco — {{ escola.nome }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    #curso-fields, #texto-fields { display: none; }
+    .tipo-curso #curso-fields { display: block; }
+    .tipo-texto #texto-fields { display: block; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="page-header-premium mb-0">
+        {% if form.instance.pk %}Editar Bloco{% else %}Novo Bloco{% endif %}
+        <small class="text-muted fs-6">{{ escola.nome }}</small>
+    </h1>
+    <a href="{% url 'publico:bloco_list' escola.pk %}" class="btn btn-premium-outline btn-sm">
+        <i class="bi bi-arrow-left me-1"></i> Voltar
+    </a>
+</div>
+
+<div class="premium-card p-4" id="form-wrapper">
+    <form method="post" novalidate>
+        {% csrf_token %}
+
+        <div class="mb-3">
+            <label class="form-label fw-bold">{{ form.tipo.label }}</label>
+            {% render_field form.tipo class="form-select" onchange="toggleTipo(this.value)" %}
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label fw-bold">{{ form.titulo.label }}</label>
+            {% render_field form.titulo class="form-control" %}
+        </div>
+
+        <div id="curso-fields">
+            <div class="row g-2 mb-3">
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">{{ form.data_inicio.label }}</label>
+                    {% render_field form.data_inicio class="form-control" %}
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">{{ form.data_fim.label }}</label>
+                    {% render_field form.data_fim class="form-control" %}
+                </div>
+            </div>
+            <div class="mb-3">
+                <label class="form-label fw-bold">{{ form.dias_semana.label }}</label>
+                {% render_field form.dias_semana class="form-control" %}
+            </div>
+            <div class="row g-2 mb-3">
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">{{ form.horario_inicio.label }}</label>
+                    {% render_field form.horario_inicio class="form-control" type="time" %}
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">{{ form.horario_fim.label }}</label>
+                    {% render_field form.horario_fim class="form-control" type="time" %}
+                </div>
+            </div>
+        </div>
+
+        <div id="texto-fields">
+            <div class="mb-3">
+                <label class="form-label fw-bold">Conteúdo</label>
+                {% render_field form.texto class="form-control" %}
+            </div>
+        </div>
+
+        <div class="row g-2 mb-3">
+            <div class="col-md-6">
+                <label class="form-label fw-bold">{{ form.ordem.label }}</label>
+                {% render_field form.ordem class="form-control" %}
+            </div>
+            <div class="col-md-6 d-flex align-items-end">
+                <div class="form-check">
+                    {% render_field form.ativo class="form-check-input" %}
+                    <label class="form-check-label fw-bold">{{ form.ativo.label }}</label>
+                </div>
+            </div>
+        </div>
+
+        <button type="submit" class="btn btn-premium">
+            <i class="bi bi-check-lg me-1"></i> Salvar
+        </button>
+    </form>
+</div>
+
+<script>
+function toggleTipo(tipo) {
+    var wrapper = document.getElementById('form-wrapper');
+    wrapper.classList.remove('tipo-curso', 'tipo-texto');
+    wrapper.classList.add('tipo-' + tipo);
+}
+document.addEventListener('DOMContentLoaded', function() {
+    var tipoSelect = document.querySelector('select[name="tipo"]');
+    if (tipoSelect) {
+        toggleTipo(tipoSelect.value);
+    }
+});
+</script>
+{% endblock %}

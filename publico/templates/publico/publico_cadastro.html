@@ -1,0 +1,595 @@
+{% extends "simple_base.html" %}
+{% load static %}
+{% load widget_tweaks %}
+
+{% block title %}Cadastro — {{ escola.nome }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* ══════════════════════════════════════
+       BASE — MOBILE FIRST
+    ══════════════════════════════════════ */
+    *, *::before, *::after { box-sizing: border-box; }
+
+    body {
+        background: #f0f4f8;
+        min-height: 100vh;
+        font-family: 'Inter', sans-serif;
+        margin: 0;
+        padding: 0;
+        -webkit-text-size-adjust: 100%;
+    }
+
+    /* ── TARJA ── */
+    .header-tarja {
+        background: #F1B514;
+        width: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-bottom: 5px solid #18529D;
+        min-height: 75px;
+        padding: 0.6rem 1rem;
+    }
+    .header-tarja img.logo-uditech {
+        height: 50px;
+        object-fit: contain;
+    }
+
+    /* ── NAV AZUL ── */
+    .top-bar {
+        background: #18529D;
+        padding: 0.75rem 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        position: sticky;
+        top: 0;
+        z-index: 100;
+    }
+    .top-bar .btn-back {
+        color: rgba(255,255,255,0.9);
+        text-decoration: none;
+        font-weight: 600;
+        font-size: 0.9rem;
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+        min-height: 44px;
+        padding: 0.5rem 0;
+        flex: 1;
+        -webkit-tap-highlight-color: transparent;
+    }
+    .top-bar .btn-back:active { color: #F1B514; }
+    .top-bar .escola-nome {
+        color: rgba(255,255,255,0.8);
+        font-size: 0.82rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 55%;
+    }
+
+    /* ── CONTAINER ── */
+    .container-cadastro {
+        max-width: 700px;
+        margin: 0 auto;
+        padding: 1rem 0.85rem 5rem;
+    }
+
+    /* ── CARD CPF ── */
+    .card-cpf {
+        background: white;
+        border-radius: 18px;
+        overflow: hidden;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+    }
+    .card-cpf .card-top {
+        background: linear-gradient(135deg, #18529D, #0E3262);
+        color: white;
+        padding: 1.5rem 1.2rem;
+        position: relative;
+        overflow: hidden;
+    }
+    .card-cpf .card-top::after {
+        content: '';
+        position: absolute;
+        top: 0; right: 0;
+        width: 100%; height: 100%;
+        background: radial-gradient(circle at top right, rgba(255,255,255,0.1) 0%, transparent 60%);
+        pointer-events: none;
+    }
+    .card-cpf .card-top h4 {
+        font-weight: 800;
+        font-size: 1.1rem;
+        margin: 0 0 0.25rem;
+        position: relative;
+        z-index: 1;
+    }
+    .card-cpf .card-top p {
+        margin: 0;
+        opacity: 0.8;
+        font-size: 0.88rem;
+        position: relative;
+        z-index: 1;
+    }
+    .card-cpf .card-body { padding: 1.2rem; }
+
+    /* ── CPF INPUT ── */
+    .cpf-input {
+        font-size: 1.6rem;
+        letter-spacing: 0.15em;
+        text-align: center;
+        padding: 1rem 0.75rem;
+        border-radius: 12px;
+        border: 2px solid #e2e8f0;
+        width: 100%;
+        background: #f8fafc;
+        outline: none;
+        font-family: inherit;
+        font-weight: 700;
+        color: #0E3262;
+        -webkit-appearance: none;
+    }
+    .cpf-input:focus {
+        border-color: #18529D;
+        box-shadow: 0 0 0 3px rgba(24,82,157,0.12);
+        background: white;
+    }
+
+    /* ── CARD FORMULÁRIO ── */
+    .card-form {
+        background: white;
+        border-radius: 18px;
+        overflow: hidden;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+    }
+    .card-form .card-top {
+        background: linear-gradient(135deg, #18529D, #0E3262);
+        color: white;
+        padding: 1.5rem 1.2rem;
+        position: relative;
+        overflow: hidden;
+    }
+    .card-form .card-top::after {
+        content: '';
+        position: absolute;
+        top: 0; right: 0;
+        width: 100%; height: 100%;
+        background: radial-gradient(circle at top right, rgba(255,255,255,0.1) 0%, transparent 60%);
+        pointer-events: none;
+    }
+    .card-form .card-top h4 {
+        font-weight: 800;
+        font-size: 1.1rem;
+        margin: 0 0 0.25rem;
+        position: relative;
+        z-index: 1;
+        line-height: 1.3;
+    }
+    .card-form .card-top p {
+        margin: 0;
+        opacity: 0.8;
+        font-size: 0.85rem;
+        position: relative;
+        z-index: 1;
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+    }
+    .card-form .form-body { padding: 1.2rem; }
+
+    /* ── SECTION TITLE ── */
+    .section-title {
+        font-size: 0.78rem;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        font-weight: 800;
+        color: #0E3262;
+        border-bottom: 2px solid #f1f5f9;
+        padding-bottom: 0.45rem;
+        margin: 1.5rem 0 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+    }
+    .section-title i { color: #F1B514; font-size: 0.95rem; }
+
+    /* ── INPUTS ── */
+    .form-label {
+        color: #374151;
+        font-size: 0.82rem;
+        font-weight: 600;
+        margin-bottom: 0.3rem;
+        display: block;
+    }
+    .form-control, .form-select {
+        border: 1.5px solid #e2e8f0;
+        border-radius: 10px;
+        padding: 0.75rem 0.9rem;
+        font-size: 1rem;           /* evita zoom automático no iOS */
+        background-color: #f8fafc;
+        width: 100%;
+        font-family: inherit;
+        color: #1e293b;
+        -webkit-appearance: none;
+        appearance: none;
+        outline: none;
+        transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .form-control:focus, .form-select:focus {
+        border-color: #18529D;
+        box-shadow: 0 0 0 3px rgba(24,82,157,0.1);
+        background-color: white;
+    }
+    .form-select {
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%2364748b' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 0.9rem center;
+        padding-right: 2.2rem;
+    }
+
+    /* ── FORM CHECK (checkboxes) ── */
+    .check-item {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.75rem 0.9rem;
+        background: #f8fafc;
+        border: 1.5px solid #e2e8f0;
+        border-radius: 10px;
+        margin-bottom: 0.5rem;
+        cursor: pointer;
+        -webkit-tap-highlight-color: transparent;
+    }
+    .check-item input[type="checkbox"],
+    .check-item input[type="radio"] {
+        width: 20px;
+        height: 20px;
+        flex-shrink: 0;
+        accent-color: #18529D;
+    }
+    .check-item label {
+        font-size: 0.92rem;
+        color: #1e293b;
+        margin: 0;
+        cursor: pointer;
+        line-height: 1.3;
+    }
+
+    /* ── BOTÕES ── */
+    .btn-consultar {
+        width: 100%;
+        background: linear-gradient(135deg, #18529D, #0E3262);
+        color: white;
+        border: none;
+        border-radius: 12px;
+        font-size: 1rem;
+        font-weight: 700;
+        padding: 1rem;
+        min-height: 52px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        -webkit-tap-highlight-color: transparent;
+        cursor: pointer;
+        font-family: inherit;
+    }
+    .btn-finalizar {
+        width: 100%;
+        background: #F1B514;
+        color: #0E3262;
+        border: none;
+        border-radius: 14px;
+        font-size: 1.05rem;
+        font-weight: 800;
+        padding: 1rem;
+        min-height: 56px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        margin-top: 1.5rem;
+        box-shadow: 0 4px 16px rgba(241,181,20,0.3);
+        -webkit-tap-highlight-color: transparent;
+        cursor: pointer;
+        font-family: inherit;
+    }
+
+    /* ── ALERTA ── */
+    .alert-form {
+        background: #fef2f2;
+        border: 1px solid #fecaca;
+        border-radius: 10px;
+        padding: 0.85rem 1rem;
+        color: #991b1b;
+        font-size: 0.88rem;
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    /* ── ROW HELPER ── */
+    .field-row {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 0.75rem;
+        margin-bottom: 0.75rem;
+    }
+
+    /* ══════════════════════════════════════
+       TABLET / DESKTOP (≥ 600px)
+    ══════════════════════════════════════ */
+    @media (min-width: 600px) {
+        .header-tarja { min-height: 95px; }
+        .header-tarja img.logo-uditech { height: 65px; }
+
+        .container-cadastro { padding: 1.5rem 1.5rem 5rem; }
+
+        .card-cpf .card-top, .card-form .card-top { padding: 2rem 1.8rem; }
+        .card-cpf .card-top h4, .card-form .card-top h4 { font-size: 1.25rem; }
+        .card-cpf .card-body, .card-form .form-body { padding: 1.8rem; }
+
+        .field-row-2 { grid-template-columns: 1fr 1fr; }
+        .field-row-3 { grid-template-columns: 1fr 1fr 1fr; }
+        .field-row-cep { grid-template-columns: 1fr 2fr; }
+        .field-row-num { grid-template-columns: 1fr 2fr; }
+        .field-row-cidade { grid-template-columns: 2fr 1fr; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- TARJA -->
+<div class="header-tarja">
+    <img src="{% static 'publico/img/logo_uditech.png' %}" alt="Uditech" class="logo-uditech">
+</div>
+
+<!-- NAV -->
+<div class="top-bar">
+    <a href="{% url 'publico:escola' escola.slug %}" class="btn-back">
+        <i class="bi bi-arrow-left"></i> Voltar
+    </a>
+    <span class="escola-nome">{{ escola.nome }}</span>
+</div>
+
+<!-- CONTAINER -->
+<div class="container-cadastro">
+
+    {% if not form %}
+    <!-- ETAPA 1: CPF -->
+    <div class="card-cpf">
+        <div class="card-top">
+            <h4>Cadastro — {{ escola.nome }}</h4>
+            <p>Digite seu CPF para continuar</p>
+        </div>
+        <div class="card-body">
+            <form method="get">
+                <div class="field-row">
+                    <div>
+                        <label class="form-label">CPF</label>
+                        <input type="text" name="cpf" class="cpf-input numeric-input" placeholder="Apenas números"
+                               maxlength="11" required autofocus inputmode="numeric">
+                    </div>
+                </div>
+                <button type="submit" class="btn-consultar" style="margin-top:0.75rem;">
+                    <i class="bi bi-search"></i> Consultar
+                </button>
+            </form>
+        </div>
+    </div>
+
+    {% else %}
+    <!-- ETAPA 2: FORMULÁRIO COMPLETO -->
+    <div class="card-form">
+        <div class="card-top">
+            <h4>Cadastro — {{ escola.nome }}</h4>
+            {% if aluno_encontrado %}
+                <p><i class="bi bi-check-circle-fill"></i> CPF encontrado! Dados preenchidos automaticamente.</p>
+            {% else %}
+                <p>Preencha seus dados abaixo</p>
+            {% endif %}
+        </div>
+        <div class="form-body">
+            <form method="post" novalidate>
+                {% csrf_token %}
+                <input type="hidden" name="cpf" value="{{ cpf }}">
+
+                {% if form.errors %}
+                <div class="alert-form" style="display:block;">
+                    <div style="font-weight:bold; margin-bottom:0.5rem;"><i class="bi bi-exclamation-triangle-fill"></i> Verifique os erros abaixo:</div>
+                    <ul style="margin:0; padding-left:1.5rem; font-size:0.85rem;">
+                        {% for field in form %}
+                            {% for error in field.errors %}
+                                <li><strong>{{ field.label }}:</strong> {{ error }}</li>
+                            {% endfor %}
+                        {% endfor %}
+                        {% for error in form.non_field_errors %}
+                            <li>{{ error }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                {% endif %}
+
+                <!-- ── IDENTIFICAÇÃO ── -->
+                <div class="section-title"><i class="bi bi-person-badge"></i> Identificação</div>
+
+                <div class="field-row">
+                    <div>
+                        <label class="form-label">{{ form.nome_completo.label }} *</label>
+                        {% render_field form.nome_completo class="form-control" required="" autocomplete="name" %}
+                    </div>
+                </div>
+
+                <div class="field-row field-row-2">
+                    <div>
+                        <label class="form-label">{{ form.cpf.label }} *</label>
+                        <input type="text" class="form-control" value="{{ cpf }}" readonly style="background:#f1f5f9; color:#64748b;">
+                    </div>
+                    <div>
+                        <label class="form-label">{{ form.data_emissao.label }}</label>
+                        {% render_field form.data_emissao class="form-control" %}
+                    </div>
+                </div>
+
+                <!-- ── INFORMAÇÕES PESSOAIS ── -->
+                <div class="section-title"><i class="bi bi-person"></i> Informações Pessoais</div>
+
+                <div class="field-row field-row-2">
+                    <div>
+                        <label class="form-label">{{ form.data_nascimento.label }} *</label>
+                        {% render_field form.data_nascimento class="form-control" required="" %}
+                    </div>
+                    <div>
+                        <label class="form-label">{{ form.sexo.label }} *</label>
+                        {% render_field form.sexo class="form-select" required="" %}
+                    </div>
+                </div>
+
+                <div class="field-row field-row-2">
+                    <div>
+                        <label class="form-label">{{ form.estado_civil.label }}</label>
+                        {% render_field form.estado_civil class="form-select" %}
+                    </div>
+                    <div>
+                        <label class="form-label">{{ form.cor_raca.label }}</label>
+                        {% render_field form.cor_raca class="form-select" %}
+                    </div>
+                </div>
+
+                <div class="field-row">
+                    <div>
+                        <label class="form-label">{{ form.nome_mae.label }}</label>
+                        {% render_field form.nome_mae class="form-control" autocomplete="off" %}
+                    </div>
+                </div>
+
+                <div class="field-row field-row-2">
+                    <div>
+                        <label class="form-label">{{ form.naturalidade.label }}</label>
+                        {% render_field form.naturalidade class="form-control" %}
+                    </div>
+                    <div>
+                        <label class="form-label">{{ form.uf_naturalidade.label }}</label>
+                        {% render_field form.uf_naturalidade class="form-control" %}
+                    </div>
+                </div>
+
+                <div class="field-row field-row-2">
+                    <div>
+                        <label class="form-label">{{ form.escolaridade.label }} *</label>
+                        {% render_field form.escolaridade class="form-select" required="" %}
+                    </div>
+                    <div>
+                        <label class="form-label">{{ form.whatsapp.label }} *</label>
+                        {% render_field form.whatsapp class="form-control numeric-input" required="" inputmode="tel" placeholder="Apenas números" %}
+                    </div>
+                </div>
+
+                <div class="field-row">
+                    <div>
+                        <div class="check-item">
+                            {% render_field form.deficiencia id="id_deficiencia" onchange="toggleDeficiencia(this.checked)" %}
+                            <label for="id_deficiencia">{{ form.deficiencia.label }}</label>
+                        </div>
+                    </div>
+                    <div id="tipo-deficiencia-row" style="display:none;">
+                        <label class="form-label">{{ form.tipo_deficiencia.label }}</label>
+                        {% render_field form.tipo_deficiencia class="form-control" %}
+                    </div>
+                </div>
+
+                <!-- ── ENDEREÇO ── -->
+                <div class="section-title"><i class="bi bi-geo-alt"></i> Endereço</div>
+
+                <div class="field-row field-row-cep">
+                    <div>
+                        <label class="form-label">{{ form.endereco_cep.label }} *</label>
+                        {% render_field form.endereco_cep class="form-control numeric-input" required="" placeholder="Apenas números" inputmode="numeric" %}
+                    </div>
+                    <div>
+                        <label class="form-label">{{ form.endereco_rua.label }} *</label>
+                        {% render_field form.endereco_rua class="form-control" required="" %}
+                    </div>
+                </div>
+
+                <div class="field-row field-row-num">
+                    <div>
+                        <label class="form-label">{{ form.endereco_numero.label }} *</label>
+                        {% render_field form.endereco_numero class="form-control" required="" inputmode="numeric" %}
+                    </div>
+                    <div>
+                        <label class="form-label">{{ form.endereco_bairro.label }} *</label>
+                        {% render_field form.endereco_bairro class="form-control" required="" %}
+                    </div>
+                </div>
+
+                <div class="field-row field-row-cidade">
+                    <div>
+                        <label class="form-label">{{ form.endereco_cidade.label }} *</label>
+                        {% render_field form.endereco_cidade class="form-control" required="" %}
+                    </div>
+                    <div>
+                        <label class="form-label">{{ form.endereco_estado.label }}</label>
+                        {% render_field form.endereco_estado class="form-control" %}
+                    </div>
+                </div>
+
+                <!-- ── CURSOS ── -->
+                <div class="section-title"><i class="bi bi-journal-check"></i> Cursos de Interesse *</div>
+                <div class="field-row">
+                    {% for choice in form.cursos_interesse %}
+                    <div class="check-item">
+                        {{ choice.tag }}
+                        <label for="{{ choice.id_for_label }}">{{ choice.choice_label }}</label>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <!-- ── TURNO ── -->
+                <div class="section-title"><i class="bi bi-sun"></i> Turno de Interesse *</div>
+                <div class="field-row">
+                    {% for choice in form.turno_interesse %}
+                    <div class="check-item">
+                        {{ choice.tag }}
+                        <label for="{{ choice.id_for_label }}">{{ choice.choice_label }}</label>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <button type="submit" class="btn-finalizar">
+                    <i class="bi bi-send-check"></i> Finalizar Cadastro
+                </button>
+            </form>
+        </div>
+    </div>
+    {% endif %}
+
+</div>
+
+
+
+<script>
+function toggleDeficiencia(checked) {
+    document.getElementById('tipo-deficiencia-row').style.display = checked ? '' : 'none';
+}
+document.addEventListener('DOMContentLoaded', function() {
+    var cb = document.querySelector('input[name="deficiencia"]');
+    if (cb) {
+        cb.addEventListener('change', function() { toggleDeficiencia(this.checked); });
+        toggleDeficiencia(cb.checked);
+    }
+    
+    // Limita campos numéricos (classe numeric-input) para aceitarem apenas números
+    var numericInputs = document.querySelectorAll('.numeric-input');
+    numericInputs.forEach(function(input) {
+        input.addEventListener('input', function(e) {
+            this.value = this.value.replace(/[^0-9]/g, '');
+        });
+    });
+});
+</script>
+{% endblock %}

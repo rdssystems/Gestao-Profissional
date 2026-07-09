@@ -638,6 +638,9 @@
                             <li><a class="dropdown-item" href="{% url 'core:agenda' %}"><i class="bi bi-calendar3 me-2 text-primary"></i> Agenda</a></li>
                             <li><a class="dropdown-item" href="{% url 'documentos:lista_documentos' %}"><i class="bi bi-cloud-check me-2 text-primary"></i> Drive</a></li>
                             <li><a class="dropdown-item" href="{% url 'escolas:lista_escolas' %}"><i class="bi bi-building me-2 text-primary"></i> Escolas</a></li>
+                            {% if request.session.sistema == 'uditech' %}
+                            <li><a class="dropdown-item" href="{% url 'publico:config' %}"><i class="bi bi-link-45deg me-2 text-primary"></i> Link Público</a></li>
+                            {% endif %}
 
                             <li>
                                 <hr class="dropdown-divider">

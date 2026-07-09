@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+{% load widget_tweaks %}
+
+{% block title %}{% if form.instance.pk %}Editar{% else %}Novo{% endif %} Curso/Ementa{% endblock %}
+
+{% block extra_css %}
+<style>
+    .page-banner {
+        background: linear-gradient(135deg, #18529D 0%, #0E3262 100%);
+        border-radius: 16px;
+        padding: 2rem 2.5rem;
+        color: white;
+        margin-bottom: 2rem;
+        box-shadow: 0 10px 25px rgba(14, 50, 98, 0.15);
+    }
+    .banner-title { font-weight: 800; font-size: 1.8rem; margin-bottom: 0; }
+    .form-card {
+        background: white;
+        border-radius: 18px;
+        padding: 2.5rem;
+        box-shadow: 0 4px 24px rgba(14,50,98,0.09);
+        max-width: 760px;
+        margin: 0 auto;
+    }
+    .form-label { font-weight: 600; color: #0E3262; margin-bottom: 0.4rem; }
+    .form-control, .form-select {
+        border-radius: 10px;
+        border: 1.5px solid #e2e8f0;
+        padding: 0.65rem 1rem;
+        font-size: 0.97rem;
+        transition: border-color 0.2s;
+    }
+    .form-control:focus { border-color: #18529D; box-shadow: 0 0 0 3px rgba(24,82,157,0.12); }
+    textarea.form-control { min-height: 180px; resize: vertical; font-family: inherit; }
+    .hint-text { font-size: 0.82rem; color: #94a3b8; margin-top: 0.3rem; }
+    .btn-salvar {
+        background: linear-gradient(135deg, #18529D, #0E3262);
+        color: white; border: none; border-radius: 12px;
+        padding: 0.75rem 2rem; font-weight: 700; font-size: 1rem;
+        transition: all 0.2s;
+    }
+    .btn-salvar:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(14,50,98,0.25); color: white; }
+    .btn-voltar {
+        border-radius: 12px; font-weight: 600; padding: 0.75rem 1.5rem;
+        border: 1.5px solid #e2e8f0; color: #64748b;
+    }
+    .form-check-input:checked { background-color: #18529D; border-color: #18529D; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-banner d-flex justify-content-between align-items-center flex-wrap gap-3">
+    <div>
+        <h1 class="banner-title">
+            <i class="bi bi-journal-plus me-2"></i>
+            {% if form.instance.pk %}Editar Curso/Ementa{% else %}Novo Curso/Ementa{% endif %}
+        </h1>
+    </div>
+    <a href="{% url 'publico:ementa_list' %}" class="btn btn-light" style="border-radius:12px;font-weight:600;color:#18529D;">
+        <i class="bi bi-arrow-left me-1"></i> Voltar
+    </a>
+</div>
+
+<div class="form-card">
+    <form method="post" novalidate>
+        {% csrf_token %}
+
+        {% if form.non_field_errors %}
+        <div class="alert alert-danger rounded-3 mb-3">{{ form.non_field_errors }}</div>
+        {% endif %}
+
+        <div class="mb-4">
+            <label class="form-label">{{ form.titulo.label }}</label>
+            {% render_field form.titulo class="form-control" placeholder="Ex: Informática Básica" %}
+            {% if form.titulo.errors %}<div class="text-danger small mt-1">{{ form.titulo.errors }}</div>{% endif %}
+        </div>
+
+        <div class="mb-4">
+            <label class="form-label">{{ form.texto.label }}</label>
+            {% render_field form.texto class="form-control" placeholder="Descreva o conteúdo programático do curso..." %}
+            <p class="hint-text"><i class="bi bi-info-circle me-1"></i>Este texto será exibido ao clicar no título do curso na página pública.</p>
+            {% if form.texto.errors %}<div class="text-danger small mt-1">{{ form.texto.errors }}</div>{% endif %}
+        </div>
+
+        <div class="row g-3 mb-4">
+            <div class="col-sm-6">
+                <label class="form-label">Ordem de exibição</label>
+                {% render_field form.ordem class="form-control" %}
+                <p class="hint-text">Número menor aparece primeiro na lista.</p>
+            </div>
+            <div class="col-sm-6 d-flex align-items-center pt-3">
+                <div class="form-check form-switch mt-2">
+                    {% render_field form.ativo class="form-check-input" role="switch" %}
+                    <label class="form-check-label fw-600 ms-2" style="font-weight:600;color:#0E3262;">Visível na página pública</label>
+                </div>
+            </div>
+        </div>
+
+        <div class="d-flex gap-3 flex-wrap mt-2">
+            <button type="submit" class="btn-salvar btn">
+                <i class="bi bi-check-lg me-2"></i>Salvar
+            </button>
+            <a href="{% url 'publico:ementa_list' %}" class="btn btn-voltar">Cancelar</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

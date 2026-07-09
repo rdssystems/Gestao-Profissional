@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Cursos e Ementas Públicas{% endblock %}
+
+{% block extra_css %}
+<style>
+    .page-banner {
+        background: linear-gradient(135deg, #18529D 0%, #0E3262 100%);
+        border-radius: 16px;
+        padding: 2rem 2.5rem;
+        color: white;
+        margin-bottom: 2rem;
+        box-shadow: 0 10px 25px rgba(14, 50, 98, 0.15);
+    }
+    .banner-title { font-weight: 800; font-size: 2rem; margin-bottom: 0.25rem; }
+    .ementa-row {
+        background: white;
+        border-radius: 14px;
+        padding: 1.2rem 1.5rem;
+        margin-bottom: 1rem;
+        box-shadow: 0 2px 12px rgba(14,50,98,0.07);
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        border-left: 5px solid #18529D;
+        transition: transform 0.2s;
+    }
+    .ementa-row:hover { transform: translateX(4px); }
+    .ementa-titulo { font-weight: 700; color: #0E3262; font-size: 1.05rem; flex: 1; }
+    .ementa-texto { color: #64748b; font-size: 0.9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 340px; }
+    .badge-ordem {
+        background: rgba(24,82,157,0.1); color: #18529D;
+        font-weight: 700; border-radius: 8px; padding: 0.3em 0.7em; font-size: 0.8rem; white-space: nowrap;
+    }
+    .badge-inativo { background: rgba(100,116,139,0.12); color: #64748b; }
+    .btn-novo {
+        background: #F1B514; color: #0E3262; font-weight: 700;
+        border: none; border-radius: 12px; padding: 0.65rem 1.5rem;
+        transition: all 0.2s;
+    }
+    .btn-novo:hover { background: #e0a800; color: #0E3262; transform: translateY(-1px); }
+    .empty-state { background: white; border-radius: 16px; padding: 3rem 2rem; text-align: center; color: #94a3b8; box-shadow: 0 2px 12px rgba(14,50,98,0.05); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-banner d-flex justify-content-between align-items-center flex-wrap gap-3">
+    <div>
+        <h1 class="banner-title"><i class="bi bi-journal-text me-2"></i>Cursos e Ementas</h1>
+        <p class="mb-0" style="color:rgba(255,255,255,0.8);">Gerencie os cursos exibidos na página pública.</p>
+    </div>
+    <div class="d-flex gap-2 flex-wrap">
+        <a href="{% url 'publico:config' %}" class="btn btn-light" style="border-radius:12px; font-weight:600; color:#18529D;">
+            <i class="bi bi-arrow-left me-1"></i> Voltar
+        </a>
+        <a href="{% url 'publico:ementa_create' %}" class="btn-novo btn">
+            <i class="bi bi-plus-lg me-1"></i> Novo Curso
+        </a>
+    </div>
+</div>
+
+{% if ementas %}
+    {% for ementa in ementas %}
+    <div class="ementa-row">
+        <span class="badge-ordem">#{{ ementa.ordem }}</span>
+        <div class="flex-grow-1 min-w-0">
+            <div class="ementa-titulo">{{ ementa.titulo }}</div>
+            <div class="ementa-texto">{{ ementa.texto|truncatechars:100 }}</div>
+        </div>
+        {% if not ementa.ativo %}
+        <span class="badge badge-inativo"><i class="bi bi-eye-slash me-1"></i>Oculto</span>
+        {% else %}
+        <span class="badge" style="background:rgba(16,185,129,0.12);color:#059669;font-weight:700;border-radius:8px;padding:0.3em 0.7em;"><i class="bi bi-eye me-1"></i>Visível</span>
+        {% endif %}
+        <div class="d-flex gap-2">
+            <a href="{% url 'publico:ementa_update' ementa.pk %}" class="btn btn-sm btn-outline-primary" style="border-radius:8px;">
+                <i class="bi bi-pencil"></i>
+            </a>
+            <a href="{% url 'publico:ementa_delete' ementa.pk %}" class="btn btn-sm btn-outline-danger" style="border-radius:8px;">
+                <i class="bi bi-trash"></i>
+            </a>
+        </div>
+    </div>
+    {% endfor %}
+{% else %}
+<div class="empty-state">
+    <i class="bi bi-journal-x" style="font-size:3rem;opacity:0.4;"></i>
+    <h5 class="mt-3 fw-bold" style="color:#0E3262;">Nenhum curso cadastrado</h5>
+    <p>Clique em <strong>Novo Curso</strong> para começar a preencher os cursos e ementas que aparecerão na página pública.</p>
+    <a href="{% url 'publico:ementa_create' %}" class="btn-novo btn mt-2">
+        <i class="bi bi-plus-lg me-1"></i> Novo Curso
+    </a>
+</div>
+{% endif %}
+{% endblock %}

@@ -76,6 +76,7 @@ INSTALLED_APPS = [
     'controle_diario', # Novo app
     # 'whatsapp',
     'treinamento',
+    'publico',
 
     # Apps de terceiros
     'dbbackup',

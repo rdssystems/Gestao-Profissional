@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+
+{% block title %}Blocos — {{ escola.nome }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="page-header-premium mb-0">{{ escola.nome }}</h1>
+        <p class="text-muted mb-0">Gerenciar conteúdo do Link Público</p>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="{% url 'publico:config' %}" class="btn btn-premium-outline btn-sm">
+            <i class="bi bi-arrow-left me-1"></i> Voltar
+        </a>
+        <a href="{% url 'publico:bloco_create' escola.pk %}" class="btn btn-premium">
+            <i class="bi bi-plus-lg me-1"></i> Novo Bloco
+        </a>
+    </div>
+</div>
+
+<div class="row g-3">
+    {% for bloco in blocos %}
+    <div class="col-12">
+        <div class="premium-card p-3 {% if not bloco.ativo %}opacity-50{% endif %}">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <span class="badge {% if bloco.tipo == 'curso' %}bg-warning text-dark{% else %}bg-primary{% endif %} me-2">
+                        {{ bloco.get_tipo_display }}
+                    </span>
+                    {% if not bloco.ativo %}
+                    <span class="badge bg-secondary">Inativo</span>
+                    {% endif %}
+                    <h6 class="fw-bold mt-2 mb-1">{{ bloco.titulo }}</h6>
+                    {% if bloco.tipo == 'curso' %}
+                        <small class="text-muted">
+                            <i class="bi bi-calendar3 me-1"></i> {{ bloco.data_inicio|date:"d/m/Y"|default:"—" }} a {{ bloco.data_fim|date:"d/m/Y"|default:"—" }}
+                            {% if bloco.dias_semana %} | {{ bloco.dias_semana }}{% endif %}
+                            {% if bloco.horario_inicio %} | {{ bloco.horario_inicio|time:"H:i" }} às {{ bloco.horario_fim|time:"H:i" }}{% endif %}
+                        </small>
+                    {% endif %}
+                </div>
+                <div class="d-flex gap-1">
+                    <a href="{% url 'publico:bloco_update' bloco.pk %}" class="btn btn-sm btn-light border" title="Editar">
+                        <i class="bi bi-pencil"></i>
+                    </a>
+                    <a href="{% url 'publico:bloco_delete' bloco.pk %}" class="btn btn-sm btn-light border text-danger" title="Excluir">
+                        <i class="bi bi-trash"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% empty %}
+    <div class="col-12 text-center text-muted py-5">
+        <i class="bi bi-inbox display-4 d-block mb-3"></i>
+        <p>Nenhum bloco cadastrado. Crie o primeiro!</p>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

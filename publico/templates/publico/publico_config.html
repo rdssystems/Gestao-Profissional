@@ -1,0 +1,295 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Link Público — Configuração{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Premium Page Styling */
+    .page-banner {
+        background: linear-gradient(135deg, #18529D 0%, #0E3262 100%);
+        border-radius: 16px;
+        padding: 2.5rem 2.5rem;
+        color: white;
+        margin-bottom: 2.5rem;
+        box-shadow: 0 10px 25px rgba(14, 50, 98, 0.15);
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .page-banner::after {
+        content: '';
+        position: absolute;
+        top: -50%;
+        right: -10%;
+        width: 350px;
+        height: 350px;
+        background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 70%);
+        border-radius: 50%;
+    }
+
+    .banner-title {
+        font-weight: 800;
+        letter-spacing: -0.5px;
+        font-size: 2.2rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .banner-subtitle {
+        color: rgba(255, 255, 255, 0.85);
+        font-size: 1.1rem;
+        font-weight: 400;
+    }
+
+    .qr-container {
+        background: white;
+        border-radius: 20px;
+        padding: 2.5rem;
+        box-shadow: 0 15px 35px rgba(24, 82, 157, 0.08);
+        text-align: center;
+        border: 1px solid rgba(24, 82, 157, 0.1);
+        transition: transform 0.3s ease;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+    }
+    
+    .qr-container:hover {
+        transform: translateY(-5px);
+    }
+
+    .qr-svg-wrapper {
+        background: #ffffff;
+        padding: 1.25rem;
+        border-radius: 16px;
+        display: inline-block;
+        margin-bottom: 1.5rem;
+        border: 2px dashed #e9ecef;
+        box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
+    }
+
+    .qr-svg-wrapper svg {
+        width: 180px;
+        height: 180px;
+        display: block;
+    }
+
+    .link-box {
+        background: #f8f9fa;
+        border-radius: 12px;
+        padding: 0.4rem;
+        display: flex;
+        align-items: center;
+        border: 1px solid #e9ecef;
+        margin-top: 1rem;
+    }
+    
+    .link-box input {
+        background: transparent;
+        border: none;
+        box-shadow: none;
+        color: #4C5B7A;
+        font-weight: 600;
+        padding-left: 1rem;
+        font-size: 0.95rem;
+    }
+    
+    .link-box input:focus {
+        box-shadow: none;
+        background: transparent;
+    }
+
+    .btn-copy {
+        background: #FEF9E7;
+        color: #18529D;
+        border: none;
+        border-radius: 8px;
+        padding: 0.6rem 1.2rem;
+        font-weight: 600;
+        transition: all 0.2s;
+        white-space: nowrap;
+    }
+
+    .btn-copy:hover {
+        background: #f1b514;
+        color: #0e3262;
+    }
+
+    .section-title {
+        font-weight: 700;
+        color: #0E3262;
+        font-size: 1.4rem;
+        margin-bottom: 1.5rem;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+    
+    .section-title i {
+        color: #f1b514;
+    }
+
+    .unit-card {
+        background: white;
+        border-radius: 16px;
+        padding: 1.5rem;
+        border-left: 5px solid #18529D;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.04);
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        height: 100%;
+    }
+
+    .unit-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 12px 25px rgba(24, 82, 157, 0.12);
+        border-left-color: #f1b514;
+    }
+
+    .unit-icon {
+        width: 52px;
+        height: 52px;
+        background: rgba(24, 82, 157, 0.08);
+        border-radius: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #18529D;
+        font-size: 1.6rem;
+        margin-right: 1.2rem;
+        flex-shrink: 0;
+        transition: all 0.3s;
+    }
+    
+    .unit-card:hover .unit-icon {
+        background: #18529D;
+        color: white;
+        transform: scale(1.05) rotate(-5deg);
+    }
+    
+    .unit-info h6 {
+        font-weight: 700;
+        color: #0E3262;
+        margin-bottom: 0.35rem;
+        font-size: 1.1rem;
+    }
+    
+    .badge-blocks {
+        background: rgba(24, 82, 157, 0.1);
+        color: #18529D;
+        font-weight: 600;
+        padding: 0.4em 0.8em;
+        border-radius: 8px;
+        font-size: 0.8rem;
+    }
+    
+    .action-btn {
+        font-weight: 600;
+        border-radius: 10px;
+        padding: 0.5rem 1rem;
+        white-space: nowrap;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Banner Section -->
+<div class="page-banner d-flex justify-content-between align-items-center flex-wrap gap-3">
+    <div style="position: relative; z-index: 1;">
+        <h1 class="banner-title">Link Público</h1>
+        <p class="banner-subtitle mb-0">Gerencie a visibilidade e o acesso às unidades Uditech de forma simples e rápida.</p>
+    </div>
+    <a href="{{ public_url }}" target="_blank" class="btn btn-light btn-lg shadow-sm" style="color: #18529D; font-weight: 700; border-radius: 12px; z-index: 1;">
+        <i class="bi bi-box-arrow-up-right me-2"></i> Acessar Portal
+    </a>
+</div>
+
+<div class="row g-4 mb-5 justify-content-center">
+    <div class="col-lg-6 col-xl-5">
+        <div class="qr-container">
+            <h5 class="fw-bold text-dark mb-4" style="color: #0E3262 !important;">Acesso via QR Code</h5>
+            
+            <div>
+                <div class="qr-svg-wrapper">
+                    {{ qr_svg|safe }}
+                </div>
+            </div>
+            
+            <p class="text-muted small mb-2">Escaneie o código acima com a câmera do celular para acessar a página pública.</p>
+            
+            <div class="link-box">
+                <input type="text" class="form-control" id="publicUrlInput" value="{{ public_url }}" readonly>
+                <button class="btn btn-copy ms-2" type="button" onclick="copyPublicLink()" id="copyBtn">
+                    <i class="bi bi-copy me-1"></i> Copiar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4 col-xl-3">
+        <div class="qr-container" style="background:linear-gradient(135deg,#0E3262,#18529D);color:white;">
+            <div style="font-size:2.5rem;margin-bottom:1rem;">📚</div>
+            <h5 class="fw-bold mb-2" style="color:white;">Cursos e Ementas</h5>
+            <p style="color:rgba(255,255,255,0.75);font-size:0.9rem;margin-bottom:1.5rem;">
+                Gerencie os cursos e ementas exibidos na página pública acima dos cards das Uditechs.
+            </p>
+            <a href="{% url 'publico:ementa_list' %}" class="btn btn-light w-100" style="border-radius:12px;font-weight:700;color:#0E3262;padding:0.75rem;">
+                <i class="bi bi-journal-text me-2"></i>Gerenciar Cursos
+            </a>
+        </div>
+    </div>
+</div>
+
+<h3 class="section-title"><i class="bi bi-building"></i> Unidades Uditech</h3>
+<div class="row g-4 mb-4">
+    {% for escola in escolas %}
+    <div class="col-xl-4 col-lg-6">
+        <div class="unit-card">
+            <div class="d-flex align-items-center">
+                <div class="unit-icon">
+                    <i class="bi bi-hdd-network"></i>
+                </div>
+                <div class="unit-info">
+                    <h6>{{ escola.nome }}</h6>
+                    <span class="badge badge-blocks">{{ escola.blocos_conteudo.count }} bloco{{ escola.blocos_conteudo.count|pluralize }}</span>
+                </div>
+            </div>
+            <a href="{% url 'publico:bloco_list' escola.pk %}" class="btn btn-premium-outline action-btn ms-3">
+                <i class="bi bi-gear-fill me-1"></i> Gerenciar
+            </a>
+        </div>
+    </div>
+    {% empty %}
+    <div class="col-12">
+        <div class="qr-container p-5 text-center text-muted border-0 bg-white" style="box-shadow: 0 4px 15px rgba(0,0,0,0.03);">
+            <div class="mb-3">
+                <i class="bi bi-building-slash text-secondary" style="font-size: 3rem; opacity: 0.5;"></i>
+            </div>
+            <h5 class="fw-bold text-dark">Nenhuma unidade Uditech encontrada</h5>
+            <p class="mb-0">Não há unidades Uditech vinculadas ao seu perfil ou cadastradas no sistema.</p>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<script>
+    function copyPublicLink() {
+        const input = document.getElementById('publicUrlInput');
+        const btn = document.getElementById('copyBtn');
+        input.select();
+        input.setSelectionRange(0, 99999);
+        navigator.clipboard.writeText(input.value).then(() => {
+            const originalHtml = btn.innerHTML;
+            btn.innerHTML = '<i class="bi bi-check2"></i> Copiado!';
+            btn.classList.add('bg-success', 'text-white');
+            setTimeout(() => {
+                btn.innerHTML = originalHtml;
+                btn.classList.remove('bg-success', 'text-white');
+            }, 2000);
+        });
+    }
+</script>
+{% endblock %}

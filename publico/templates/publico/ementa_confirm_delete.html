@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{% block title %}Excluir Curso/Ementa{% endblock %}
+
+{% block content %}
+<div style="max-width:520px;margin:3rem auto;">
+    <div style="background:white;border-radius:20px;padding:2.5rem;box-shadow:0 4px 24px rgba(14,50,98,0.1);text-align:center;">
+        <div style="font-size:3.5rem;margin-bottom:1rem;">🗑️</div>
+        <h4 style="color:#0E3262;font-weight:800;margin-bottom:0.5rem;">Excluir Curso/Ementa</h4>
+        <p style="color:#64748b;margin-bottom:0.5rem;">Você está prestes a excluir permanentemente:</p>
+        <div style="background:#fef3c7;border:2px solid #F1B514;border-radius:12px;padding:1rem 1.5rem;margin:1.5rem 0;">
+            <strong style="color:#0E3262;font-size:1.1rem;">{{ object.titulo }}</strong>
+        </div>
+        <p style="color:#ef4444;font-size:0.9rem;margin-bottom:2rem;">
+            <i class="bi bi-exclamation-triangle me-1"></i>Esta ação não pode ser desfeita.
+        </p>
+        <form method="post">
+            {% csrf_token %}
+            <div class="d-flex gap-3 justify-content-center flex-wrap">
+                <a href="{% url 'publico:ementa_list' %}" class="btn btn-light" style="border-radius:12px;font-weight:600;padding:0.75rem 1.75rem;">
+                    Cancelar
+                </a>
+                <button type="submit" class="btn btn-danger" style="border-radius:12px;font-weight:700;padding:0.75rem 1.75rem;">
+                    <i class="bi bi-trash me-1"></i>Sim, excluir
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

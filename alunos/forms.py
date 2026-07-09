@@ -141,10 +141,31 @@ class AlunoForm(forms.ModelForm):
             'turno_interesse': {'required': _("Este Campo é Obrigatório")},
         }
 
-    def __init__(self, *args, user=None, active_escola=None, sistema='CP', **kwargs):
+    def __init__(self, *args, user=None, active_escola=None, sistema='CP', publico_escola=None, **kwargs):
         super().__init__(*args, **kwargs)
         self.user = user
         sistema = sistema.upper()
+
+        # Preencher o turno_interesse inicial se for edição (está salvo como string separada por vírgula)
+        if self.instance and self.instance.pk and self.instance.turno_interesse:
+            self.initial['turno_interesse'] = self.instance.turno_interesse.split(',')
+
+        if publico_escola:
+            if 'cursos_interesse' in self.fields:
+                self.fields['cursos_interesse'].queryset = TipoCurso.objects.filter(escola=publico_escola)
+                self.fields['cursos_interesse'].required = True
+                self.fields['cursos_interesse'].error_messages = {'required': 'Selecione pelo menos um curso de interesse.'}
+            if 'escola' in self.fields:
+                self.fields['escola'].initial = publico_escola
+            required_fields = [
+                'nome_completo', 'cpf', 'data_nascimento', 'sexo', 'whatsapp',
+                'turno_interesse', 'endereco_cep', 'endereco_rua', 'endereco_numero',
+                'endereco_bairro', 'endereco_cidade', 'escolaridade',
+            ]
+            for field_name in required_fields:
+                if field_name in self.fields:
+                    self.fields[field_name].required = True
+            return
 
         # Determina a escola alvo para filtragem
         # Prioridade: active_escola (enviada pela view), depois a escola do perfil (para coordenador/auxiliar)
@@ -174,10 +195,6 @@ class AlunoForm(forms.ModelForm):
                 else:
                     # Fallback para usuários normais sem escola vinculada
                     self.fields['cursos_interesse'].queryset = TipoCurso.objects.filter(escola__tipo=sistema)
-
-        # Preencher o turno_interesse inicial se for edição (está salvo como string separada por vírgula)
-        if self.instance and self.instance.pk and self.instance.turno_interesse:
-            self.initial['turno_interesse'] = self.instance.turno_interesse.split(',')
 
         required_fields = [
             'whatsapp', 'renda_individual', 'num_moradores', 

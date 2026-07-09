@@ -1,8 +1,10 @@
 from django.db import models
 from django.contrib.auth.models import User
+from django.utils.text import slugify
 
 class Escola(models.Model):
     nome = models.CharField(max_length=200)
+    slug = models.SlugField(max_length=200, unique=True, null=True)
     endereco = models.CharField(max_length=200)
     email = models.EmailField(unique=True)
     telefone = models.CharField(max_length=20)
@@ -21,6 +23,17 @@ class Escola(models.Model):
 
     def __str__(self):
         return self.nome
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            base = slugify(self.nome)
+            slug = base
+            n = 1
+            while Escola.objects.filter(slug=slug).exclude(pk=self.pk).exists():
+                slug = f'{base}-{n}'
+                n += 1
+            self.slug = slug
+        super().save(*args, **kwargs)
 
     def get_whatsapp_formatado(self):
         if not self.whatsapp:
