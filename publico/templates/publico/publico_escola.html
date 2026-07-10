@@ -81,6 +81,19 @@
         border-radius: 0 0 24px 24px;
         margin-bottom: 1.5rem;
     }
+    .header-card::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background-image: var(--bg-image, none);
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+        opacity: 0.3;
+        pointer-events: none;
+        z-index: 0;
+    }
+    .header-card > * { position: relative; z-index: 1; }
     .header-card::after {
         content: '';
         position: absolute;
@@ -233,6 +246,7 @@
         .top-bar .escola-nome { font-size: 1rem; }
 
         .header-card { padding: 3rem 2rem 2.5rem; border-radius: 0 0 30px 30px; margin-bottom: 2rem; }
+        .header-card::before { display: none; }
         .header-card h1 { font-size: 2rem; }
 
         .content-wrap { padding: 0 1.5rem 5rem; }
@@ -269,7 +283,7 @@
 </div>
 
 <!-- HEADER -->
-<div class="header-card">
+<div class="header-card" style="{% if escola.slug == 'uditech-centro' %}--bg-image: url('{% static 'publico/img/uditech_centro.jpeg' %}');{% elif escola.slug == 'uditech-rondon' %}--bg-image: url('{% static 'publico/img/uditech_rondon.jpg' %}');{% endif %}">
     <div class="badge-escola">Unidade Uditech</div>
     <h1>{{ escola.nome }}</h1>
 </div>
