@@ -138,6 +138,9 @@
                         <i class="bi bi-whatsapp"></i>
                     </a>
                     {% endif %}
+                    {% if aluno.from_publico %}
+                    <span class="ms-1" title="Cadastro via Link Público — pendente finalização" style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: #f59e0b; box-shadow: 0 0 6px #f59e0b; vertical-align: middle;"></span>
+                    {% endif %}
                 </td>
                 <td class="text-muted">{{ aluno.idade }} anos</td>
                 <td>

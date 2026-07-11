@@ -129,6 +129,7 @@ class Aluno(models.Model):
 
     score_total = models.IntegerField(default=0, editable=False, verbose_name="Score Total")
     observacoes = models.TextField(blank=True, null=True, verbose_name="Observações do Histórico")
+    from_publico = models.BooleanField(default=False, verbose_name="Cadastro via Link Público")
 
     def save(self, *args, **kwargs):
         from core.utils import normalize_name, clean_digits

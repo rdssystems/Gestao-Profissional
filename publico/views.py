@@ -87,15 +87,20 @@ class PublicoCadastroView(View):
     def get(self, request, slug):
         cpf = request.GET.get('cpf', '')
         aluno = None
+        aluno_outra_escola = None
         ja_cadastrado = False
         form = None
         cpf_limpo = ''
         if cpf:
             cpf_limpo = ''.join(filter(str.isdigit, cpf))
             if len(cpf_limpo) == 11:
-                aluno = Aluno.objects.filter(cpf__icontains=cpf_limpo).first()
-                if aluno and aluno.escola == self.escola:
+                aluno = Aluno.objects.filter(cpf=cpf_limpo, escola=self.escola).first()
+                if aluno:
                     ja_cadastrado = True
+                else:
+                    aluno_outra_escola = Aluno.objects.filter(cpf=cpf_limpo).first()
+                    if aluno_outra_escola:
+                        aluno = aluno_outra_escola
 
         if ja_cadastrado:
             pass
@@ -143,6 +148,8 @@ class PublicoCadastroView(View):
             aluno.escola = self.escola
             if cpf_limpo:
                 aluno.cpf = cpf_limpo
+            if not aluno_existente:
+                aluno.from_publico = True
             aluno.save()
             form.save_m2m()
             messages.success(request, 'Cadastro realizado com sucesso!')
