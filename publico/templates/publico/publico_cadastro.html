@@ -359,7 +359,7 @@
 <!-- CONTAINER -->
 <div class="container-cadastro">
 
-    {% if not form %}
+    {% if not form and not ja_cadastrado %}
     <!-- ETAPA 1: CPF -->
     <div class="card-cpf">
         <div class="card-top">
@@ -379,6 +379,28 @@
                     <i class="bi bi-search"></i> Consultar
                 </button>
             </form>
+        </div>
+    </div>
+
+    {% elif ja_cadastrado %}
+    <!-- JÁ CADASTRADO NESTA UNIDADE -->
+    <div class="card-form">
+        <div class="card-top" style="background: linear-gradient(135deg, #25D366, #128C7E);">
+            <h4><i class="bi bi-check-circle-fill me-2"></i>Você já está cadastrado!</h4>
+            <p>{{ aluno_nome }}, seu cadastro já existe nesta unidade.</p>
+        </div>
+        <div class="form-body" style="text-align: center; padding: 2rem;">
+            <i class="bi bi-person-check-fill" style="font-size: 3.5rem; color: #25D366;"></i>
+            <p class="mt-3 mb-1 fw-bold">Já tenho cadastro</p>
+            <p class="text-muted">Caso tenha interesse em novos cursos,<br>entre em contato pelo WhatsApp da unidade.</p>
+            <a href="https://wa.me/{{ whatsapp_num }}?text={{ whatsapp_msg }}"
+               target="_blank"
+               class="btn-whatsapp"
+               style="display: inline-flex; align-items: center; gap: 0.5rem; background: #25D366; color: #fff;
+                      font-weight: 700; padding: 0.8rem 2rem; border-radius: 12px; text-decoration: none;
+                      font-size: 1.05rem; box-shadow: 0 4px 16px rgba(37,211,102,0.3);">
+                <i class="bi bi-whatsapp" style="font-size: 1.3rem;"></i> Chamar no WhatsApp
+            </a>
         </div>
     </div>
 

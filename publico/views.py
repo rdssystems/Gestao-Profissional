@@ -87,23 +87,44 @@ class PublicoCadastroView(View):
     def get(self, request, slug):
         cpf = request.GET.get('cpf', '')
         aluno = None
+        ja_cadastrado = False
         form = None
+        cpf_limpo = ''
         if cpf:
             cpf_limpo = ''.join(filter(str.isdigit, cpf))
             if len(cpf_limpo) == 11:
                 aluno = Aluno.objects.filter(cpf__icontains=cpf_limpo).first()
-        if aluno or cpf:
-            cpf_limpo = ''.join(filter(str.isdigit, cpf)) if cpf else ''
-            if aluno:
-                form = AlunoForm(instance=aluno, publico_escola=self.escola)
-            else:
-                form = AlunoForm(initial={'cpf': cpf_limpo}, publico_escola=self.escola)
+                if aluno and aluno.escola == self.escola:
+                    ja_cadastrado = True
+
+        if ja_cadastrado:
+            pass
+        elif aluno:
+            form = AlunoForm(instance=aluno, publico_escola=self.escola)
             form.fields.pop('escola', None)
+        elif cpf_limpo:
+            form = AlunoForm(initial={'cpf': cpf_limpo}, publico_escola=self.escola)
+            form.fields.pop('escola', None)
+
+        WHATSAPP_NUMBERS = {
+            'uditech-centro': '553432574709',
+            'uditech-rondon': '553432298050',
+        }
+        whatsapp_num = WHATSAPP_NUMBERS.get(slug, '')
+        whatsapp_msg = ''
+        if ja_cadastrado and aluno:
+            from urllib.parse import quote
+            whatsapp_msg = quote(f'Olá, sou {aluno.nome_completo} já tenho cadastro nesta unidade e gostaria de me inscrever para um curso.')
+
         return render(request, self.template_name, {
             'escola': self.escola,
             'cpf': cpf,
             'form': form,
-            'aluno_encontrado': bool(aluno),
+            'aluno_encontrado': bool(aluno) and not ja_cadastrado,
+            'ja_cadastrado': ja_cadastrado,
+            'aluno_nome': aluno.nome_completo if aluno else '',
+            'whatsapp_num': whatsapp_num,
+            'whatsapp_msg': whatsapp_msg,
         })
 
     def post(self, request, slug):
