@@ -5,32 +5,40 @@ echo "--- Iniciando Atualizacao do Sistema ---"
 # ──────────────────────────────────────────────────
 # 0. BACKUP PRE-UPDATE (GCS + Google Drive)
 # ──────────────────────────────────────────────────
-echo ">>> [PRE-UPDATE] Gerando backup do banco..."
-BACKUP_DATE=$(date +%Y%m%d_%H%M%S)
-BACKUP_FILE="pre_update_${BACKUP_DATE}.dump"
-TEMP="/tmp/${BACKUP_FILE}"
-GDRIVE="/media/qualificacaoudia_google_drive_1777986114/Gestao-Profissional/backups"
+read -p ">>> Deseja fazer backup antes de atualizar? (s/N): " FAZER_BACKUP
 
-# Dump
-sudo docker exec gq-db pg_dump -U gestao_user -Fc gestao_db > "$TEMP"
+if [[ "$FAZER_BACKUP" =~ ^[sS]$ ]]; then
+    echo ">>> [PRE-UPDATE] Gerando backup do banco..."
+    BACKUP_DATE=$(date +%Y%m%d_%H%M%S)
+    BACKUP_FILE="pre_update_${BACKUP_DATE}.dump"
+    TEMP="/tmp/${BACKUP_FILE}"
+    GDRIVE="/media/qualificacaoudia_google_drive_1777986114/Gestao-Profissional/backups/pre_update"
 
-# Enviar para GCS
-sudo docker cp "$TEMP" "gq-app:/tmp/${BACKUP_FILE}"
-sudo docker exec gq-app python /app/backup_upload.py "$BACKUP_FILE"
+    # Dump
+    sudo docker exec gq-db pg_dump -U gestao_user -Fc gestao_db > "$TEMP"
 
-# Salvar no Google Drive
-mkdir -p "$GDRIVE"
-cp "$TEMP" "$GDRIVE/$BACKUP_FILE"
+    # Enviar para GCS
+    sudo docker cp "$TEMP" "gq-app:/tmp/${BACKUP_FILE}"
+    sudo docker exec gq-app python /app/backup_upload.py "$BACKUP_FILE"
 
-# Manter apenas os 10 mais recentes no Drive
-TOTAL=$(ls -1 "$GDRIVE"/*.dump 2>/dev/null | wc -l)
-if [ "$TOTAL" -gt 10 ]; then
-    TO_DELETE=$((TOTAL - 10))
-    ls -1t "$GDRIVE"/*.dump | tail -n "$TO_DELETE" | xargs rm -f
+    # Salvar no Google Drive
+    mkdir -p "$GDRIVE"
+    cp "$TEMP" "$GDRIVE/$BACKUP_FILE"
+
+    # Manter apenas os 10 mais recentes no Drive
+    TOTAL=$(ls -1 "$GDRIVE"/*.dump 2>/dev/null | wc -l)
+    if [ "$TOTAL" -gt 10 ]; then
+        TO_DELETE=$((TOTAL - 10))
+        ls -1t "$GDRIVE"/*.dump | tail -n "$TO_DELETE" | while read f; do
+            rm -f "$f"
+        done
+    fi
+
+    rm -f "$TEMP"
+    echo ">>> [PRE-UPDATE] Backup salvo: GCS + Google Drive ($BACKUP_FILE)"
+else
+    echo ">>> Backup pulado."
 fi
-
-rm -f "$TEMP"
-echo ">>> [PRE-UPDATE] Backup salvo: GCS + Google Drive ($BACKUP_FILE)"
 
 # ──────────────────────────────────────────────────
 # 1. Git pull

@@ -5,11 +5,11 @@ DATE=$(date +%Y%m%d_%H%M%S)
 FILENAME="gestao_db_${DATE}.dump"
 TEMP_FILE="/tmp/${FILENAME}"
 APP_DIR="/DATA/AppData/Gestao-Profissional"
-GDRIVE="/media/qualificacaoudia_google_drive_1777986114/Gestao-Profissional/backups"
+GDRIVE="/media/qualificacaoudia_google_drive_1777986114/Gestao-Profissional/backups/diario"
 LOG="$APP_DIR/backup_gcs.log"
 
 echo "======================================" >> "$LOG"
-echo "  BACKUP INICIADO: $DATE"              >> "$LOG"
+echo "  BACKUP DIARIO INICIADO: $DATE"       >> "$LOG"
 echo "======================================" >> "$LOG"
 
 # 1. Dump
@@ -45,5 +45,5 @@ echo "    Backups no Drive: $(ls -1 "$GDRIVE"/*.dump 2>/dev/null | wc -l)" >> "$
 echo ">>> [5/5] Limpando temporarios..."     >> "$LOG"
 rm -f "$TEMP_FILE"
 
-echo "  BACKUP CONCLUIDO: $(date +"%Y-%m-%d %H:%M:%S")" >> "$LOG"
+echo "  BACKUP DIARIO CONCLUIDO: $(date +"%Y-%m-%d %H:%M:%S")" >> "$LOG"
 echo ""                                      >> "$LOG"
