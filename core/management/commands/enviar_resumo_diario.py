@@ -96,10 +96,13 @@ class Command(BaseCommand):
             ))
 
         assunto = f"Controle Diário - {hoje.strftime('%d/%m/%Y')}"
+
+        MESES_PT = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho',
+                     'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro']
         
         # 6. Montagem do corpo em Texto Simples (Fallback)
         texto_simples = (
-            f"Controle Diário do dia {hoje.strftime('%d/%m/%Y')}:\n\n"
+            f"Controle Diário do dia {hoje.day} de {MESES_PT[hoje.month - 1]} de {hoje.year}:\n\n"
             f"--- TOTAIS DO DIA ---\n"
             f"Atendimentos: {total_atendimento}\n"
             f"Inscrições Declaradas: {total_inscricoes}\n"
@@ -400,7 +403,7 @@ class Command(BaseCommand):
                 <div class="container">
                     <div class="header">
                         <h1>Controle Diário</h1>
-                        <p>Consolidado Operacional de {hoje.strftime('%d de %B de %Y')}</p>
+                        <p>Consolidado Operacional de {hoje.strftime('%d')} de {MESES_PT[hoje.month - 1]} de {hoje.year}</p>
                     </div>
                     <div class="content">
                         <p style="font-size: 15px; color: #334155; margin-bottom: 25px; line-height: 1.5;">
