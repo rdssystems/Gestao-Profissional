@@ -136,4 +136,5 @@ def preencher_relatorio_sine_view(request):
         'form': form,
         'hoje': hoje,
         'instance': instance,
+        'hide_navbar': True,
     })

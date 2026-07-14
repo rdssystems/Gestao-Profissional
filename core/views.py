@@ -390,6 +390,11 @@ class AuditLogListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
 class LoginSuccessRedirectView(LoginRequiredMixin, View):
     def get(self, request):
         user = request.user
+        
+        # Redirecionar usuário SINE para a tela de lançamento do SINE
+        if not user.is_superuser and (user.groups.filter(name='SINE').exists() or user.has_perm('controle_diario.add_relatoriodiariosine')):
+            return redirect('controle_diario:preencher_sine')
+
         if user.is_superuser or (hasattr(user, 'profile') and not user.profile.escola and user.profile.nivel_acesso in ['ADMIN_CP', 'ADMIN_UDITECH']):
             # Forçar a escolha do contexto após login se for superuser ou administrador de segmento sem escola fixa
             return redirect('escolas:selecionar_contexto')
