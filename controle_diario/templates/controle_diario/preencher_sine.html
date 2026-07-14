@@ -5,39 +5,71 @@
 
 {% block extra_css %}
 <style>
+    body {
+        background: linear-gradient(135deg, #F5F8FF 0%, #EAF1FF 100%);
+    }
+    @media (min-width: 992px) {
+        body {
+            overflow: hidden; /* Sem barra de rolagem no desktop */
+            height: 100vh;
+        }
+    }
+    footer {
+        display: none !important; /* Esconde rodapé global nesta página */
+    }
+    main {
+        padding-top: 10px !important;
+        padding-bottom: 10px !important;
+    }
     .card-sine {
         border: none;
-        border-radius: 20px;
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+        border-radius: 16px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
     }
     .section-title-sine {
         color: #0E3262;
         font-weight: 700;
-        font-size: 1.1rem;
+        font-size: 0.9rem;
         border-bottom: 2px solid #e2e8f0;
-        padding-bottom: 8px;
-        margin-bottom: 20px;
+        padding-bottom: 4px;
+        margin-bottom: 12px;
         display: flex;
         align-items: center;
-        gap: 8px;
+        gap: 6px;
+    }
+    .form-label-sine {
+        font-size: 0.78rem;
+        font-weight: 600;
+        color: #475569;
+        margin-bottom: 2px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        display: block;
+    }
+    .form-control-sine {
+        padding: 5px 10px !important;
+        font-size: 0.85rem !important;
+        border-radius: 8px !important;
+        height: 32px !important;
     }
     .badge-status {
-        font-size: 0.85rem;
+        font-size: 0.75rem;
         font-weight: 700;
-        padding: 6px 16px;
+        padding: 4px 12px;
         border-radius: 30px;
     }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="container-fluid px-4 px-lg-5 mt-4 mb-5">
+<div class="container-fluid px-2 px-md-3 mt-1 mb-2">
 
     <!-- Cabeçalho Minimalista com Logout para Usuário SINE -->
-    <div class="d-flex justify-content-between align-items-center bg-white border-bottom p-3 mb-4 rounded-4 shadow-sm flex-wrap gap-2">
+    <div class="d-flex justify-content-between align-items-center bg-white border-bottom p-2 mb-2 rounded-3 shadow-sm flex-wrap gap-2">
         <div class="d-flex align-items-center">
-            <img src="/static/core/logopmu.png" alt="Logo PMU" style="height: 38px;" class="me-2">
-            <span class="badge bg-success-subtle text-success-emphasis px-3 py-2 rounded-pill fw-bold" style="font-size: 0.85rem;">
+            <img src="/static/core/logopmu.png" alt="Logo PMU" style="height: 32px;" class="me-2">
+            <span class="badge bg-success-subtle text-success-emphasis px-2.5 py-1.5 rounded-pill fw-bold" style="font-size: 0.8rem;">
                 <i class="bi bi-briefcase-fill me-1"></i> Painel SINE
             </span>
         </div>
@@ -45,32 +77,32 @@
             <span class="text-secondary small">Usuário: <strong class="text-dark">{{ user.username }}</strong></span>
             <form method="post" action="{% url 'logout' %}" class="d-inline mb-0">
                 {% csrf_token %}
-                <button type="submit" class="btn btn-outline-danger btn-sm px-3 rounded-pill fw-semibold d-flex align-items-center gap-1">
+                <button type="submit" class="btn btn-outline-danger btn-sm py-1 px-3 rounded-pill fw-semibold d-flex align-items-center gap-1" style="font-size: 0.78rem;">
                     <i class="bi bi-box-arrow-right"></i> Sair
                 </button>
             </form>
         </div>
     </div>
 
-    <!-- Cabeçalho -->
-    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
+    <!-- Cabeçalho Interno Compacto -->
+    <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2 px-1">
         <div>
-            <h1 class="fw-bold display-6 text-primary mb-1">
+            <h2 class="fw-bold fs-4 text-primary mb-0">
                 Controle Diário — SINE
-            </h1>
-            <p class="text-muted fs-5 mb-0">
+            </h2>
+            <p class="text-muted small mb-0">
                 Lançamento de Indicadores de Atendimento
             </p>
         </div>
-        <div class="text-end">
-            <h4 class="fw-bold mb-1 text-dark">{{ hoje|date:"d/m/Y" }}</h4>
+        <div class="text-end d-flex align-items-center gap-2">
+            <h5 class="fw-bold mb-0 text-dark">{{ hoje|date:"d/m/Y" }}</h5>
             {% if instance %}
-                <span class="badge bg-warning-subtle text-warning-emphasis badge-status">
-                    <i class="bi bi-pencil-fill me-1"></i> Editando Registro
+                <span class="badge bg-warning-subtle text-warning-emphasis badge-status py-1">
+                    <i class="bi bi-pencil-fill me-1"></i> Editando
                 </span>
             {% else %}
-                <span class="badge bg-primary-subtle text-primary-emphasis badge-status">
-                    <i class="bi bi-plus-circle-fill me-1"></i> Novo Registro
+                <span class="badge bg-primary-subtle text-primary-emphasis badge-status py-1">
+                    <i class="bi bi-plus-circle-fill me-1"></i> Novo
                 </span>
             {% endif %}
         </div>
@@ -78,14 +110,13 @@
 
     <!-- Card principal -->
     <div class="card card-sine">
-        <div class="card-body p-4 p-lg-5">
+        <div class="card-body p-3 p-lg-4">
 
             {% if instance %}
-                <div class="alert alert-info border-0 shadow-sm rounded-3 mb-4 d-flex align-items-center">
-                    <i class="bi bi-info-circle-fill fs-4 me-3"></i>
+                <div class="alert alert-info border-0 py-1.5 px-3 rounded-3 mb-3 d-flex align-items-center" style="font-size: 0.8rem;">
+                    <i class="bi bi-info-circle-fill fs-5 me-2"></i>
                     <div>
-                        <h6 class="fw-bold mb-0">Indicadores já preenchidos hoje!</h6>
-                        <p class="mb-0 small opacity-75">Caso queira corrigir algum número lançado, você pode fazer as alterações abaixo e clicar em "Atualizar Indicadores".</p>
+                        <span class="fw-bold">Indicadores já preenchidos hoje!</span> Você pode fazer as alterações abaixo e clicar em "Atualizar Indicadores".
                     </div>
                 </div>
             {% endif %}
@@ -94,109 +125,117 @@
                 {% csrf_token %}
 
                 {% if form.non_field_errors %}
-                    <div class="alert alert-danger mb-4">
+                    <div class="alert alert-danger py-1.5 px-3 mb-3" style="font-size: 0.8rem;">
                         {% for error in form.non_field_errors %}
                             <div>{{ error }}</div>
                         {% endfor %}
                     </div>
                 {% endif %}
 
-                <!-- 1. SEÇÃO ATENDIMENTOS -->
-                <div class="section-title-sine">
-                    <i class="bi bi-people-fill text-primary"></i> 1. Atendimentos Realizados
-                </div>
-                <div class="row g-4 mb-5">
-                    <div class="col-12 col-md-6 col-xl-3">
-                        <label class="form-label fw-semibold text-secondary">{{ form.atendimento_trabalhador.label }}</label>
-                        {{ form.atendimento_trabalhador|add_class:"form-control form-control-lg" }}
-                        {% if form.atendimento_trabalhador.errors %}<div class="text-danger small mt-1">{{ form.atendimento_trabalhador.errors }}</div>{% endif %}
-                    </div>
-                    <div class="col-12 col-md-6 col-xl-3">
-                        <label class="form-label fw-semibold text-secondary">{{ form.atendimento_trabalhador_online.label }}</label>
-                        {{ form.atendimento_trabalhador_online|add_class:"form-control form-control-lg" }}
-                        {% if form.atendimento_trabalhador_online.errors %}<div class="text-danger small mt-1">{{ form.atendimento_trabalhador_online.errors }}</div>{% endif %}
-                    </div>
-                    <div class="col-12 col-md-6 col-xl-3">
-                        <label class="form-label fw-semibold text-secondary">{{ form.atendimento_empregador.label }}</label>
-                        {{ form.atendimento_empregador|add_class:"form-control form-control-lg" }}
-                        {% if form.atendimento_empregador.errors %}<div class="text-danger small mt-1">{{ form.atendimento_empregador.errors }}</div>{% endif %}
-                    </div>
-                    <div class="col-12 col-md-6 col-xl-3">
-                        <label class="form-label fw-semibold text-secondary">{{ form.atendimento_empregador_online.label }}</label>
-                        {{ form.atendimento_empregador_online|add_class:"form-control form-control-lg" }}
-                        {% if form.atendimento_empregador_online.errors %}<div class="text-danger small mt-1">{{ form.atendimento_empregador_online.errors }}</div>{% endif %}
-                    </div>
-                </div>
+                <div class="row g-3">
+                    <!-- Coluna Esquerda: Atendimentos + Seguro/CTPS -->
+                    <div class="col-12 col-lg-6 border-end-lg">
+                        <!-- 1. SEÇÃO ATENDIMENTOS -->
+                        <div class="section-title-sine">
+                            <i class="bi bi-people-fill text-primary"></i> 1. Atendimentos Realizados
+                        </div>
+                        <div class="row g-2 mb-3">
+                            <div class="col-6">
+                                <label class="form-label-sine" title="{{ form.atendimento_trabalhador.label }}">{{ form.atendimento_trabalhador.label }}</label>
+                                {{ form.atendimento_trabalhador|add_class:"form-control form-control-sine" }}
+                                {% if form.atendimento_trabalhador.errors %}<div class="text-danger small mt-1" style="font-size: 0.7rem;">{{ form.atendimento_trabalhador.errors }}</div>{% endif %}
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label-sine" title="{{ form.atendimento_trabalhador_online.label }}">{{ form.atendimento_trabalhador_online.label }}</label>
+                                {{ form.atendimento_trabalhador_online|add_class:"form-control form-control-sine" }}
+                                {% if form.atendimento_trabalhador_online.errors %}<div class="text-danger small mt-1" style="font-size: 0.7rem;">{{ form.atendimento_trabalhador_online.errors }}</div>{% endif %}
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label-sine" title="{{ form.atendimento_empregador.label }}">{{ form.atendimento_empregador.label }}</label>
+                                {{ form.atendimento_empregador|add_class:"form-control form-control-sine" }}
+                                {% if form.atendimento_empregador.errors %}<div class="text-danger small mt-1" style="font-size: 0.7rem;">{{ form.atendimento_empregador.errors }}</div>{% endif %}
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label-sine" title="{{ form.atendimento_empregador_online.label }}">{{ form.atendimento_empregador_online.label }}</label>
+                                {{ form.atendimento_empregador_online|add_class:"form-control form-control-sine" }}
+                                {% if form.atendimento_empregador_online.errors %}<div class="text-danger small mt-1" style="font-size: 0.7rem;">{{ form.atendimento_empregador_online.errors }}</div>{% endif %}
+                            </div>
+                        </div>
 
-                <!-- 2. SEÇÃO SERVIÇOS -->
-                <div class="section-title-sine">
-                    <i class="bi bi-file-earmark-text-fill text-primary"></i> 2. Seguro Desemprego e CTPS
-                </div>
-                <div class="row g-4 mb-5">
-                    <div class="col-12 col-md-6">
-                        <label class="form-label fw-semibold text-secondary">{{ form.seguro_desemprego.label }}</label>
-                        {{ form.seguro_desemprego|add_class:"form-control form-control-lg" }}
-                        {% if form.seguro_desemprego.errors %}<div class="text-danger small mt-1">{{ form.seguro_desemprego.errors }}</div>{% endif %}
+                        <!-- 2. SEÇÃO SERVIÇOS -->
+                        <div class="section-title-sine">
+                            <i class="bi bi-file-earmark-text-fill text-primary"></i> 2. Seguro Desemprego e CTPS
+                        </div>
+                        <div class="row g-2">
+                            <div class="col-6">
+                                <label class="form-label-sine" title="{{ form.seguro_desemprego.label }}">{{ form.seguro_desemprego.label }}</label>
+                                {{ form.seguro_desemprego|add_class:"form-control form-control-sine" }}
+                                {% if form.seguro_desemprego.errors %}<div class="text-danger small mt-1" style="font-size: 0.7rem;">{{ form.seguro_desemprego.errors }}</div>{% endif %}
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label-sine" title="{{ form.ctps_digital.label }}">{{ form.ctps_digital.label }}</label>
+                                {{ form.ctps_digital|add_class:"form-control form-control-sine" }}
+                                {% if form.ctps_digital.errors %}<div class="text-danger small mt-1" style="font-size: 0.7rem;">{{ form.ctps_digital.errors }}</div>{% endif %}
+                            </div>
+                        </div>
                     </div>
-                    <div class="col-12 col-md-6">
-                        <label class="form-label fw-semibold text-secondary">{{ form.ctps_digital.label }}</label>
-                        {{ form.ctps_digital|add_class:"form-control form-control-lg" }}
-                        {% if form.ctps_digital.errors %}<div class="text-danger small mt-1">{{ form.ctps_digital.errors }}</div>{% endif %}
-                    </div>
-                </div>
 
-                <!-- 3. SEÇÃO SELEÇÃO & INTERMEDIAÇÃO -->
-                <div class="section-title-sine">
-                    <i class="bi bi-briefcase-fill text-primary"></i> 3. Intermediação de Mão de Obra
-                </div>
-                <div class="row g-4 mb-5">
-                    <div class="col-12 col-md-6 col-xl-4">
-                        <label class="form-label fw-semibold text-secondary">{{ form.vagas_captadas.label }}</label>
-                        {{ form.vagas_captadas|add_class:"form-control form-control-lg" }}
-                        {% if form.vagas_captadas.errors %}<div class="text-danger small mt-1">{{ form.vagas_captadas.errors }}</div>{% endif %}
-                    </div>
-                    <div class="col-12 col-md-6 col-xl-4">
-                        <label class="form-label fw-semibold text-secondary">{{ form.curriculos.label }}</label>
-                        {{ form.curriculos|add_class:"form-control form-control-lg" }}
-                        {% if form.curriculos.errors %}<div class="text-danger small mt-1">{{ form.curriculos.errors }}</div>{% endif %}
-                    </div>
-                    <div class="col-12 col-md-6 col-xl-4">
-                        <label class="form-label fw-semibold text-secondary">{{ form.entrevistados.label }}</label>
-                        {{ form.entrevistados|add_class:"form-control form-control-lg" }}
-                        {% if form.entrevistados.errors %}<div class="text-danger small mt-1">{{ form.entrevistados.errors }}</div>{% endif %}
-                    </div>
-                    <div class="col-12 col-md-6">
-                        <label class="form-label fw-semibold text-secondary">{{ form.processo_seletivo.label }}</label>
-                        {{ form.processo_seletivo|add_class:"form-control form-control-lg" }}
-                        {% if form.processo_seletivo.errors %}<div class="text-danger small mt-1">{{ form.processo_seletivo.errors }}</div>{% endif %}
-                    </div>
-                    <div class="col-12 col-md-6">
-                        <label class="form-label fw-semibold text-secondary">{{ form.orientacao_profissional.label }}</label>
-                        {{ form.orientacao_profissional|add_class:"form-control form-control-lg" }}
-                        {% if form.orientacao_profissional.errors %}<div class="text-danger small mt-1">{{ form.orientacao_profissional.errors }}</div>{% endif %}
-                    </div>
-                </div>
+                    <!-- Coluna Direita: Intermediação + Telefonia -->
+                    <div class="col-12 col-lg-6">
+                        <!-- 3. SEÇÃO SELEÇÃO & INTERMEDIAÇÃO -->
+                        <div class="section-title-sine">
+                            <i class="bi bi-briefcase-fill text-primary"></i> 3. Intermediação de Mão de Obra
+                        </div>
+                        <div class="row g-2 mb-3">
+                            <div class="col-4">
+                                <label class="form-label-sine" title="{{ form.vagas_captadas.label }}">{{ form.vagas_captadas.label }}</label>
+                                {{ form.vagas_captadas|add_class:"form-control form-control-sine" }}
+                                {% if form.vagas_captadas.errors %}<div class="text-danger small mt-1" style="font-size: 0.7rem;">{{ form.vagas_captadas.errors }}</div>{% endif %}
+                            </div>
+                            <div class="col-4">
+                                <label class="form-label-sine" title="{{ form.curriculos.label }}">{{ form.curriculos.label }}</label>
+                                {{ form.curriculos|add_class:"form-control form-control-sine" }}
+                                {% if form.curriculos.errors %}<div class="text-danger small mt-1" style="font-size: 0.7rem;">{{ form.curriculos.errors }}</div>{% endif %}
+                            </div>
+                            <div class="col-4">
+                                <label class="form-label-sine" title="{{ form.entrevistados.label }}">{{ form.entrevistados.label }}</label>
+                                {{ form.entrevistados|add_class:"form-control form-control-sine" }}
+                                {% if form.entrevistados.errors %}<div class="text-danger small mt-1" style="font-size: 0.7rem;">{{ form.entrevistados.errors }}</div>{% endif %}
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label-sine" title="{{ form.processo_seletivo.label }}">{{ form.processo_seletivo.label }}</label>
+                                {{ form.processo_seletivo|add_class:"form-control form-control-sine" }}
+                                {% if form.processo_seletivo.errors %}<div class="text-danger small mt-1" style="font-size: 0.7rem;">{{ form.processo_seletivo.errors }}</div>{% endif %}
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label-sine" title="{{ form.orientacao_profissional.label }}">{{ form.orientacao_profissional.label }}</label>
+                                {{ form.orientacao_profissional|add_class:"form-control form-control-sine" }}
+                                {% if form.orientacao_profissional.errors %}<div class="text-danger small mt-1" style="font-size: 0.7rem;">{{ form.orientacao_profissional.errors }}</div>{% endif %}
+                            </div>
+                        </div>
 
-                <!-- 4. SEÇÃO TELEFONIA -->
-                <div class="section-title-sine">
-                    <i class="bi bi-telephone-fill text-primary"></i> 4. Contatos Telefônicos
-                </div>
-                <div class="row g-4 mb-5">
-                    <div class="col-12 col-md-6">
-                        <label class="form-label fw-semibold text-secondary">{{ form.ligacoes_recebidas.label }}</label>
-                        {{ form.ligacoes_recebidas|add_class:"form-control form-control-lg" }}
-                        {% if form.ligacoes_recebidas.errors %}<div class="text-danger small mt-1">{{ form.ligacoes_recebidas.errors }}</div>{% endif %}
-                    </div>
-                    <div class="col-12 col-md-6">
-                        <label class="form-label fw-semibold text-secondary">{{ form.ligacoes_realizadas.label }}</label>
-                        {{ form.ligacoes_realizadas|add_class:"form-control form-control-lg" }}
-                        {% if form.ligacoes_realizadas.errors %}<div class="text-danger small mt-1">{{ form.ligacoes_realizadas.errors }}</div>{% endif %}
+                        <!-- 4. SEÇÃO TELEFONIA -->
+                        <div class="section-title-sine">
+                            <i class="bi bi-telephone-fill text-primary"></i> 4. Contatos Telefônicos
+                        </div>
+                        <div class="row g-2">
+                            <div class="col-6">
+                                <label class="form-label-sine" title="{{ form.ligacoes_recebidas.label }}">{{ form.ligacoes_recebidas.label }}</label>
+                                {{ form.ligacoes_recebidas|add_class:"form-control form-control-sine" }}
+                                {% if form.ligacoes_recebidas.errors %}<div class="text-danger small mt-1" style="font-size: 0.7rem;">{{ form.ligacoes_recebidas.errors }}</div>{% endif %}
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label-sine" title="{{ form.ligacoes_realizadas.label }}">{{ form.ligacoes_realizadas.label }}</label>
+                                {{ form.ligacoes_realizadas|add_class:"form-control form-control-sine" }}
+                                {% if form.ligacoes_realizadas.errors %}<div class="text-danger small mt-1" style="font-size: 0.7rem;">{{ form.ligacoes_realizadas.errors }}</div>{% endif %}
+                            </div>
+                        </div>
                     </div>
                 </div>
 
                 <!-- Ações -->
-                <div class="d-flex justify-content-end mt-4">
-                    <button type="submit" class="btn btn-primary btn-lg px-5 fw-semibold shadow-sm rounded-3">
+                <div class="d-flex justify-content-end mt-3 border-top pt-2">
+                    <button type="submit" class="btn btn-primary px-4 py-1.5 fw-semibold shadow-sm rounded-pill" style="font-size: 0.88rem;">
                         {% if instance %}
                             <i class="bi bi-save2-fill me-1"></i> Atualizar Indicadores
                         {% else %}
