@@ -5,8 +5,8 @@ from django.utils import timezone
 from datetime import date
 from django.db.models import Sum, Q # Importando Sum e Q
 
-from .models import ControleDiario
-from .forms import ControleDiarioForm
+from .models import ControleDiario, RelatorioDiarioSine
+from .forms import ControleDiarioForm, RelatorioDiarioSineForm
 from escolas.models import Escola
 
 # Decorador para verificar se o usuário é superusuário OU tem perfil com escola
@@ -98,11 +98,42 @@ def controle_diario_admin_view(request):
         total_ligacoes_realizadas=Sum('ligacoes_realizadas'),
     )
 
+    # Buscar dados do SINE para a data
+    sine_relatorio = RelatorioDiarioSine.objects.filter(data=data_selecionada).first()
+
     context = {
         'controles_diarios': controles_diarios_qs,
         'totais': totais,
         'data_selecionada': data_selecionada,
         'escola_id_selecionada': escola_id,
         'todas_escolas': todas_escolas,
+        'sine_relatorio': sine_relatorio,
     }
     return render(request, 'controle_diario/controle_diario_admin.html', context)
+
+
+@login_required
+@user_passes_test(lambda u: u.is_superuser or u.has_perm('controle_diario.add_relatoriodiariosine') or u.groups.filter(name='SINE').exists())
+def preencher_relatorio_sine_view(request):
+    hoje = date.today()
+    instance = RelatorioDiarioSine.objects.filter(data=hoje).first()
+
+    if request.method == 'POST':
+        form = RelatorioDiarioSineForm(request.POST, instance=instance)
+        if form.is_valid():
+            relatorio = form.save(commit=False)
+            relatorio.data = hoje
+            relatorio.usuario = request.user
+            relatorio.save()
+            messages.success(request, "Indicadores diários do SINE salvos com sucesso!")
+            return redirect('controle_diario:preencher_sine')
+        else:
+            messages.error(request, "Erro ao salvar os dados. Verifique os valores informados.")
+    else:
+        form = RelatorioDiarioSineForm(instance=instance)
+
+    return render(request, 'controle_diario/preencher_sine.html', {
+        'form': form,
+        'hoje': hoje,
+        'instance': instance,
+    })

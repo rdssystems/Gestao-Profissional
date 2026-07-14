@@ -6,4 +6,5 @@ app_name = 'controle_diario'
 urlpatterns = [
     path('preencher/', views.preencher_controle_diario_view, name='preencher'),
     path('admin-view/', views.controle_diario_admin_view, name='admin_view'), # Nova URL
+    path('sine/', views.preencher_relatorio_sine_view, name='preencher_sine'),
 ]

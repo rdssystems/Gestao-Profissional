@@ -134,6 +134,9 @@ class EmailDestinatario(models.Model):
     nome = models.CharField(max_length=100, verbose_name="Nome")
     email = models.EmailField(unique=True, verbose_name="E-mail")
     ativo = models.BooleanField(default=True, verbose_name="Ativo")
+    receber_cp = models.BooleanField(default=True, verbose_name="Receber dados de CPs")
+    receber_uditech = models.BooleanField(default=True, verbose_name="Receber dados de Uditechs")
+    receber_sine = models.BooleanField(default=True, verbose_name="Receber dados do SINE")
     adicionado_em = models.DateTimeField(auto_now_add=True)
     adicionado_por = models.ForeignKey(
         User, on_delete=models.SET_NULL, null=True, blank=True,

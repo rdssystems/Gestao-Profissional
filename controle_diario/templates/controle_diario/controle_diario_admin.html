@@ -183,6 +183,96 @@
                 {% endif %}
             </div>
         </div>
+
+        <!-- Registros SINE -->
+        <div class="card border-0 shadow-sm rounded-4 mb-5">
+            <div class="card-header bg-success bg-gradient text-white py-3 rounded-top-4 d-flex justify-content-between align-items-center">
+                <h5 class="mb-0 fw-bold">
+                    <i class="bi bi-briefcase-fill me-2"></i>Indicadores do SINE — {{ data_selecionada|date:"d/m/Y" }}
+                </h5>
+                {% if sine_relatorio %}
+                    <span class="badge bg-white text-success fw-bold">Enviado por: {{ sine_relatorio.usuario.get_full_name|default:sine_relatorio.usuario.username }}</span>
+                {% endif %}
+            </div>
+
+            <div class="card-body p-0">
+                {% if sine_relatorio %}
+                    <div class="table-responsive">
+                        <table class="table table-hover table-bordered align-middle mb-0">
+                            <thead class="table-light text-center small text-uppercase">
+                                <tr>
+                                    <th class="text-start" style="width: 50%;">Indicador / Serviço</th>
+                                    <th>Valor Lançado</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td class="fw-semibold text-secondary">Atendimento ao Trabalhador (Presencial)</td>
+                                    <td class="text-center">{{ sine_relatorio.atendimento_trabalhador }}</td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-semibold text-secondary">Atendimento ao Trabalhador (On-line)</td>
+                                    <td class="text-center">{{ sine_relatorio.atendimento_trabalhador_online }}</td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-semibold text-secondary">Atendimento ao Empregador (Presencial)</td>
+                                    <td class="text-center">{{ sine_relatorio.atendimento_empregador }}</td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-semibold text-secondary">Atendimento ao Empregador (On-line)</td>
+                                    <td class="text-center">{{ sine_relatorio.atendimento_empregador_online }}</td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-semibold text-secondary">Seguro Desemprego</td>
+                                    <td class="text-center">{{ sine_relatorio.seguro_desemprego }}</td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-semibold text-secondary">CTPS Digital</td>
+                                    <td class="text-center">{{ sine_relatorio.ctps_digital }}</td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-semibold text-secondary">Vagas Captadas</td>
+                                    <td class="text-center">{{ sine_relatorio.vagas_captadas }}</td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-semibold text-secondary">Currículos Recebidos</td>
+                                    <td class="text-center">{{ sine_relatorio.curriculos }}</td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-semibold text-secondary">Entrevistados</td>
+                                    <td class="text-center">{{ sine_relatorio.entrevistados }}</td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-semibold text-secondary">Processos Seletivos Realizados</td>
+                                    <td class="text-center">{{ sine_relatorio.processo_seletivo }}</td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-semibold text-secondary">Orientação Profissional</td>
+                                    <td class="text-center">{{ sine_relatorio.orientacao_profissional }}</td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-semibold text-secondary">Ligações Recebidas</td>
+                                    <td class="text-center">{{ sine_relatorio.ligacoes_recebidas }}</td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-semibold text-secondary">Ligações Realizadas</td>
+                                    <td class="text-center">{{ sine_relatorio.ligacoes_realizadas }}</td>
+                                </tr>
+                                <tr class="table-success fw-bold text-success-emphasis">
+                                    <td>TOTAL DE PROCEDIMENTOS SINE</td>
+                                    <td class="text-center fs-5">{{ sine_relatorio.total_procedimentos }}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="alert alert-warning m-4 border-0 shadow-sm rounded-3">
+                        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                        Nenhum indicador do SINE foi enviado para esta data.
+                    </div>
+                {% endif %}
+            </div>
+        </div>
     </div>
 
     <!-- Visualização em Dashboard (Escondida por padrão) -->

@@ -416,7 +416,7 @@
         <form method="post" id="form-add">
             {% csrf_token %}
             <input type="hidden" name="action" value="add">
-            <div class="row g-3 align-items-end">
+            <div class="row g-3 align-items-end mb-3">
                 <div class="col-md-4">
                     <label class="form-label-custom">Nome</label>
                     <input type="text" name="nome" class="form-control form-control-custom"
@@ -431,6 +431,23 @@
                     <button type="submit" class="btn-primary-custom w-100">
                         <i class="bi bi-plus-lg"></i> Adicionar
                     </button>
+                </div>
+            </div>
+            <div>
+                <label class="form-label-custom d-block">Preferências de Recebimento</label>
+                <div class="d-flex flex-wrap gap-4 mt-2">
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="checkbox" name="receber_cp" id="check-cp" checked>
+                        <label class="form-check-label fw-bold text-secondary small" for="check-cp">Receber dados de CPs</label>
+                    </div>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="checkbox" name="receber_uditech" id="check-uditech" checked>
+                        <label class="form-check-label fw-bold text-secondary small" for="check-uditech">Receber dados de Uditechs</label>
+                    </div>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="checkbox" name="receber_sine" id="check-sine" checked>
+                        <label class="form-check-label fw-bold text-secondary small" for="check-sine">Receber dados do SINE</label>
+                    </div>
                 </div>
             </div>
         </form>
@@ -458,6 +475,35 @@
                         Adicionado em {{ dest.adicionado_em|date:"d/m/Y" }}
                         {% if dest.adicionado_por %} por {{ dest.adicionado_por.get_full_name|default:dest.adicionado_por.username }}{% endif %}
                     </div>
+                </div>
+                <div class="d-flex flex-wrap gap-2 me-3">
+                    <form method="post" style="display:inline;">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="toggle_pref">
+                        <input type="hidden" name="pk" value="{{ dest.pk }}">
+                        <input type="hidden" name="pref" value="cp">
+                        <button type="submit" class="btn btn-sm {% if dest.receber_cp %}btn-primary{% else %}btn-outline-secondary opacity-50{% endif %} rounded-pill px-3 fw-bold" style="font-size: 0.72rem;" title="Alternar dados de CPs">
+                            CP
+                        </button>
+                    </form>
+                    <form method="post" style="display:inline;">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="toggle_pref">
+                        <input type="hidden" name="pk" value="{{ dest.pk }}">
+                        <input type="hidden" name="pref" value="uditech">
+                        <button type="submit" class="btn btn-sm {% if dest.receber_uditech %}btn-warning text-dark{% else %}btn-outline-secondary opacity-50{% endif %} rounded-pill px-3 fw-bold" style="font-size: 0.72rem;" title="Alternar dados de Uditechs">
+                            Uditech
+                        </button>
+                    </form>
+                    <form method="post" style="display:inline;">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="toggle_pref">
+                        <input type="hidden" name="pk" value="{{ dest.pk }}">
+                        <input type="hidden" name="pref" value="sine">
+                        <button type="submit" class="btn btn-sm {% if dest.receber_sine %}btn-success{% else %}btn-outline-secondary opacity-50{% endif %} rounded-pill px-3 fw-bold" style="font-size: 0.72rem;" title="Alternar dados do SINE">
+                            SINE
+                        </button>
+                    </form>
                 </div>
                 <span class="status-pill {% if dest.ativo %}active{% else %}inactive{% endif %}">
                     <i class="bi {% if dest.ativo %}bi-check-circle-fill{% else %}bi-pause-circle{% endif %}"></i>

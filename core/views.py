@@ -76,7 +76,13 @@ def gerenciar_email_destinatarios(request):
             if nome and email:
                 obj, created = EmailDestinatario.objects.get_or_create(
                     email=email,
-                    defaults={'nome': nome, 'adicionado_por': request.user}
+                    defaults={
+                        'nome': nome, 
+                        'adicionado_por': request.user,
+                        'receber_cp': 'receber_cp' in request.POST,
+                        'receber_uditech': 'receber_uditech' in request.POST,
+                        'receber_sine': 'receber_sine' in request.POST,
+                    }
                 )
                 if created:
                     messages.success(request, f"✅ {nome} ({email}) adicionado com sucesso!")
@@ -84,6 +90,20 @@ def gerenciar_email_destinatarios(request):
                     messages.warning(request, f"⚠️ O e-mail {email} já estava cadastrado.")
             else:
                 messages.error(request, "Preencha o nome e o e-mail.")
+
+        elif action == 'toggle_pref':
+            pk = request.POST.get('pk')
+            pref = request.POST.get('pref')
+            dest = get_object_or_404(EmailDestinatario, pk=pk)
+            if pref == 'cp':
+                dest.receber_cp = not dest.receber_cp
+            elif pref == 'uditech':
+                dest.receber_uditech = not dest.receber_uditech
+            elif pref == 'sine':
+                dest.receber_sine = not dest.receber_sine
+            dest.save()
+            status_pref = "ativado" if getattr(dest, f'receber_{pref}') else "desativado"
+            messages.info(request, f"Recebimento de dados de {pref.upper()} para {dest.nome} {status_pref}.")
 
         elif action == 'toggle':
             pk = request.POST.get('pk')
