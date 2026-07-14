@@ -18,43 +18,43 @@
         display: none !important; /* Esconde rodapé global nesta página */
     }
     main {
-        padding-top: 10px !important;
-        padding-bottom: 10px !important;
+        padding-top: 15px !important;
+        padding-bottom: 15px !important;
     }
     .card-sine {
         border: none;
-        border-radius: 16px;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+        border-radius: 20px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
     }
     .section-title-sine {
         color: #0E3262;
         font-weight: 700;
-        font-size: 0.9rem;
+        font-size: 1.05rem;
         border-bottom: 2px solid #e2e8f0;
-        padding-bottom: 4px;
-        margin-bottom: 12px;
+        padding-bottom: 6px;
+        margin-bottom: 16px;
         display: flex;
         align-items: center;
-        gap: 6px;
+        gap: 8px;
     }
     .form-label-sine {
-        font-size: 0.78rem;
+        font-size: 0.9rem;
         font-weight: 600;
-        color: #475569;
-        margin-bottom: 2px;
+        color: #334155;
+        margin-bottom: 4px;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
         display: block;
     }
     .form-control-sine {
-        padding: 5px 10px !important;
-        font-size: 0.85rem !important;
-        border-radius: 8px !important;
-        height: 32px !important;
+        padding: 8px 12px !important;
+        font-size: 0.95rem !important;
+        border-radius: 10px !important;
+        height: 42px !important;
     }
     .badge-status {
-        font-size: 0.75rem;
+        font-size: 0.8rem;
         font-weight: 700;
         padding: 4px 12px;
         border-radius: 30px;
@@ -65,13 +65,28 @@
 {% block content %}
 <div class="container-fluid px-2 px-md-3 mt-1 mb-2">
 
-    <!-- Cabeçalho Minimalista com Logout para Usuário SINE -->
-    <div class="d-flex justify-content-between align-items-center bg-white border-bottom p-2 mb-2 rounded-3 shadow-sm flex-wrap gap-2">
-        <div class="d-flex align-items-center">
+    <!-- Cabeçalho Minimalista Integrado com Logout para Usuário SINE -->
+    <div class="d-flex justify-content-between align-items-center bg-white border-bottom p-2 mb-3 rounded-3 shadow-sm flex-wrap gap-2">
+        <div class="d-flex align-items-center flex-wrap gap-2">
             <img src="/static/core/logopmu.png" alt="Logo PMU" style="height: 32px;" class="me-2">
             <span class="badge bg-success-subtle text-success-emphasis px-2.5 py-1.5 rounded-pill fw-bold" style="font-size: 0.8rem;">
                 <i class="bi bi-briefcase-fill me-1"></i> Painel SINE
             </span>
+            <span class="text-secondary fw-bold ms-1" style="font-size: 0.9rem;">
+                | &nbsp;Controle Diário
+            </span>
+            <span class="text-dark fw-bold ms-2" style="font-size: 0.9rem;">
+                {{ hoje|date:"d/m/Y" }}
+            </span>
+            {% if instance %}
+                <span class="badge bg-warning-subtle text-warning-emphasis rounded-pill fw-bold ms-2" style="font-size: 0.75rem; padding: 4px 10px;">
+                    <i class="bi bi-pencil-fill me-1"></i> Editando Registro
+                </span>
+            {% else %}
+                <span class="badge bg-primary-subtle text-primary-emphasis rounded-pill fw-bold ms-2" style="font-size: 0.75rem; padding: 4px 10px;">
+                    <i class="bi bi-plus-circle-fill me-1"></i> Novo Registro
+                </span>
+            {% endif %}
         </div>
         <div class="d-flex align-items-center gap-3">
             <span class="text-secondary small">Usuário: <strong class="text-dark">{{ user.username }}</strong></span>
@@ -81,30 +96,6 @@
                     <i class="bi bi-box-arrow-right"></i> Sair
                 </button>
             </form>
-        </div>
-    </div>
-
-    <!-- Cabeçalho Interno Compacto -->
-    <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2 px-1">
-        <div>
-            <h2 class="fw-bold fs-4 text-primary mb-0">
-                Controle Diário — SINE
-            </h2>
-            <p class="text-muted small mb-0">
-                Lançamento de Indicadores de Atendimento
-            </p>
-        </div>
-        <div class="text-end d-flex align-items-center gap-2">
-            <h5 class="fw-bold mb-0 text-dark">{{ hoje|date:"d/m/Y" }}</h5>
-            {% if instance %}
-                <span class="badge bg-warning-subtle text-warning-emphasis badge-status py-1">
-                    <i class="bi bi-pencil-fill me-1"></i> Editando
-                </span>
-            {% else %}
-                <span class="badge bg-primary-subtle text-primary-emphasis badge-status py-1">
-                    <i class="bi bi-plus-circle-fill me-1"></i> Novo
-                </span>
-            {% endif %}
         </div>
     </div>
 
@@ -132,14 +123,14 @@
                     </div>
                 {% endif %}
 
-                <div class="row g-3">
+                <div class="row g-4 g-xxl-5">
                     <!-- Coluna Esquerda: Atendimentos + Seguro/CTPS -->
                     <div class="col-12 col-lg-6 border-end-lg">
                         <!-- 1. SEÇÃO ATENDIMENTOS -->
                         <div class="section-title-sine">
                             <i class="bi bi-people-fill text-primary"></i> 1. Atendimentos Realizados
                         </div>
-                        <div class="row g-2 mb-3">
+                        <div class="row g-3 mb-4">
                             <div class="col-6">
                                 <label class="form-label-sine" title="{{ form.atendimento_trabalhador.label }}">{{ form.atendimento_trabalhador.label }}</label>
                                 {{ form.atendimento_trabalhador|add_class:"form-control form-control-sine" }}
@@ -166,7 +157,7 @@
                         <div class="section-title-sine">
                             <i class="bi bi-file-earmark-text-fill text-primary"></i> 2. Seguro Desemprego e CTPS
                         </div>
-                        <div class="row g-2">
+                        <div class="row g-3">
                             <div class="col-6">
                                 <label class="form-label-sine" title="{{ form.seguro_desemprego.label }}">{{ form.seguro_desemprego.label }}</label>
                                 {{ form.seguro_desemprego|add_class:"form-control form-control-sine" }}
@@ -186,7 +177,7 @@
                         <div class="section-title-sine">
                             <i class="bi bi-briefcase-fill text-primary"></i> 3. Intermediação de Mão de Obra
                         </div>
-                        <div class="row g-2 mb-3">
+                        <div class="row g-3 mb-4">
                             <div class="col-4">
                                 <label class="form-label-sine" title="{{ form.vagas_captadas.label }}">{{ form.vagas_captadas.label }}</label>
                                 {{ form.vagas_captadas|add_class:"form-control form-control-sine" }}
@@ -218,7 +209,7 @@
                         <div class="section-title-sine">
                             <i class="bi bi-telephone-fill text-primary"></i> 4. Contatos Telefônicos
                         </div>
-                        <div class="row g-2">
+                        <div class="row g-3">
                             <div class="col-6">
                                 <label class="form-label-sine" title="{{ form.ligacoes_recebidas.label }}">{{ form.ligacoes_recebidas.label }}</label>
                                 {{ form.ligacoes_recebidas|add_class:"form-control form-control-sine" }}
@@ -234,8 +225,8 @@
                 </div>
 
                 <!-- Ações -->
-                <div class="d-flex justify-content-end mt-3 border-top pt-2">
-                    <button type="submit" class="btn btn-primary px-4 py-1.5 fw-semibold shadow-sm rounded-pill" style="font-size: 0.88rem;">
+                <div class="d-flex justify-content-end mt-4 border-top pt-3">
+                    <button type="submit" class="btn btn-primary btn-lg px-5 py-2.5 fw-semibold shadow-sm rounded-pill" style="font-size: 0.95rem;">
                         {% if instance %}
                             <i class="bi bi-save2-fill me-1"></i> Atualizar Indicadores
                         {% else %}
