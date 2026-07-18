@@ -32,12 +32,32 @@ if env_file.exists():
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-ij4m531%r&e6)@6+^mulytw1ph2x&(kw4p^91(i$au+&(zy=_%'
+# A chave DEVE vir da variavel de ambiente (arquivo .env / secrets do Docker).
+# Nunca versione a chave de producao.
+SECRET_KEY = os.getenv('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.getenv('DEBUG', 'True') == 'True'
+DEBUG = os.getenv('DEBUG', 'False') == 'True'
 
-ALLOWED_HOSTS = ['*']
+if not SECRET_KEY:
+    if DEBUG:
+        # Fallback APENAS para desenvolvimento local. Nao usar em producao.
+        SECRET_KEY = 'django-insecure-dev-only-key-do-not-use-in-production'
+    else:
+        raise RuntimeError(
+            'SECRET_KEY nao definida. Configure a variavel de ambiente SECRET_KEY '
+            'antes de iniciar em producao.'
+        )
+
+# Hosts permitidos (separados por virgula na variavel de ambiente ALLOWED_HOSTS).
+ALLOWED_HOSTS = [
+    h.strip() for h in os.getenv(
+        'ALLOWED_HOSTS',
+        'localhost,127.0.0.1,100.93.40.101,'
+        'servidor-qualificacao.tailbeb7d5.ts.net,'
+        'app.gestaoqualificacao.com.br,.gestaoqualificacao.com.br'
+    ).split(',') if h.strip()
+]
 
 CSRF_TRUSTED_ORIGINS = [
     'http://localhost:8000',
@@ -51,6 +71,23 @@ CSRF_TRUSTED_ORIGINS = [
 ]
 
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
+# --- FLAGS DE SEGURANCA (aplicadas apenas fora de DEBUG / em producao) ---
+if not DEBUG:
+    # Cookies apenas via HTTPS
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SESSION_COOKIE_HTTPONLY = True
+    # Redireciona HTTP -> HTTPS (desligavel via env caso o proxy ja force TLS)
+    SECURE_SSL_REDIRECT = os.getenv('SECURE_SSL_REDIRECT', 'True') == 'True'
+    # HSTS: 1 ano, incluindo subdominios
+    SECURE_HSTS_SECONDS = 31536000
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
+    # Impede o navegador de adivinhar o content-type
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+    # Referrer minimo
+    SECURE_REFERRER_POLICY = 'same-origin'
 
 
 # Application definition

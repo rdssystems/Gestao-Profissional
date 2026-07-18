@@ -68,6 +68,7 @@ test_*.txt
 *.sql
 *.db
 *.sqlite3.bak
+*.dump
 
 # Media and Uploads
 media/
