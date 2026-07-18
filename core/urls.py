@@ -15,7 +15,6 @@ urlpatterns = [
     # Sistema de Avisos / Updates
     path('avisos/lido/<int:aviso_pk>/', views.marcar_aviso_lido, name='marcar_aviso_lido'),
     path('admin/avisos/', views.gerenciar_avisos, name='gerenciar_avisos'),
-    path('admin/ativar-dev/', views.ativar_dev_view, name='ativar_dev'),
     path('admin/email-destinatarios/', gerenciar_email_destinatarios, name='gerenciar_email_destinatarios'),
     path('admin/email-destinatarios/enviar-agora/', enviar_email_agora, name='enviar_email_agora'),
     

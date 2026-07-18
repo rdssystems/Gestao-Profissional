@@ -4,9 +4,9 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-# Defaults for Docker environment
+# Configuracao via variaveis de ambiente (sem segredos versionados)
 EVOLUTION_API_URL = os.getenv('EVOLUTION_API_URL', 'http://localhost:8080')
-EVOLUTION_API_KEY = os.getenv('EVOLUTION_API_KEY', 'gq-evolution-secret-key-2026')
+EVOLUTION_API_KEY = os.getenv('EVOLUTION_API_KEY', '')
 
 HEADERS = {
     'apikey': EVOLUTION_API_KEY,

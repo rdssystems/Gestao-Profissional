@@ -42,24 +42,6 @@ def gerenciar_avisos(request):
     return render(request, 'core/gerenciar_avisos.html', {'avisos': avisos})
 
 @login_required
-def ativar_dev_view(request):
-    """View secreta para o desenvolvedor ativar seu status em qualquer uma de suas contas admin"""
-    if request.method == 'POST':
-        senha_dev = request.POST.get('senha_dev')
-        # Senha que sugeri ou você pode mudar
-        if senha_dev == 'Klisman@Dev2026':
-            profile, created = Profile.objects.get_or_create(user=request.user)
-            profile.is_developer = True
-            profile.save()
-            messages.success(request, "Modo Desenvolvedor Ativado com sucesso!")
-            return redirect('escolas:dashboard')
-        else:
-            messages.error(request, "Senha incorreta.")
-    
-    return render(request, 'core/ativar_dev.html')
-
-
-@login_required
 @user_passes_test(lambda u: u.is_superuser)
 def gerenciar_email_destinatarios(request):
     """Gerencia os destinatários e o agendamento do relatório do Controle Diário por e-mail."""

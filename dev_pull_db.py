@@ -5,15 +5,25 @@ Uso: python dev_pull_db.py
 """
 import paramiko, sys, os, subprocess
 
-VPS_HOST = 'IP_REMOVIDO'
-VPS_USER = 'klismanrds'
-VPS_PASS = 'SENHA_ROTACIONADA_REMOVIDA'
+# Credenciais lidas do ambiente (nunca versionar segredos).
+# Defina antes de rodar, ex:
+#   export VPS_HOST=... VPS_USER=... VPS_PASS=...
+VPS_HOST = os.getenv('VPS_HOST')
+VPS_USER = os.getenv('VPS_USER')
+VPS_PASS = os.getenv('VPS_PASS')
+VPS_PORT = int(os.getenv('VPS_PORT', '22'))
 LOCAL_DUMP = 'dev_restore.dump'
+
+if not all([VPS_HOST, VPS_USER, VPS_PASS]):
+    sys.exit(
+        'Erro: defina as variaveis de ambiente VPS_HOST, VPS_USER e VPS_PASS '
+        'antes de executar este script.'
+    )
 
 print('Conectando à VPS...')
 client = paramiko.SSHClient()
 client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-client.connect(VPS_HOST, port=22, username=VPS_USER, password=VPS_PASS, timeout=15)
+client.connect(VPS_HOST, port=VPS_PORT, username=VPS_USER, password=VPS_PASS, timeout=15)
 
 def run(cmd, timeout=60):
     stdin, stdout, stderr = client.exec_command(cmd, timeout=timeout)
