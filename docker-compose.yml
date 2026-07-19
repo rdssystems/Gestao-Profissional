@@ -7,8 +7,10 @@ services:
       - POSTGRES_DB=gestao_db
       - POSTGRES_USER=gestao_user
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    # Porta publicada apenas no loopback: o app acessa o banco pela rede
+    # interna do Docker (db:5432). Isso remove a exposicao do banco na internet.
     ports:
-      - "5434:5432"
+      - "127.0.0.1:5434:5432"
     volumes:
       - ./postgres_data:/var/lib/postgresql/data
 
