@@ -1,0 +1,40 @@
+# Segredos e credenciais — nunca devem entrar na imagem Docker.
+.env
+.env.*
+!.env.example
+google_drive_key.json
+
+# Dados reais (PII) e volumes bind-mounted — nao pertencem a imagem.
+postgres_data/
+postgres_data_dev/
+media/
+documentos_alunos/
+documentos_escola/
+staticfiles/
+
+# Controle de versao e ambiente local.
+.git/
+.gitignore
+venv_new/
+__pycache__/
+*.pyc
+
+# Backups e dumps.
+*.dump
+*.sql
+*.bak
+backups/
+
+# Scripts/dados de desenvolvimento local, sem uso dentro do container.
+test_gdrive.py
+check_bucket.py
+find_copy.py
+fix_aluno_form.py
+test_verify.txt
+test_write.txt
+*.csv
+*.xlsx
+
+# Editor/IDE.
+.vscode/
+.idea/

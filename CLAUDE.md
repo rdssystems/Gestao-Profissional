@@ -75,6 +75,45 @@ Auditoria completa realizada. **Concluído e em produção:**
   `127.0.0.1:5434` (era `0.0.0.0`, exposta no IPv6 público). Verificado
   externamente (conexão recusada). **Era o risco crítico nº 1.**
 
+## Auditoria de 2026-08-01 (código da aplicação, não só config)
+Nova rodada de auditoria, desta vez em **código** (autorização/IDOR, uploads,
+brute force), não só `settings.py`. Achou e corrigiu **vulnerabilidades
+críticas ativas em produção**: PII de aluno exposta sem login
+(`escolas/views.py`), escrita não-autenticada em avaliação de professor
+(`cursos/views.py`), escalação de privilégio total via `usuarios/views.py`
+(Coordenador conseguia trocar senha de qualquer superusuário), um bug
+sistêmico no default de `Profile.nivel_acesso` que furava o escopo por
+escola em `core/mixins.py`, e vazamento de PII entre escolas no portal
+público (`publico/views.py`). Detalhes completos, com file:line e o que
+ainda falta, em:
+- `docs/auditoria/2026-08-01-seguranca.md` — o que foi corrigido + pendências.
+- `docs/auditoria/2026-08-01-arquitetura-codigo.md` — backlog de
+  organização de código levantado na auditoria.
+- `docs/auditoria/2026-08-01-infraestrutura.md` — Docker/scripts/dependências
+  (bump de Django/Pillow/cryptography/Twisted/requests por CVE, `.dockerignore`
+  criado, `atualizar.sh` não roda mais `makemigrations` em produção).
+- `docs/auditoria/2026-08-01-plano-proximos-passos.md` — o backlog acima
+  organizado em Grupo A (zero risco), Grupo B (baixo risco, testável) e
+  Grupo C (precisa VPS ou decisão do usuário). **Grupos A e B já foram
+  executados** no mesmo dia (testes de regressão, `transaction.atomic()`
+  no import CSV, índices de banco, lock de concorrência em
+  `WebSocialMember`, `cursos/views.py` quebrado em pacote
+  `cursos/views/`). Isso revelou 2 achados novos: default inseguro de
+  `Profile.nivel_acesso` (corrigido) e uma migration de permissões
+  (`core/migrations/0003_assign_permissions.py`) que nunca funcionou em
+  banco nenhum criado do zero (corrigida via `post_migrate` em
+  `core/apps.py`). **Grupo C segue pendente** — próximo passo quando
+  houver acesso à VPS.
+
+**Achado fora do código do app**: o repositório git na pasta pessoal do
+usuário (`Documents/`, um nível acima deste repo) estava com `.git`
+inicializado na raiz do HOME (`C:\Users\...`) por acidente, rastreando
+binários do Redis e um gitlink quebrado para este repo. Nenhum segredo
+chegou a ser commitado (verificado), mas um `git add -A` ali arriscava
+pegar `.ssh/`, `.aws/`, etc. Sinalizado ao usuário para mover o `.git` para
+dentro da pasta do projeto — fora do escopo deste repo, então não documentado
+em detalhe aqui.
+
 ## Segurança — PENDÊNCIAS (retomar daqui)
 Descoberta chave: a VPS tem **IPv6 público roteável e NENHUM firewall de host**
 (política INPUT ACCEPT; ZimaOS/Docker gerencia iptables, sem persistência).

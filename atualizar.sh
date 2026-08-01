@@ -58,9 +58,11 @@ sudo -E docker compose up -d --build
 # ──────────────────────────────────────────────────
 # 3. Migrations
 # ──────────────────────────────────────────────────
-echo ">>> Verificando migrations..."
-sudo docker exec gq-app python manage.py makemigrations
 echo ">>> Aplicando migrations..."
+# NAO rodar "makemigrations" aqui: isso geraria migrations novas direto contra
+# o schema de PRODUCAO, sem revisao/commit, e o proximo "git reset --hard" as
+# apaga do repo de novo (schema e git ficam fora de sincronia a cada deploy).
+# Migrations tem que ser geradas e commitadas em dev.
 sudo docker exec gq-app python manage.py migrate
 
 # ──────────────────────────────────────────────────
