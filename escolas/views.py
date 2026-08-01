@@ -178,7 +178,10 @@ class DashboardView(LoginRequiredMixin, TemplateView):
                 except:
                     pass
             else:
-                from django.db.models import Q
+                # Q ja vem importado no topo do arquivo — um import local
+                # aqui tornava 'Q' uma variavel LOCAL pra funcao inteira em
+                # Python (mesmo antes deste ponto no codigo-fonte), quebrando
+                # qualquer uso de Q() antes deste bloco especifico rodar.
                 if user.is_superuser:
                     audit_scope = audit_scope.all()
                 else:
@@ -217,6 +220,24 @@ class DashboardView(LoginRequiredMixin, TemplateView):
                     idades.append(hoje.year - al.data_nascimento.year - ((hoje.month, hoje.day) < (al.data_nascimento.month, al.data_nascimento.day)))
             return int(sum(idades) / len(idades)) if idades else 0
 
+        # Estatisticas de Chamada (presentes/total) de TODOS os cursos ativos
+        # do escopo, numa unica query agrupada por curso — antes disso, o
+        # loop de assiduidade abaixo rodava 2 queries de Chamada por curso
+        # ativo por escola (e o bloco global repetia o mesmo trabalho de
+        # novo, agrupado por escola). Com N escolas/cursos isso virava
+        # centenas de queries numa unica carga do Dashboard.
+        todos_cursos_ativos_scope = curso_scope.filter(status__in=['Aberta', 'Em Andamento'])
+        chamada_stats_by_curso = {
+            row['registro_aula__curso_id']: row
+            for row in Chamada.objects
+                .filter(registro_aula__curso__in=todos_cursos_ativos_scope)
+                .values('registro_aula__curso_id')
+                .annotate(
+                    presentes=Count('id', filter=Q(status_presenca='P')),
+                    total=Count('id'),
+                )
+        }
+
         # ---- DADOS GLOBAIS DA REDE ----
         if has_global_access and (escola_id_filter == 'all' or not escola_id_filter) and escolas_chart.count() > 1:
             kpi_inscricoes_hoje_g = aluno_scope.filter(data_criacao__year=year, data_criacao__month=month).count()
@@ -231,15 +252,24 @@ class DashboardView(LoginRequiredMixin, TemplateView):
             vagas_g = cursos_ativos_g.aggregate(total=models.Sum('vagas'))['total'] or 0
             vagas_ociosas_g = max(0, vagas_g - kpi_alunos_cursando_g)
 
-            # Assiduidade Geral - Agrega por Escolas em vez de curso para o Global caber
+            # Assiduidade Geral - Agrega por Escolas em vez de curso para o Global caber.
+            # Agregado em Python a partir de chamada_stats_by_curso (ja calculado
+            # acima numa unica query) — nao dispara nenhuma query nova aqui.
             assiduidade_labels_g = []
             assiduidade_series_g = []
+            cursos_ativos_g_por_escola = cursos_ativos_g.values_list('id', 'escola_id')
+            stats_por_escola_g = {}
+            for curso_id, escola_id_do_curso in cursos_ativos_g_por_escola:
+                stats = chamada_stats_by_curso.get(curso_id)
+                if not stats:
+                    continue
+                acumulado = stats_por_escola_g.setdefault(escola_id_do_curso, {'presentes': 0, 'total': 0})
+                acumulado['presentes'] += stats['presentes']
+                acumulado['total'] += stats['total']
             for sc in escolas_chart:
-                sc_cursos = cursos_ativos_g.filter(escola=sc)
-                tot_p = Chamada.objects.filter(registro_aula__curso__in=sc_cursos, status_presenca='P').count()
-                tot_c = Chamada.objects.filter(registro_aula__curso__in=sc_cursos).count()
-                if tot_c > 0:
-                    pct = int((tot_p / tot_c) * 100)
+                acumulado = stats_por_escola_g.get(sc.id)
+                if acumulado and acumulado['total'] > 0:
+                    pct = int((acumulado['presentes'] / acumulado['total']) * 100)
                     assiduidade_labels_g.append(f"{sc.nome}")
                     assiduidade_series_g.append(pct)
             if assiduidade_series_g:
@@ -309,15 +339,16 @@ class DashboardView(LoginRequiredMixin, TemplateView):
             cursando = inscricao_scope.filter(curso__escola=esc, status='cursando', curso__status__in=['Aberta', 'Em Andamento']).count()
             vagas_ociosas = max(0, vagas - cursando)
             
-            # 2. Dados de Assiduidade (Barra Horizontal)
+            # 2. Dados de Assiduidade (Barra Horizontal) — a partir do dict
+            # chamada_stats_by_curso calculado uma unica vez antes do loop
+            # (nao dispara query de Chamada nenhuma por curso/escola aqui).
             assiduidade_labels = []
             assiduidade_series = []
-            
+
             for curs in esc_cursos_ativos:
-                tot_p = Chamada.objects.filter(registro_aula__curso=curs, status_presenca='P').count()
-                tot_c = Chamada.objects.filter(registro_aula__curso=curs).count()
-                if tot_c > 0:
-                    pct = int((tot_p / tot_c) * 100)
+                stats = chamada_stats_by_curso.get(curs.id)
+                if stats and stats['total'] > 0:
+                    pct = int((stats['presentes'] / stats['total']) * 100)
                     assiduidade_labels.append(curs.nome) # limit length in JS or python?
                     assiduidade_series.append(pct)
             
