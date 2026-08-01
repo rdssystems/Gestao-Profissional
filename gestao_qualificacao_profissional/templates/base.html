@@ -646,16 +646,23 @@
                                 <hr class="dropdown-divider">
                             </li>
 
-                            {% if user.is_superuser %}
+                            {% if user.is_superuser or user|has_group:'Coordenador' %}
                             <li><h6 class="dropdown-header text-uppercase smaller fw-bold text-muted">Administração</h6></li>
+                            {% if user.is_superuser %}
                              <li><a class="dropdown-item" href="{% url 'score_config:configurar' %}"><i class="bi bi-sliders me-2"></i> Configuração de Score</a></li>
+                            {% endif %}
+                            <!-- Coordenador tambem gerencia usuarios (add_user/change_user/view_user
+                                 no grupo) — a view/form ja restringe ao escopo da propria escola;
+                                 antes o link so aparecia pra superuser, sem nenhum caminho na UI. -->
                             <li><a class="dropdown-item" href="{% url 'usuarios:lista_usuarios' %}"><i class="bi bi-people me-2"></i> Usuários</a></li>
+                            {% if user.is_superuser %}
                             <li><a class="dropdown-item" href="{% url 'core:gerenciar_email_destinatarios' %}"><i class="bi bi-envelope-at me-2 text-primary"></i> Envio de E-mail</a></li>
                             <li><a class="dropdown-item" href="{% url 'core:lista_auditoria' %}"><i class="bi bi-journal-text me-2"></i> Auditoria</a></li>
                             <li><a class="dropdown-item" href="{% url 'admin:index' %}"><i class="bi bi-database-gear me-2"></i> Admin Django</a></li>
-                            
+
                             {% if user.profile.is_developer %}
                             <li><a class="dropdown-item text-primary fw-bold" href="{% url 'core:gerenciar_avisos' %}"><i class="bi bi-plus-circle-fill me-1"></i> Postar Atualização</a></li>
+                            {% endif %}
                             {% endif %}
 
                             <li>

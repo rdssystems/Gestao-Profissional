@@ -56,6 +56,52 @@ class UsuariosPrivilegeEscalationRegressionTest(TestCase):
         response = self.client.get(self.editar_coord_b_url)
         self.assertEqual(response.status_code, 404)
 
+    def test_link_usuarios_aparece_no_menu_para_coordenador(self):
+        """
+        Regressão de 2026-08-01: o grupo Coordenador já tinha as permissões
+        add_user/change_user/view_user corretas, mas o link "Usuários" no
+        menu (base.html) só aparecia dentro de {% if user.is_superuser %} —
+        um Coordenador de CP/Uditech não tinha NENHUM caminho na interface
+        pra chegar na tela de criação de usuário, mesmo com a view/form já
+        preparados e corretamente restritos à própria escola.
+        """
+        self.client.login(username='coord_a', password='password123')
+        response = self.client.get(reverse('escolas:dashboard'))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, self.lista_url)
+
+    def test_coordenador_consegue_criar_usuario_para_propria_escola(self):
+        self.client.login(username='coord_a', password='password123')
+        response = self.client.post(self.criar_url, data={
+            'username': 'novo_usuario_a',
+            'email': 'novo@escola-a.com',
+            'first_name': 'Novo',
+            'last_name': 'Usuario',
+            'password': 'senhaSegura123',
+            'password_confirm': 'senhaSegura123',
+            'escola': self.escola_a.pk,
+            'role': 'Auxiliar Administrativo',
+        })
+        self.assertEqual(response.status_code, 302)
+        novo = User.objects.get(username='novo_usuario_a')
+        self.assertEqual(novo.profile.escola, self.escola_a)
+
+    def test_coordenador_nao_consegue_criar_usuario_para_outra_escola(self):
+        """O campo escola do form ja restringe as opcoes a propria escola do
+        Coordenador — POST forcando outra escola deve falhar a validacao."""
+        self.client.login(username='coord_a', password='password123')
+        response = self.client.post(self.criar_url, data={
+            'username': 'tentativa_cross_escola',
+            'email': 'x@escola-b.com',
+            'first_name': 'X', 'last_name': 'Y',
+            'password': 'senhaSegura123',
+            'password_confirm': 'senhaSegura123',
+            'escola': self.escola_b.pk,
+            'role': 'Auxiliar Administrativo',
+        })
+        self.assertEqual(response.status_code, 200)  # form invalido, re-renderiza
+        self.assertFalse(User.objects.filter(username='tentativa_cross_escola').exists())
+
     def test_coordenador_nao_consegue_trocar_senha_de_outro_usuario_via_post(self):
         self.client.login(username='coord_a', password='password123')
         response = self.client.post(self.editar_coord_b_url, data={
