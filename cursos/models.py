@@ -96,7 +96,7 @@ class Curso(models.Model):
     dia_inicio_semana = models.CharField(max_length=20, choices=DIAS_SEMANA_CHOICES, blank=True, null=True)
     dia_fim_semana = models.CharField(max_length=20, choices=DIAS_SEMANA_CHOICES, blank=True, null=True)
 
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='Aberta')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='Aberta', db_index=True)
     nome_professor = models.CharField(max_length=200, blank=True, null=True, verbose_name="Nome do Professor")
     telefone_professor = models.CharField(max_length=20, blank=True, null=True, verbose_name="Whatsapp/Telefone do Professor")
     parceiro = models.ForeignKey(Parceiro, on_delete=models.SET_NULL, null=True, blank=True, related_name='cursos', verbose_name="Parceiro")
@@ -139,7 +139,7 @@ class Inscricao(models.Model):
         ('concluido', 'Concluído'),
         ('desistente', 'Desistente'),
     )
-    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='cursando', verbose_name="Status")
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='cursando', verbose_name="Status", db_index=True)
     
     data_conclusao = models.DateTimeField(null=True, blank=True, verbose_name="Data de Conclusão")
     data_desistencia = models.DateTimeField(null=True, blank=True, verbose_name="Data de Desistência")

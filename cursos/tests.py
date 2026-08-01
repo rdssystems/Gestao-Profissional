@@ -570,3 +570,56 @@ class ContatoMatriculaTest(TestCase):
         self.assertEqual(response.status_code, 200)
         contato.refresh_from_db()
         self.assertEqual(contato.status, 'interessado')
+
+class AvaliarEstudanteAjaxViewRegressionTest(TestCase):
+    """
+    Regressão do bug crítico de 2026-08-01: AvaliarEstudanteAjaxView não
+    tinha login nem token — só um ID sequencial (inscricao_pk) adivinhável,
+    ao contrário do resto do fluxo de avaliação (que exige token_acesso do
+    curso + sessão 'prof_auth_{curso.pk}' estabelecida via
+    AvaliarProfessorAcessoView).
+    """
+    def setUp(self):
+        from alunos.models import Aluno
+        from .models import Inscricao
+
+        self.escola = Escola.objects.create(nome='Escola Avaliacao', email='aval@escola.com')
+        self.tipo_curso = TipoCurso.objects.create(escola=self.escola, nome='Curso Teste')
+        self.curso = Curso.objects.create(
+            escola=self.escola, tipo_curso=self.tipo_curso, nome='Curso Avaliação',
+            carga_horaria=10, data_inicio='2026-01-01', data_fim='2026-01-31',
+            status='Em Andamento', nome_professor='Professor Teste',
+        )
+        self.aluno = Aluno.objects.create(
+            escola=self.escola, nome_completo='Aluno Avaliado', cpf='33333333333',
+            data_nascimento='2000-01-01',
+        )
+        self.inscricao = Inscricao.objects.create(aluno=self.aluno, curso=self.curso, status='cursando')
+        self.url = reverse('cursos:avaliar_estudante_ajax', args=[self.inscricao.pk])
+
+    def test_sem_sessao_de_professor_get_e_negado(self):
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 404)
+
+    def test_sem_sessao_de_professor_post_e_negado(self):
+        response = self.client.post(self.url, data={})
+        self.assertEqual(response.status_code, 404)
+
+    def test_com_sessao_de_professor_valida_get_e_permitido(self):
+        session = self.client.session
+        session[f'prof_auth_{self.curso.pk}'] = True
+        session.save()
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 200)
+
+    def test_sessao_de_professor_de_outro_curso_nao_autoriza(self):
+        outro_curso = Curso.objects.create(
+            escola=self.escola, tipo_curso=self.tipo_curso, nome='Outro Curso',
+            carga_horaria=10, data_inicio='2026-01-01', data_fim='2026-01-31',
+            status='Em Andamento', nome_professor='Outro Professor',
+        )
+        session = self.client.session
+        session[f'prof_auth_{outro_curso.pk}'] = True
+        session.save()
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 404)

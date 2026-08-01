@@ -215,7 +215,16 @@ class DocumentoAjaxUploadView(LoginRequiredMixin, HasEscolaOrSuperuserMixin, Vie
         
         if not arquivo:
             return JsonResponse({'sucesso': False, 'erro': 'Nenhum arquivo enviado.'}, status=400)
-            
+
+        # .objects.create() nao roda full_clean(), entao os validators do
+        # model field (extensao/tamanho) precisam ser chamados manualmente.
+        from django.core.exceptions import ValidationError
+        from core.validators import validate_upload_file
+        try:
+            validate_upload_file(arquivo)
+        except ValidationError as e:
+            return JsonResponse({'sucesso': False, 'erro': ' '.join(e.messages)}, status=400)
+
         if user.is_superuser:
             escola_id = request.POST.get('escola_id')
             if escola_id == 'todas' or not escola_id:

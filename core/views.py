@@ -408,6 +408,29 @@ def get_active_escola(request):
 class CustomLoginView(LoginView):
     template_name = 'registration/login.html'
 
+    # Login administrativo nao tinha nenhuma protecao contra forca bruta.
+    # Bloqueia por IP apos muitas tentativas com credenciais invalidas
+    # (nao conta tentativas validas, entao nao afeta uso normal).
+    RATE_LIMIT_KEY = 'login'
+    RATE_LIMIT_MAX_ATTEMPTS = 10
+    RATE_LIMIT_WINDOW_SECONDS = 300
+
+    def post(self, request, *args, **kwargs):
+        from core.utils import is_rate_limited
+        if is_rate_limited(request, self.RATE_LIMIT_KEY, self.RATE_LIMIT_MAX_ATTEMPTS):
+            messages.error(
+                request,
+                "Muitas tentativas de login com falha a partir deste endereço. "
+                "Aguarde alguns minutos e tente novamente."
+            )
+            return redirect('login')
+        return super().post(request, *args, **kwargs)
+
+    def form_invalid(self, form):
+        from core.utils import register_attempt
+        register_attempt(self.request, self.RATE_LIMIT_KEY, self.RATE_LIMIT_WINDOW_SECONDS)
+        return super().form_invalid(form)
+
     def form_valid(self, form):
         user = form.get_user()
         

@@ -45,3 +45,33 @@ def clean_digits(value):
     if not value:
         return ""
     return re.sub(r'\D', '', value)
+
+
+def get_client_ip(request):
+    x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+    if x_forwarded_for:
+        return x_forwarded_for.split(',')[0].strip()
+    return request.META.get('REMOTE_ADDR')
+
+
+def is_rate_limited(request, key, limit):
+    """
+    Throttle simples baseado em cache (Redis em produção, locmem em dev).
+    Usado em endpoints sem nenhuma proteção contra força bruta/enumeração
+    (login administrativo, busca de CPF no portal público).
+    """
+    from django.core.cache import cache
+    ip = get_client_ip(request) or 'unknown'
+    count = cache.get(f'throttle:{key}:{ip}', 0)
+    return count >= limit
+
+
+def register_attempt(request, key, window_seconds):
+    """Incrementa o contador de tentativas usado por is_rate_limited."""
+    from django.core.cache import cache
+    ip = get_client_ip(request) or 'unknown'
+    cache_key = f'throttle:{key}:{ip}'
+    try:
+        cache.incr(cache_key)
+    except ValueError:
+        cache.set(cache_key, 1, timeout=window_seconds)

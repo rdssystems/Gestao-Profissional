@@ -3,8 +3,11 @@ from django.views.generic.edit import CreateView, UpdateView, DeleteView
 from django.views.generic.list import ListView
 from django.contrib.contenttypes.models import ContentType
 import json
+import logging
 from django.core.serializers.json import DjangoJSONEncoder
 from django.forms.models import model_to_dict
+
+logger = logging.getLogger(__name__)
 
 # Import local para evitar erro de importação circular se colocar no topo
 # (mas idealmente models devem ser importados no topo se não houver ciclo)
@@ -29,14 +32,19 @@ class StaffRequiredMixin(UserPassesTestMixin):
 
         sistema = self.request.session.get('sistema', 'cp').upper()
 
-        # Administradores de Segmento — acesso total ao seu segmento
-        if profile.nivel_acesso == 'ADMIN_CP':
-            return sistema == 'CP'
-        if profile.nivel_acesso == 'ADMIN_UDITECH':
-            return sistema == 'UDITECH'
-        if profile.nivel_acesso == 'SUPERUSER':
-            return True
-        
+        # Administradores de Segmento — acesso total ao seu segmento.
+        # 'nivel_acesso' e 'ADMIN_CP' por default no model (Profile.nivel_acesso),
+        # entao so tratamos como admin de segmento quando o perfil NAO estiver
+        # vinculado a uma escola especifica — senao todo Coordenador/Auxiliar
+        # (que tem profile.escola definido) herdaria acesso a rede inteira.
+        if not profile.escola:
+            if profile.nivel_acesso == 'ADMIN_CP':
+                return sistema == 'CP'
+            if profile.nivel_acesso == 'ADMIN_UDITECH':
+                return sistema == 'UDITECH'
+            if profile.nivel_acesso == 'SUPERUSER':
+                return True
+
         # Coordenador local / Auxiliar
         is_staff = user.groups.filter(name__in=['Coordenador', 'Auxiliar Administrativo']).exists()
         if not is_staff:
@@ -91,13 +99,16 @@ class CoordenadorRequiredMixin(UserPassesTestMixin):
 
         sistema = self.request.session.get('sistema', 'cp').upper()
 
-        # Administradores de Segmento — acesso total ao seu segmento
-        if profile.nivel_acesso == 'ADMIN_CP':
-            return sistema == 'CP'
-        if profile.nivel_acesso == 'ADMIN_UDITECH':
-            return sistema == 'UDITECH'
-        if profile.nivel_acesso == 'SUPERUSER':
-            return True
+        # Administradores de Segmento — acesso total ao seu segmento.
+        # Mesma ressalva do StaffRequiredMixin: 'nivel_acesso' e ADMIN_CP por
+        # default, entao so conta como admin de segmento sem escola vinculada.
+        if not profile.escola:
+            if profile.nivel_acesso == 'ADMIN_CP':
+                return sistema == 'CP'
+            if profile.nivel_acesso == 'ADMIN_UDITECH':
+                return sistema == 'UDITECH'
+            if profile.nivel_acesso == 'SUPERUSER':
+                return True
 
         # Coordenador local
         is_coordenador = user.groups.filter(name='Coordenador').exists()
@@ -141,7 +152,7 @@ class AuditLogMixin:
                 ip_address=self.get_client_ip()
             )
         except Exception as e:
-            print(f"Erro ao salvar log de auditoria: {e}")
+            logger.warning("Erro ao salvar log de auditoria: %s", e)
 
     def form_valid(self, form):
         from core.utils import audit_context

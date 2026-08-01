@@ -2,6 +2,7 @@ from django.db import models
 from django.utils import timezone
 from escolas.models import Escola
 from cursos.models import TipoCurso
+from core.validators import validate_upload_file
 from datetime import date
 
 class Aluno(models.Model):
@@ -11,7 +12,7 @@ class Aluno(models.Model):
 
     # Identificação
     nome_completo = models.CharField(max_length=255, verbose_name="Nome Completo")
-    cpf = models.CharField(max_length=14, verbose_name="CPF")
+    cpf = models.CharField(max_length=14, verbose_name="CPF", db_index=True)
     rg = models.CharField(max_length=20, blank=True, null=True, verbose_name="RG")
     orgao_exp = models.CharField(max_length=20, blank=True, null=True, verbose_name="Órgão Expedidor")
     data_emissao = models.DateField(blank=True, null=True, verbose_name="Data de Emissão")
@@ -124,7 +125,7 @@ class Aluno(models.Model):
     receber_notificacoes = models.BooleanField(default=True, verbose_name="Deseja receber atualizações de cursos?")
     
     # Campos de controle
-    data_criacao = models.DateTimeField(auto_now_add=True)
+    data_criacao = models.DateTimeField(auto_now_add=True, db_index=True)
     data_atualizacao = models.DateTimeField(auto_now=True)
 
     score_total = models.IntegerField(default=0, editable=False, verbose_name="Score Total")
@@ -156,7 +157,11 @@ class Aluno(models.Model):
 
 class ArquivoAluno(models.Model):
     aluno = models.ForeignKey(Aluno, on_delete=models.CASCADE, related_name='arquivos', verbose_name="Aluno")
-    arquivo = models.FileField(upload_to='documentos_alunos/%Y/%m/%d/', verbose_name="Arquivo")
+    arquivo = models.FileField(
+        upload_to='documentos_alunos/%Y/%m/%d/',
+        verbose_name="Arquivo",
+        validators=[validate_upload_file],
+    )
     nome = models.CharField(max_length=255, verbose_name="Nome do Arquivo")
     data_upload = models.DateTimeField(auto_now_add=True, verbose_name="Data de Upload")
     enviado_por = models.ForeignKey('auth.User', on_delete=models.SET_NULL, null=True, verbose_name="Enviado por")

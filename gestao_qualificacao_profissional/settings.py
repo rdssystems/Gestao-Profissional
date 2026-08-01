@@ -72,6 +72,13 @@ CSRF_TRUSTED_ORIGINS = [
 
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
+# Cookies de sessão/CSRF nao devem vazar em requisicoes cross-site.
+# Nenhum template le o cookie de CSRF via JS (todos usam {{ csrf_token }} ou o
+# campo hidden csrfmiddlewaretoken), entao e seguro barrar leitura via JS.
+SESSION_COOKIE_SAMESITE = 'Lax'
+CSRF_COOKIE_SAMESITE = 'Lax'
+CSRF_COOKIE_HTTPONLY = True
+
 # --- FLAGS DE SEGURANCA (aplicadas apenas fora de DEBUG / em producao) ---
 if not DEBUG:
     # Cookies apenas via HTTPS
@@ -267,13 +274,34 @@ EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', '')
 DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', 'onboarding@resend.dev')
 
 # --- CONFIGURAÇÃO DE BACKUP (django-dbbackup + Google Cloud Storage) ---
-from google.oauth2 import service_account
-
+# A chave de service account e opcional fora de producao: sem ela, o app ainda
+# sobe normalmente (so o comando `manage.py dbbackup` fica indisponivel).
+# Caminho configuravel via env para nao acoplar todo boot local a esse arquivo.
 GS_BUCKET_NAME = 'backup-django-qualificacao-2026'
 GS_PROJECT_ID = 'backup-django-2026'
-GS_CREDENTIALS = service_account.Credentials.from_service_account_file(
-    os.path.join(BASE_DIR, 'google_drive_key.json')
+
+_gs_key_path = os.getenv(
+    'GOOGLE_DRIVE_KEY_PATH', os.path.join(BASE_DIR, 'google_drive_key.json')
 )
+
+if os.path.exists(_gs_key_path):
+    from google.oauth2 import service_account
+
+    GS_CREDENTIALS = service_account.Credentials.from_service_account_file(_gs_key_path)
+    _dbbackup_storage = {
+        "dbbackup": {"BACKEND": "storages.backends.gcloud.GoogleCloudStorage"},
+    }
+elif not DEBUG:
+    raise RuntimeError(
+        f'Chave de service account do Google nao encontrada em "{_gs_key_path}". '
+        'Configure GOOGLE_DRIVE_KEY_PATH ou coloque google_drive_key.json na raiz '
+        'do projeto antes de iniciar em producao.'
+    )
+else:
+    # Dev sem a chave: backup para GCS fica indisponivel, mas o app sobe.
+    _dbbackup_storage = {
+        "dbbackup": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
+    }
 
 STORAGES = {
     "default": {
@@ -282,14 +310,16 @@ STORAGES = {
     "staticfiles": {
         "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
     },
-    "dbbackup": {
-        "BACKEND": "storages.backends.gcloud.GoogleCloudStorage",
-    },
+    **_dbbackup_storage,
 }
 
-# Número de backups para manter (apaga os mais antigos automaticamente)
-DBBACKUP_CLEANUP_KEEP = 1 
-DBBACKUP_CLEANUP_KEEP_MEDIA = 1
+# Número de backups para manter (apaga os mais antigos automaticamente).
+# O fluxo de backup real hoje usa pg_dump direto (backup_agora.sh/backup_gcs.sh,
+# retencao de 10), nao o "manage.py dbbackup" — mas o bucket GCS e compartilhado
+# entre os dois, entao manter isto em 1 era uma armadilha: se alguem rodar
+# "manage.py dbbackup" manualmente, apagaria os backups da retencao real.
+DBBACKUP_CLEANUP_KEEP = 10
+DBBACKUP_CLEANUP_KEEP_MEDIA = 10
 
 # --- CONFIGURAÇÃO DE E-MAIL REAL FINALIZADA ---
 
@@ -305,3 +335,50 @@ MESSAGE_TAGS = {
 
 # Permitir visualização de arquivos (PDFs) em iframes
 X_FRAME_OPTIONS = 'SAMEORIGIN'
+
+# --- LOGGING ---
+# Antes disso o projeto não tinha NENHUM LOGGING configurado: erros de
+# auditoria/notificação (varios `except Exception as e: print(...)`
+# espalhados pelas views) só apareciam se alguem estivesse olhando o stdout
+# do container no exato momento. Isso adiciona um arquivo persistente
+# (dentro do bind mount, sobrevive a restart do container) + mantém o
+# console (docker logs) — não muda nenhuma lógica de negócio, só onde os
+# logs vão parar. Handlers/loggers padrão do Django (`django.request` etc.)
+# continuam funcionando normalmente, isto só formaliza e persiste.
+LOGS_DIR = BASE_DIR / 'logs'
+LOGS_DIR.mkdir(exist_ok=True)
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '{asctime} {levelname} {name}: {message}',
+            'style': '{',
+        },
+    },
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+            'formatter': 'verbose',
+        },
+        'file': {
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': LOGS_DIR / 'app.log',
+            'maxBytes': 10 * 1024 * 1024,  # 10 MB
+            'backupCount': 5,
+            'formatter': 'verbose',
+        },
+    },
+    'root': {
+        'handlers': ['console', 'file'],
+        'level': 'INFO',
+    },
+    'loggers': {
+        'django.request': {
+            'handlers': ['console', 'file'],
+            'level': 'ERROR',
+            'propagate': False,
+        },
+    },
+}

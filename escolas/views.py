@@ -1,4 +1,5 @@
 import json
+from django.http import Http404
 from django.shortcuts import render, get_object_or_404, redirect
 from django.views import View
 from django.views.generic import ListView, DetailView, TemplateView, RedirectView
@@ -456,32 +457,50 @@ class EscolaDeleteView(SuperuserRequiredMixin, DeleteView):
         sistema = self.request.session.get('sistema', 'cp').upper()
         return Escola.objects.filter(tipo=sistema)
 
-class CursosPorEscolaListView(ListView):
+def _escola_acessivel_ou_404(request, escola_id):
+    """
+    Resolve a Escola do escola_id na URL, garantindo que o usuário logado
+    só acesse escolas do seu próprio segmento (sistema) e, se não for
+    admin/superuser, apenas a própria escola vinculada ao perfil.
+    """
+    user = request.user
+    if user.is_superuser:
+        return get_object_or_404(Escola, pk=escola_id)
+
+    sistema = request.session.get('sistema', 'cp').upper()
+    profile = getattr(user, 'profile', None)
+    # 'nivel_acesso' e ADMIN_CP por default no model Profile, entao só conta
+    # como admin de segmento (acesso a toda a rede) quando NÃO há escola
+    # vinculada ao perfil — senão todo Coordenador herdaria acesso à rede toda.
+    is_segment_admin = profile and not profile.escola and profile.nivel_acesso in ['ADMIN_CP', 'ADMIN_UDITECH']
+
+    if is_segment_admin:
+        return get_object_or_404(Escola, pk=escola_id, tipo=sistema)
+
+    # Coordenador/Auxiliar: só pode ver a própria escola.
+    if not profile or not profile.escola or str(profile.escola_id) != str(escola_id):
+        raise Http404
+    return profile.escola
+
+
+class CursosPorEscolaListView(LoginRequiredMixin, ListView):
     model = Curso
     template_name = 'cursos/curso_list.html'
     context_object_name = 'cursos'
     def get_queryset(self):
-        if self.request.user.is_superuser:
-            self.escola = get_object_or_404(Escola, pk=self.kwargs['escola_id'])
-        else:
-            sistema = self.request.session.get('sistema', 'cp').upper()
-            self.escola = get_object_or_404(Escola, pk=self.kwargs['escola_id'], tipo=sistema)
+        self.escola = _escola_acessivel_ou_404(self.request, self.kwargs['escola_id'])
         return Curso.objects.filter(escola=self.escola).order_by('-data_inicio')
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['escola'] = self.escola
         return context
 
-class AlunosPorEscolaListView(ListView):
+class AlunosPorEscolaListView(LoginRequiredMixin, ListView):
     model = Aluno
     template_name = 'alunos/aluno_list.html'
     context_object_name = 'alunos'
     def get_queryset(self):
-        if self.request.user.is_superuser:
-            self.escola = get_object_or_404(Escola, pk=self.kwargs['escola_id'])
-        else:
-            sistema = self.request.session.get('sistema', 'cp').upper()
-            self.escola = get_object_or_404(Escola, pk=self.kwargs['escola_id'], tipo=sistema)
+        self.escola = _escola_acessivel_ou_404(self.request, self.kwargs['escola_id'])
         return Aluno.objects.filter(escola=self.escola).order_by('nome_completo')
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)

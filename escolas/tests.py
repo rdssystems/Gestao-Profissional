@@ -122,3 +122,60 @@ class EscolaCrudViewTest(TestCase):
         response = self.client.post(self.delete_url)
         self.assertEqual(response.status_code, 302) # Redireciona após sucesso
         self.assertFalse(Escola.objects.filter(pk=self.escola.pk).exists())
+
+
+class AlunosCursosPorEscolaListViewTest(TestCase):
+    """
+    Regressão do bug crítico de 2026-08-01: AlunosPorEscolaListView e
+    CursosPorEscolaListView não tinham NENHUM mixin de autenticação —
+    qualquer visitante anônimo via internet via nome completo/CPF/telefone
+    de alunos reais, só sabendo o escola_id.
+    """
+    def setUp(self):
+        from django.contrib.auth.models import Group
+        from alunos.models import Aluno
+
+        self.escola_a = Escola.objects.create(nome='Escola A', email='a@escola-a.com', tipo='CP')
+        self.escola_b = Escola.objects.create(nome='Escola B', email='b@escola-b.com', tipo='CP')
+
+        self.coord_a = User.objects.create_user(username='coord_a', password='password123')
+        self.coord_a.groups.add(Group.objects.get_or_create(name='Coordenador')[0])
+        self.coord_a.profile.escola = self.escola_a
+        self.coord_a.profile.save()
+
+        self.aluno_b = Aluno.objects.create(
+            escola=self.escola_b, nome_completo='Fulano da Escola B',
+            cpf='99999999999', data_nascimento='2000-01-01',
+        )
+
+        self.url_alunos_escola_b = reverse('escolas:alunos_da_escola', args=[self.escola_b.pk])
+        self.url_cursos_escola_b = reverse('escolas:cursos_da_escola', args=[self.escola_b.pk])
+
+    def test_visitante_anonimo_nao_acessa_lista_de_alunos(self):
+        response = self.client.get(self.url_alunos_escola_b)
+        self.assertEqual(response.status_code, 302)
+        self.assertRedirects(
+            response, f"{reverse('login')}?next={self.url_alunos_escola_b}"
+        )
+
+    def test_visitante_anonimo_nao_acessa_lista_de_cursos(self):
+        response = self.client.get(self.url_cursos_escola_b)
+        self.assertEqual(response.status_code, 302)
+        self.assertRedirects(
+            response, f"{reverse('login')}?next={self.url_cursos_escola_b}"
+        )
+
+    def test_coordenador_de_uma_escola_nao_acessa_alunos_de_outra_escola(self):
+        """
+        Também fecha o IDOR: mesmo autenticado, um Coordenador da Escola A
+        não pode ver a lista de alunos da Escola B trocando o escola_id na URL.
+        """
+        self.client.login(username='coord_a', password='password123')
+        response = self.client.get(self.url_alunos_escola_b)
+        self.assertEqual(response.status_code, 404)
+
+    def test_coordenador_acessa_alunos_da_propria_escola(self):
+        self.client.login(username='coord_a', password='password123')
+        url = reverse('escolas:alunos_da_escola', args=[self.escola_a.pk])
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)

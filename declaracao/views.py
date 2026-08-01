@@ -175,10 +175,27 @@ def salvar_declaracao_view(request, inscricao_id):
     
     return redirect('declaracao:declaracao_sucesso', declaracao_id=declaracao.id)
 
+def _bloqueia_se_fora_da_escola(request, declaracao):
+    """
+    Mesma checagem de _check_inscricao_permission, mas para uma Declaracao ja
+    resolvida: sem isso, um Coordenador de uma escola conseguia visualizar
+    declaracoes emitidas para alunos de OUTRA escola da mesma rede (so
+    filtrava por 'sistema', nao por profile.escola).
+    """
+    if not request.user.is_superuser and hasattr(request.user, 'profile') and request.user.profile.escola:
+        if declaracao.inscricao.curso.escola != request.user.profile.escola:
+            messages.error(request, "Você não tem permissão para visualizar esta declaração.")
+            return redirect('declaracao:listar_cursos_aluno', aluno_id=declaracao.inscricao.aluno.id)
+    return None
+
+
 @login_required
 def declaracao_sucesso_view(request, declaracao_id):
     sistema = request.session.get('sistema', 'cp').upper()
     declaracao = get_object_or_404(Declaracao, id=declaracao_id, inscricao__curso__escola__tipo=sistema)
+    redirect_response = _bloqueia_se_fora_da_escola(request, declaracao)
+    if redirect_response:
+        return redirect_response
     return render(request, 'declaracao/declaracao_sucesso.html', {'declaracao': declaracao})
 
 
@@ -186,7 +203,10 @@ def declaracao_sucesso_view(request, declaracao_id):
 def imprimir_declaracao_view(request, hash_validacao):
     sistema = request.session.get('sistema', 'cp').upper()
     declaracao = get_object_or_404(Declaracao, hash_validacao=hash_validacao, inscricao__curso__escola__tipo=sistema)
-    
+    redirect_response = _bloqueia_se_fora_da_escola(request, declaracao)
+    if redirect_response:
+        return redirect_response
+
     escola = declaracao.inscricao.aluno.escola # Get the school object
     
     context = {

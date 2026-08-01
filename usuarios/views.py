@@ -10,15 +10,57 @@ from django.contrib import messages
 from .forms import UserCreationForm
 from core.mixins import AuditLogMixin  # Importando o Mixin de Auditoria
 
-class UserListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
+
+def usuarios_gerenciaveis_por(request_user):
+    """
+    Escopo de usuarios que request_user pode listar/editar/excluir em
+    usuarios/ (fora do django admin, que continua sob controle do Django).
+
+    - Superuser: todos.
+    - Administrador de segmento (perfil SEM escola vinculada e nivel_acesso
+      ADMIN_CP/ADMIN_UDITECH): usuarios de escolas do seu proprio sistema.
+    - Coordenador/Auxiliar (perfil COM escola vinculada): apenas usuarios da
+      MESMA escola.
+    Em nenhum caso um usuario nao-superuser enxerga/edita outro superuser ou
+    administrador de segmento — isso fechava um caminho de escalonamento de
+    privilegio (Coordenador conseguia trocar a senha de qualquer superuser).
+    """
+    qs = User.objects.all().select_related('profile__escola').prefetch_related('groups')
+
+    if request_user.is_superuser:
+        return qs
+
+    profile = getattr(request_user, 'profile', None)
+    if not profile:
+        return qs.none()
+
+    # Nunca expor superusers/admins de segmento a um usuario comum.
+    qs = qs.filter(is_superuser=False).exclude(
+        profile__nivel_acesso__in=['ADMIN_CP', 'ADMIN_UDITECH'],
+        profile__escola__isnull=True,
+    )
+
+    if not profile.escola and profile.nivel_acesso in ['ADMIN_CP', 'ADMIN_UDITECH']:
+        sistema = 'CP' if profile.nivel_acesso == 'ADMIN_CP' else 'UDITECH'
+        return qs.filter(profile__escola__tipo=sistema)
+
+    if profile.escola:
+        return qs.filter(profile__escola=profile.escola)
+
+    return qs.none()
+
+
+class EscopoUsuarioMixin:
+    """Restringe list/get_object ao escopo calculado por usuarios_gerenciaveis_por."""
+    def get_queryset(self):
+        return usuarios_gerenciaveis_por(self.request.user)
+
+
+class UserListView(LoginRequiredMixin, PermissionRequiredMixin, EscopoUsuarioMixin, ListView):
     model = User
     template_name = 'usuarios/user_list.html'
     context_object_name = 'usuarios'
     permission_required = 'auth.view_user'
-
-    def get_queryset(self):
-        # Prefetch related objects to avoid N+1 queries in the template
-        return User.objects.all().select_related('profile__escola').prefetch_related('groups')
 
 
 class UserCreateView(AuditLogMixin, LoginRequiredMixin, PermissionRequiredMixin, SuccessMessageMixin, CreateView):
@@ -28,12 +70,17 @@ class UserCreateView(AuditLogMixin, LoginRequiredMixin, PermissionRequiredMixin,
     permission_required = 'auth.add_user'
     success_message = "Usuário '%(username)s' criado com sucesso."
 
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['request_user'] = self.request.user
+        return kwargs
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['title'] = 'Criar Novo Usuário'
         return context
 
-class UserUpdateView(AuditLogMixin, LoginRequiredMixin, PermissionRequiredMixin, SuccessMessageMixin, UpdateView):
+class UserUpdateView(AuditLogMixin, LoginRequiredMixin, PermissionRequiredMixin, EscopoUsuarioMixin, SuccessMessageMixin, UpdateView):
     model = User
     form_class = UserCreationForm # Reusing UserCreationForm for editing
     template_name = 'usuarios/user_form.html' # Reusing the same form template
@@ -42,12 +89,17 @@ class UserUpdateView(AuditLogMixin, LoginRequiredMixin, PermissionRequiredMixin,
     success_url = reverse_lazy('usuarios:lista_usuarios')
     success_message = "Usuário '%(username)s' atualizado com sucesso."
 
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['request_user'] = self.request.user
+        return kwargs
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['title'] = f'Editar Usuário: {self.object.username}'
         return context
 
-class UserDeleteView(AuditLogMixin, LoginRequiredMixin, PermissionRequiredMixin, DeleteView):
+class UserDeleteView(AuditLogMixin, LoginRequiredMixin, PermissionRequiredMixin, EscopoUsuarioMixin, DeleteView):
     model = User
     template_name = 'usuarios/user_confirm_delete.html' # Template for confirmation
     context_object_name = 'user'
@@ -56,21 +108,15 @@ class UserDeleteView(AuditLogMixin, LoginRequiredMixin, PermissionRequiredMixin,
 
     def delete(self, request, *args, **kwargs):
         obj = self.get_object()
-        
+
+        # super().delete() chama o delete() do AuditLogMixin (MRO), que já
+        # grava o log — audit_context(skip=True) evita gravar duplicado.
         from core.utils import audit_context
         with audit_context(skip=True):
             response = super().delete(request, *args, **kwargs)
-        
-        # O Mixin já salvaria se não tivéssemos sobrescrevido, ou se chamássemos dele.
-        # Como o Mixin define o método delete(), chamá-lo explicitamente ou via super() funciona.
-        # Mas aqui, como o Mixin JÁ tem o método delete, ao chamar super().delete() chamamos o Mixin.
-        # E o Mixin agora usa o audit_context(skip=True).
-        
+
         messages.success(request, f"Usuário '{obj.username}' excluído com sucesso.")
         return response
-        # Nota: super().delete() aqui vai chamar DeleteView.delete, que faz a deleção real.
-        # O delete do AuditLogMixin seria ignorado a menos que chamássemos super(UserDeleteView, self) de forma diferente.
-        # Mas como chamamos save_log manualmente acima, está resolvido.
 
     def dispatch(self, request, *args, **kwargs):
         # Get the object first to check if it's the current superuser

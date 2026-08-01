@@ -2,6 +2,7 @@ import os
 from django.db import models
 from django.contrib.auth.models import User
 from escolas.models import Escola
+from core.validators import validate_upload_file
 
 class Pasta(models.Model):
     escola = models.ForeignKey(Escola, on_delete=models.CASCADE, null=True, blank=True, related_name='pastas', verbose_name="Escola")
@@ -40,7 +41,11 @@ class DocumentoUnidade(models.Model):
     escola = models.ForeignKey(Escola, on_delete=models.CASCADE, null=True, blank=True, related_name='documentos')
     pasta = models.ForeignKey(Pasta, on_delete=models.CASCADE, null=True, blank=True, related_name='documentos', verbose_name="Pasta")
     nome = models.CharField(max_length=255, verbose_name="Nome do Arquivo")
-    arquivo = models.FileField(upload_to='documentos_escola/%Y/%m/%d/', verbose_name="Arquivo")
+    arquivo = models.FileField(
+        upload_to='documentos_escola/%Y/%m/%d/',
+        verbose_name="Arquivo",
+        validators=[validate_upload_file],
+    )
     categoria = models.CharField(max_length=20, choices=CATEGORIA_CHOICES, default='outros', verbose_name="Categoria")
     data_upload = models.DateTimeField(auto_now_add=True, verbose_name="Data de Upload")
     uploaded_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, verbose_name="Enviado por")

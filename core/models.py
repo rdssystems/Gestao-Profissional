@@ -11,15 +11,24 @@ class Profile(models.Model):
     is_developer = models.BooleanField(default=False, verbose_name="Desenvolvedor (Acesso a Updates)")
     
     NIVEL_ACESSO_CHOICES = (
+        ('NENHUM', 'Nenhum (padrão — Coordenador/Auxiliar de uma escola)'),
         ('ADMIN_CP', 'Administrador de CPs'),
         ('ADMIN_UDITECH', 'Administrador de Uditechs'),
         ('SUPERUSER', 'Superusuário Global'),
     )
 
+    # Default 'NENHUM', não 'ADMIN_CP': antes, TODO perfil novo (inclusive um
+    # criado sem querer via /admin/ "Add user", sem tocar no dropdown) nascia
+    # com acesso de administrador de segmento (rede CP inteira), já que
+    # core/mixins.py só nega esse nível quando profile.escola está definido.
+    # Um usuário comum sem escola vinculada e sem esse campo escolhido
+    # explicitamente não deveria ter acesso nenhum além do próprio login.
+    # Perfis já existentes em produção com 'ADMIN_CP'/'ADMIN_UDITECH' NÃO
+    # são afetados por esta mudança (só o default de linhas novas muda).
     nivel_acesso = models.CharField(
         max_length=20,
         choices=NIVEL_ACESSO_CHOICES,
-        default='ADMIN_CP',
+        default='NENHUM',
         verbose_name="Nível de Acesso Administrativo"
     )
 

@@ -8,6 +8,7 @@ from django.utils import timezone
 from urllib.parse import quote
 
 
+from django.db import transaction
 from django.db.models import Q, Count, OuterRef
 from django.views.generic import ListView, DetailView, View
 from django.views.generic.edit import CreateView, UpdateView, DeleteView
@@ -16,7 +17,7 @@ from django.urls import reverse_lazy
 from django.shortcuts import get_object_or_404, redirect, render
 from django.contrib import messages
 from django.core.exceptions import ValidationError
-from django.http import HttpResponse, JsonResponse
+from django.http import HttpResponse, JsonResponse, Http404
 
 from .models import Aluno, ArquivoAluno, WebSocialMember
 from .forms import AlunoForm, AuxiliarAlunoForm, AlunoCSVUploadForm, VerificarCPFForm
@@ -51,6 +52,30 @@ def download_model_xlsx(request):
 class SuperuserRequiredMixin(UserPassesTestMixin):
     def test_func(self):
         return self.request.user.is_superuser
+
+
+def get_aluno_no_escopo_ou_404(request, pk):
+    """
+    Busca o Aluno garantindo escopo do usuario logado: superuser/admin de
+    segmento (perfil sem escola vinculada) acessam qualquer escola do
+    sistema ativo; Coordenador/Auxiliar (perfil COM escola vinculada) só a
+    própria escola. As views que chamam isto são plain View (sem 'model'),
+    então o StaffRequiredMixin não faz a checagem por objeto sozinho —
+    sem este helper, um Coordenador de uma escola conseguia editar
+    observações/arquivos de alunos de OUTRA escola da mesma rede só
+    adivinhando o pk.
+    """
+    user = request.user
+    profile = getattr(user, 'profile', None)
+    sistema = request.session.get('sistema', 'cp').upper()
+    is_segment_admin = user.is_superuser or (
+        profile and not profile.escola and profile.nivel_acesso in ['ADMIN_CP', 'ADMIN_UDITECH']
+    )
+    if is_segment_admin:
+        return get_object_or_404(Aluno, pk=pk, escola__tipo=sistema)
+    if profile and profile.escola:
+        return get_object_or_404(Aluno, pk=pk, escola=profile.escola)
+    raise Http404
 
 class AlunoVerificarCPFView(StaffRequiredMixin, View):
     template_name = 'alunos/verificar_cpf.html'
@@ -118,8 +143,6 @@ class AlunoClonarView(AuditLogMixin, StaffRequiredMixin, View):
              messages.error(request, "Você não está vinculado a nenhuma escola ou não possui uma escola ativa para importar o aluno.")
              return redirect('alunos:verificar_cpf')
 
-        escola_destino = user.profile.escola
-        
         # Double check if already exists (prevent race condition)
         if Aluno.objects.filter(escola=escola_destino, cpf=aluno_original.cpf).exists():
             messages.warning(request, "Este aluno já foi importado ou cadastrado nesta escola.")
@@ -144,10 +167,7 @@ class AlunoClonarView(AuditLogMixin, StaffRequiredMixin, View):
             uf_naturalidade=aluno_original.uf_naturalidade,
             deficiencia=aluno_original.deficiencia,
             escolaridade=aluno_original.escolaridade,
-            email_principal=aluno_original.email_principal, # Note: Emails are unique=True in model? 
-            # Wait, email_principal is unique=True in model. 
-            # If we clone, we will have duplicate email error!
-            # Logic adjustment needed below.
+            email_principal=aluno_original.email_principal,
             whatsapp=aluno_original.whatsapp,
             telefone_principal=aluno_original.telefone_principal,
             endereco_cep=aluno_original.endereco_cep,
@@ -166,10 +186,7 @@ class AlunoClonarView(AuditLogMixin, StaffRequiredMixin, View):
             renda_moradores=aluno_original.renda_moradores,
             como_soube=aluno_original.como_soube
         )
-        
-        # Handle Email Uniqueness for Cloning
-        # Email is no longer unique globally, so we can copy it directly.
-        
+
         try:
             novo_aluno.save()
             
@@ -501,8 +518,7 @@ class AlunoHistoricoView(StaffRequiredMixin, DetailView):
 
 class AlunoUpdateObservacoesView(AuditLogMixin, StaffRequiredMixin, View):
     def post(self, request, pk):
-        sistema = request.session.get('sistema', 'cp').upper()
-        aluno = get_object_or_404(Aluno, pk=pk, escola__tipo=sistema)
+        aluno = get_aluno_no_escopo_ou_404(request, pk)
         observacoes = request.POST.get('observacoes')
         from core.utils import audit_context
         with audit_context(skip=True):
@@ -520,8 +536,7 @@ class AlunoUpdateObservacoesView(AuditLogMixin, StaffRequiredMixin, View):
 
 class AlunoUpdateCursosInteresseView(AuditLogMixin, StaffRequiredMixin, View):
     def post(self, request, pk):
-        sistema = request.session.get('sistema', 'cp').upper()
-        aluno = get_object_or_404(Aluno, pk=pk, escola__tipo=sistema)
+        aluno = get_aluno_no_escopo_ou_404(request, pk)
         cursos_ids = request.POST.getlist('cursos_interesse')
         
         # Validar se os cursos pertencem à mesma escola ou se é superuser
@@ -585,101 +600,106 @@ class AlunoCSVUploadView(LoginRequiredMixin, SuperuserRequiredMixin, View): # Ap
         for i, row in enumerate(reader):
             line_num = i + 2 # +1 for 0-indexed, +1 for header
             try:
-                # Campo 'escola_nome' é obrigatório no CSV para vincular o aluno a uma escola existente
-                escola_nome = row.get('escola_nome')
-                if not escola_nome:
-                    raise ValueError("Coluna 'escola_nome' é obrigatória.")
-                sistema = self.request.session.get('sistema', 'cp').upper()
-                try:
-                    escola = Escola.objects.get(nome=escola_nome, tipo=sistema)
-                except Escola.DoesNotExist:
-                    raise ValueError(f"Escola '{escola_nome}' não encontrada no portal {sistema}. A escola deve existir previamente neste portal.")
+                # Cada linha e um savepoint proprio (mesmo raciocinio do
+                # import de cursos): se um passo futuro desta linha vier a
+                # gravar mais de um objeto, uma falha no meio não deixa
+                # escrita parcial — sem tornar o upload inteiro tudo-ou-nada
+                # (linha com erro continua sendo pulada e reportada).
+                with transaction.atomic():
+                    # Campo 'escola_nome' é obrigatório no CSV para vincular o aluno a uma escola existente
+                    escola_nome = row.get('escola_nome')
+                    if not escola_nome:
+                        raise ValueError("Coluna 'escola_nome' é obrigatória.")
+                    sistema = self.request.session.get('sistema', 'cp').upper()
+                    try:
+                        escola = Escola.objects.get(nome=escola_nome, tipo=sistema)
+                    except Escola.DoesNotExist:
+                        raise ValueError(f"Escola '{escola_nome}' não encontrada no portal {sistema}. A escola deve existir previamente neste portal.")
 
-                # Mapeamento e Conversão dos dados
-                aluno_data = {
-                    'escola': escola,
-                    'nome_completo': row.get('Nome'),
-                    'cpf': row.get('cpf'),
-                    'rg': row.get('rg'),
-                    'orgao_exp': row.get('orgaoemissor'),
-                    'naturalidade': row.get('Naturalidade'),
-                    'uf_naturalidade': row.get('uf'),
-                    'endereco_cep': row.get('cep'),
-                    'endereco_rua': row.get('endereco'),
-                    'endereco_numero': row.get('num'),
-                    'endereco_bairro': row.get('bairro'),
-                    'endereco_cidade': row.get('cidade'), # Novo
-                    'endereco_estado': row.get('estado_endereco'), # Novo
-                    'telefone_principal': row.get('telefone1'),
-                    'email_principal': row.get('email'), # Novo
-                    'whatsapp': '', # Default para vazio
+                    # Mapeamento e Conversão dos dados
+                    aluno_data = {
+                        'escola': escola,
+                        'nome_completo': row.get('Nome'),
+                        'cpf': row.get('cpf'),
+                        'rg': row.get('rg'),
+                        'orgao_exp': row.get('orgaoemissor'),
+                        'naturalidade': row.get('Naturalidade'),
+                        'uf_naturalidade': row.get('uf'),
+                        'endereco_cep': row.get('cep'),
+                        'endereco_rua': row.get('endereco'),
+                        'endereco_numero': row.get('num'),
+                        'endereco_bairro': row.get('bairro'),
+                        'endereco_cidade': row.get('cidade'), # Novo
+                        'endereco_estado': row.get('estado_endereco'), # Novo
+                        'telefone_principal': row.get('telefone1'),
+                        'email_principal': row.get('email'), # Novo
+                        'whatsapp': '', # Default para vazio
 
-                    'valor_moradia': float(row.get('valorresidencia')) if row.get('valorresidencia') else 0.0,
-                    'renda_individual': float(row.get('renda')) if row.get('renda') else 0.0,
-                    'num_moradores': int(row.get('nummoradores')) if row.get('nummoradores') else 0,
-                    'quantos_trabalham': int(row.get('numtrabalham')) if row.get('numtrabalham') else 0,
-                    'renda_moradores': float(row.get('rendatotal')) if row.get('rendatotal') else 0.0,
-                }
+                        'valor_moradia': float(row.get('valorresidencia')) if row.get('valorresidencia') else 0.0,
+                        'renda_individual': float(row.get('renda')) if row.get('renda') else 0.0,
+                        'num_moradores': int(row.get('nummoradores')) if row.get('nummoradores') else 0,
+                        'quantos_trabalham': int(row.get('numtrabalham')) if row.get('numtrabalham') else 0,
+                        'renda_moradores': float(row.get('rendatotal')) if row.get('rendatotal') else 0.0,
+                    }
 
-                # Conversão de datas (DD/MM/YYYY)
-                data_nasc_str = row.get('Data nasc (00/00/0000)')
-                if data_nasc_str:
-                    aluno_data['data_nascimento'] = datetime.strptime(data_nasc_str, '%d/%m/%Y').date()
-                data_emissao_str = row.get('dataemissao')
-                if data_emissao_str:
-                    aluno_data['data_emissao'] = datetime.strptime(data_emissao_str, '%d/%m/%Y').date()
-                
-                # Conversão de booleano (deficiencia) a partir de uma string Sim/Nao
-                deficiencia_str = row.get('deficiencia (sim/nao)', 'nao').lower() # Padrão para 'nao'
-                aluno_data['deficiencia'] = (deficiencia_str == 'sim')
+                    # Conversão de datas (DD/MM/YYYY)
+                    data_nasc_str = row.get('Data nasc (00/00/0000)')
+                    if data_nasc_str:
+                        aluno_data['data_nascimento'] = datetime.strptime(data_nasc_str, '%d/%m/%Y').date()
+                    data_emissao_str = row.get('dataemissao')
+                    if data_emissao_str:
+                        aluno_data['data_emissao'] = datetime.strptime(data_emissao_str, '%d/%m/%Y').date()
 
-                # Mapeamento de CHOICES (case-insensitive para os valores em português)
-                aluno_data['cor_raca'] = COR_RACA_CHOICES.get(row.get('Cor', '').lower())
-                aluno_data['sexo'] = SEXO_CHOICES.get(row.get('Sexo', '').lower())
-                aluno_data['estado_civil'] = ESTADO_CIVIL_CHOICES.get(row.get('Estado Civil', '').lower())
-                aluno_data['escolaridade'] = ESCOLARIDADE_CHOICES.get(row.get('escolaridade', '').lower())
-                aluno_data['situacao_profissional'] = SITUACAO_PROFISSIONAL_CHOICES.get(row.get('situacao', '').lower())
+                    # Conversão de booleano (deficiencia) a partir de uma string Sim/Nao
+                    deficiencia_str = row.get('deficiencia (sim/nao)', 'nao').lower() # Padrão para 'nao'
+                    aluno_data['deficiencia'] = (deficiencia_str == 'sim')
 
-                # Campos novos com choices
-                aluno_data['tempo_moradia'] = TEMPO_MORADIA_CHOICES.get(row.get('tempo_moradia', '').lower()) 
-                aluno_data['tipo_moradia'] = TIPO_MORADIA_CHOICES.get(row.get('tipo_moradia', '').lower())
-                aluno_data['como_soube'] = COMO_SOUBE_CHOICES.get(row.get('como_soube', '').lower())
-                
-                # Remoção de campos vazios ou None para que os defaults do modelo sejam aplicados
-                aluno_data = {k: v for k, v in aluno_data.items() if v is not None and v != ''}
+                    # Mapeamento de CHOICES (case-insensitive para os valores em português)
+                    aluno_data['cor_raca'] = COR_RACA_CHOICES.get(row.get('Cor', '').lower())
+                    aluno_data['sexo'] = SEXO_CHOICES.get(row.get('Sexo', '').lower())
+                    aluno_data['estado_civil'] = ESTADO_CIVIL_CHOICES.get(row.get('Estado Civil', '').lower())
+                    aluno_data['escolaridade'] = ESCOLARIDADE_CHOICES.get(row.get('escolaridade', '').lower())
+                    aluno_data['situacao_profissional'] = SITUACAO_PROFISSIONAL_CHOICES.get(row.get('situacao', '').lower())
 
+                    # Campos novos com choices
+                    aluno_data['tempo_moradia'] = TEMPO_MORADIA_CHOICES.get(row.get('tempo_moradia', '').lower())
+                    aluno_data['tipo_moradia'] = TIPO_MORADIA_CHOICES.get(row.get('tipo_moradia', '').lower())
+                    aluno_data['como_soube'] = COMO_SOUBE_CHOICES.get(row.get('como_soube', '').lower())
 
-                # Validação de campos obrigatórios no modelo Aluno que não têm default
-                required_fields_to_check = ['nome_completo', 'cpf', 'data_nascimento', 'sexo', 'escola', 'email_principal', 'endereco_cidade', 'endereco_estado']
-                for field_name in required_fields_to_check:
-                    if field_name not in aluno_data or not aluno_data[field_name]:
-                        # Ajusta a mensagem de erro para ser mais específica
-                        if field_name == 'cor_raca' and row.get('Cor', '') and not aluno_data['cor_raca']:
-                            raise ValueError(f"Valor inválido para 'Cor': {row.get('Cor')}. Opções válidas: {list(COR_RACA_CHOICES.keys())}")
-                        elif field_name == 'sexo' and row.get('Sexo', '') and not aluno_data['sexo']:
-                            raise ValueError(f"Valor inválido para 'Sexo': {row.get('Sexo')}. Opções válidas: {list(SEXO_CHOICES.keys())}")
-                        elif field_name == 'estado_civil' and row.get('Estado Civil', '') and not aluno_data['estado_civil']:
-                            raise ValueError(f"Valor inválido para 'Estado Civil': {row.get('Estado Civil')}. Opções válidas: {list(ESTADO_CIVIL_CHOICES.keys())}")
-                        elif field_name == 'escolaridade' and row.get('escolaridade', '') and not aluno_data['escolaridade']:
-                            raise ValueError(f"Valor inválido para 'escolaridade': {row.get('escolaridade')}. Opções válidas: {list(ESCOLARIDADE_CHOICES.keys())}")
-                        elif field_name == 'situacao_profissional' and row.get('situacao', '') and not aluno_data['situacao_profissional']:
-                            raise ValueError(f"Valor inválido para 'situacao': {row.get('situacao')}. Opções válidas: {list(SITUACAO_PROFISSIONAL_CHOICES.keys())}")
-                        else:
-                            raise ValueError(f"Campo obrigatório '{field_name}' está faltando ou é inválido.")
+                    # Remoção de campos vazios ou None para que os defaults do modelo sejam aplicados
+                    aluno_data = {k: v for k, v in aluno_data.items() if v is not None and v != ''}
 
-                # Tenta encontrar um aluno existente pelo CPF na mesma escola
-                aluno_instance = Aluno.objects.filter(cpf=aluno_data['cpf'], escola=escola).first()
+                    # Validação de campos obrigatórios no modelo Aluno que não têm default
+                    required_fields_to_check = ['nome_completo', 'cpf', 'data_nascimento', 'sexo', 'escola', 'email_principal', 'endereco_cidade', 'endereco_estado']
+                    for field_name in required_fields_to_check:
+                        if field_name not in aluno_data or not aluno_data[field_name]:
+                            # Ajusta a mensagem de erro para ser mais específica
+                            if field_name == 'cor_raca' and row.get('Cor', '') and not aluno_data['cor_raca']:
+                                raise ValueError(f"Valor inválido para 'Cor': {row.get('Cor')}. Opções válidas: {list(COR_RACA_CHOICES.keys())}")
+                            elif field_name == 'sexo' and row.get('Sexo', '') and not aluno_data['sexo']:
+                                raise ValueError(f"Valor inválido para 'Sexo': {row.get('Sexo')}. Opções válidas: {list(SEXO_CHOICES.keys())}")
+                            elif field_name == 'estado_civil' and row.get('Estado Civil', '') and not aluno_data['estado_civil']:
+                                raise ValueError(f"Valor inválido para 'Estado Civil': {row.get('Estado Civil')}. Opções válidas: {list(ESTADO_CIVIL_CHOICES.keys())}")
+                            elif field_name == 'escolaridade' and row.get('escolaridade', '') and not aluno_data['escolaridade']:
+                                raise ValueError(f"Valor inválido para 'escolaridade': {row.get('escolaridade')}. Opções válidas: {list(ESCOLARIDADE_CHOICES.keys())}")
+                            elif field_name == 'situacao_profissional' and row.get('situacao', '') and not aluno_data['situacao_profissional']:
+                                raise ValueError(f"Valor inválido para 'situacao': {row.get('situacao')}. Opções válidas: {list(SITUACAO_PROFISSIONAL_CHOICES.keys())}")
+                            else:
+                                raise ValueError(f"Campo obrigatório '{field_name}' está faltando ou é inválido.")
 
-                if aluno_instance:
-                    # Se o aluno existe, atualiza os dados
-                    for key, value in aluno_data.items():
-                        setattr(aluno_instance, key, value)
-                    aluno_instance.save()
-                    updated_count += 1
-                else:
-                    # Se o aluno não existe, cria um novo
-                    Aluno.objects.create(**aluno_data)
-                    created_count += 1
+                    # Tenta encontrar um aluno existente pelo CPF na mesma escola
+                    aluno_instance = Aluno.objects.filter(cpf=aluno_data['cpf'], escola=escola).first()
+
+                    if aluno_instance:
+                        # Se o aluno existe, atualiza os dados
+                        for key, value in aluno_data.items():
+                            setattr(aluno_instance, key, value)
+                        aluno_instance.save()
+                        updated_count += 1
+                    else:
+                        # Se o aluno não existe, cria um novo
+                        Aluno.objects.create(**aluno_data)
+                        created_count += 1
 
             except (ValueError, KeyError, ValidationError, Escola.DoesNotExist) as e:
                 errors.append(f"Linha {line_num}: {e}")
@@ -750,13 +770,21 @@ class AlunoCSVUploadView(LoginRequiredMixin, SuperuserRequiredMixin, View): # Ap
 
 class AlunoArquivoAjaxUploadView(LoginRequiredMixin, StaffRequiredMixin, View):
     def post(self, request, pk):
-        sistema = request.session.get('sistema', 'cp').upper()
-        aluno = get_object_or_404(Aluno, pk=pk, escola__tipo=sistema)
+        aluno = get_aluno_no_escopo_ou_404(request, pk)
         arquivo = request.FILES.get('arquivo')
         nome = request.POST.get('nome', '')
 
         if not arquivo:
             return JsonResponse({'sucesso': False, 'erro': 'Nenhum arquivo enviado.'}, status=400)
+
+        # .objects.create() nao roda full_clean(), entao os validators do
+        # model field (extensao/tamanho) precisam ser chamados manualmente.
+        from django.core.exceptions import ValidationError
+        from core.validators import validate_upload_file
+        try:
+            validate_upload_file(arquivo)
+        except ValidationError as e:
+            return JsonResponse({'sucesso': False, 'erro': ' '.join(e.messages)}, status=400)
 
         from .models import ArquivoAluno
         doc = ArquivoAluno.objects.create(
@@ -782,21 +810,21 @@ class AlunoArquivoAjaxUploadView(LoginRequiredMixin, StaffRequiredMixin, View):
 class AlunoArquivoActionView(LoginRequiredMixin, StaffRequiredMixin, View):
     def delete(self, request, pk, file_id):
         from .models import ArquivoAluno
-        sistema = request.session.get('sistema', 'cp').upper()
-        arquivo_obj = get_object_or_404(ArquivoAluno, id=file_id, aluno_id=pk, aluno__escola__tipo=sistema)
-        
+        aluno = get_aluno_no_escopo_ou_404(request, pk)
+        arquivo_obj = get_object_or_404(ArquivoAluno, id=file_id, aluno=aluno)
+
         # Remover arquivo físico
         if arquivo_obj.arquivo:
             if os.path.isfile(arquivo_obj.arquivo.path):
                 os.remove(arquivo_obj.arquivo.path)
-        
+
         arquivo_obj.delete()
         return JsonResponse({'sucesso': True})
 
     def post(self, request, pk, file_id):
         from .models import ArquivoAluno
-        sistema = request.session.get('sistema', 'cp').upper()
-        arquivo_obj = get_object_or_404(ArquivoAluno, id=file_id, aluno_id=pk, aluno__escola__tipo=sistema)
+        aluno = get_aluno_no_escopo_ou_404(request, pk)
+        arquivo_obj = get_object_or_404(ArquivoAluno, id=file_id, aluno=aluno)
         novo_nome = request.POST.get('novo_nome')
         if novo_nome:
             arquivo_obj.nome = novo_nome
@@ -805,8 +833,7 @@ class AlunoArquivoActionView(LoginRequiredMixin, StaffRequiredMixin, View):
         return JsonResponse({'sucesso': False, 'erro': 'Nome inválido.'}, status=400)
 
     def get(self, request, pk):
-        sistema = request.session.get('sistema', 'cp').upper()
-        aluno = get_object_or_404(Aluno, pk=pk, escola__tipo=sistema)
+        aluno = get_aluno_no_escopo_ou_404(request, pk)
         arquivos = aluno.arquivos.all()
         data = []
         for a in arquivos:

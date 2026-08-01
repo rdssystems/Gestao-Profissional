@@ -367,6 +367,11 @@
             <p>Digite seu CPF para continuar</p>
         </div>
         <div class="card-body">
+            {% if erro_rate_limit %}
+            <div class="alert-form" style="display:block; margin-bottom:1rem;">
+                Muitas consultas a partir deste endereço. Aguarde alguns minutos e tente novamente.
+            </div>
+            {% endif %}
             <form method="get">
                 <div class="field-row">
                     <div>

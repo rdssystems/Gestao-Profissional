@@ -51,7 +51,26 @@ class UserCreationForm(forms.ModelForm):
         }
 
     def __init__(self, *args, **kwargs):
+        request_user = kwargs.pop('request_user', None)
         super().__init__(*args, **kwargs)
+
+        # Restringe as escolas que podem ser atribuídas ao escopo do usuário
+        # logado: um Coordenador/Auxiliar (perfil com escola vinculada) só
+        # pode criar/editar contas para a PRÓPRIA escola. Sem isso, o campo
+        # aceitava qualquer escola do sistema (inclusive de outra rede/rede
+        # oposta), permitindo escalonamento cruzado entre escolas/tenants.
+        if request_user and not request_user.is_superuser:
+            profile = getattr(request_user, 'profile', None)
+            is_segment_admin = profile and not profile.escola and profile.nivel_acesso in ['ADMIN_CP', 'ADMIN_UDITECH']
+            if is_segment_admin:
+                sistema = 'CP' if profile.nivel_acesso == 'ADMIN_CP' else 'UDITECH'
+                self.fields['escola'].queryset = Escola.objects.filter(tipo=sistema)
+            elif profile and profile.escola:
+                self.fields['escola'].queryset = Escola.objects.filter(pk=profile.escola_id)
+                self.fields['escola'].initial = profile.escola
+            else:
+                self.fields['escola'].queryset = Escola.objects.none()
+
         # Se estiver editando um usuário (instance existe e tem PK)
         if self.instance and self.instance.pk:
             # Senhas não são obrigatórias na edição

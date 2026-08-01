@@ -87,26 +87,34 @@ class PublicoCadastroView(View):
     def get(self, request, slug):
         cpf = request.GET.get('cpf', '')
         aluno = None
-        aluno_outra_escola = None
         ja_cadastrado = False
+        rate_limited = False
         form = None
         cpf_limpo = ''
         if cpf:
             cpf_limpo = ''.join(filter(str.isdigit, cpf))
             if len(cpf_limpo) == 11:
-                aluno = Aluno.objects.filter(cpf=cpf_limpo, escola=self.escola).first()
-                if aluno:
-                    ja_cadastrado = True
+                # Endpoint anonimo e sem nenhuma protecao contra enumeracao de
+                # CPF por forca bruta. Limita consultas por IP antes de bater
+                # no banco (nao afeta o preenchimento normal do formulario).
+                from core.utils import is_rate_limited, register_attempt
+                if is_rate_limited(request, 'publico_cpf_lookup', limit=30):
+                    rate_limited = True
                 else:
-                    aluno_outra_escola = Aluno.objects.filter(cpf=cpf_limpo).first()
-                    if aluno_outra_escola:
-                        aluno = aluno_outra_escola
+                    register_attempt(request, 'publico_cpf_lookup', window_seconds=600)
 
-        if ja_cadastrado:
+                    # Busca SOMENTE nesta escola. Antes, um CPF nao encontrado
+                    # aqui caia num fallback que buscava em QUALQUER escola do
+                    # sistema (inclusive de outra rede) e devolvia o cadastro
+                    # completo (nome, endereco, renda, dados de saude) de um
+                    # aluno completamente diferente para o visitante anonimo
+                    # que digitou aquele CPF — vazamento de PII sem autenticacao.
+                    aluno = Aluno.objects.filter(cpf=cpf_limpo, escola=self.escola).first()
+                    if aluno:
+                        ja_cadastrado = True
+
+        if rate_limited or ja_cadastrado:
             pass
-        elif aluno:
-            form = AlunoForm(instance=aluno, publico_escola=self.escola)
-            form.fields.pop('escola', None)
         elif cpf_limpo:
             form = AlunoForm(initial={'cpf': cpf_limpo}, publico_escola=self.escola)
             form.fields.pop('escola', None)
@@ -127,6 +135,7 @@ class PublicoCadastroView(View):
             'form': form,
             'aluno_encontrado': bool(aluno) and not ja_cadastrado,
             'ja_cadastrado': ja_cadastrado,
+            'erro_rate_limit': rate_limited,
             'aluno_nome': aluno.nome_completo if aluno else '',
             'whatsapp_num': whatsapp_num,
             'whatsapp_msg': whatsapp_msg,
@@ -137,6 +146,14 @@ class PublicoCadastroView(View):
         cpf_limpo = ''.join(filter(str.isdigit, cpf_raw))
         if not cpf_limpo:
             return redirect(f'{reverse("publico:cadastro", args=[slug])}')
+
+        # Endpoint publico sem CAPTCHA: limita envios por IP para conter spam
+        # de autocadastro.
+        from core.utils import is_rate_limited, register_attempt
+        if is_rate_limited(request, 'publico_cadastro_post', limit=20):
+            messages.error(request, 'Muitos envios a partir deste endereço. Aguarde alguns minutos e tente novamente.')
+            return redirect(f'{reverse("publico:cadastro", args=[slug])}')
+        register_attempt(request, 'publico_cadastro_post', window_seconds=600)
 
         aluno_existente = Aluno.objects.filter(cpf=cpf_limpo, escola=self.escola).first()
 

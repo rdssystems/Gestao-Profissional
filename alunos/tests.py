@@ -504,3 +504,52 @@ class AlunoCrudViewTest(TestCase):
         response = self.client.post(self.delete_url_escola2)
         self.assertEqual(response.status_code, 403)
         self.assertTrue(Aluno.objects.filter(pk=self.aluno_escola2.pk).exists())
+
+class AlunoIdorRegressionTest(TestCase):
+    """
+    Regressão do bug de 2026-08-01: AlunoUpdateObservacoesView,
+    AlunoUpdateCursosInteresseView, AlunoArquivoAjaxUploadView e
+    AlunoArquivoActionView são plain View + StaffRequiredMixin — sem
+    'model'/'get_object', o mixin não faz checagem por objeto, e essas
+    views só filtravam por escola__tipo=sistema (REDE), não pela escola
+    específica do usuário. Um Coordenador de uma escola conseguia editar
+    observações e arquivos de alunos de OUTRA escola da mesma rede, só
+    adivinhando o pk. Corrigido com get_aluno_no_escopo_ou_404().
+    """
+    def setUp(self):
+        from django.contrib.auth.models import Group
+
+        self.escola_a = Escola.objects.create(nome='Escola A IDOR', email='a-idor@escola.com', tipo='CP')
+        self.escola_b = Escola.objects.create(nome='Escola B IDOR', email='b-idor@escola.com', tipo='CP')
+
+        self.coord_a = User.objects.create_user(username='coord_idor_a', password='password123')
+        self.coord_a.groups.add(Group.objects.get_or_create(name='Coordenador')[0])
+        self.coord_a.profile.escola = self.escola_a
+        self.coord_a.profile.save()
+
+        self.aluno_b = Aluno.objects.create(
+            escola=self.escola_b, nome_completo='Aluno IDOR B',
+            cpf='77777777777', data_nascimento='2000-01-01',
+        )
+
+    def test_coordenador_nao_atualiza_observacoes_de_aluno_de_outra_escola(self):
+        self.client.login(username='coord_idor_a', password='password123')
+        url = reverse('alunos:atualizar_observacoes', args=[self.aluno_b.pk])
+        response = self.client.post(url, data={'observacoes': 'texto invasor'})
+        self.assertEqual(response.status_code, 404)
+        self.aluno_b.refresh_from_db()
+        self.assertNotEqual(self.aluno_b.observacoes, 'texto invasor')
+
+    def test_coordenador_nao_lista_arquivos_de_aluno_de_outra_escola(self):
+        self.client.login(username='coord_idor_a', password='password123')
+        url = reverse('alunos:aluno_arquivos_lista', args=[self.aluno_b.pk])
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 404)
+
+    def test_coordenador_nao_faz_upload_de_arquivo_para_aluno_de_outra_escola(self):
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        self.client.login(username='coord_idor_a', password='password123')
+        url = reverse('alunos:aluno_arquivos_upload', args=[self.aluno_b.pk])
+        arquivo = SimpleUploadedFile('doc.pdf', b'%PDF-1.4', content_type='application/pdf')
+        response = self.client.post(url, data={'arquivo': arquivo, 'nome': 'doc'})
+        self.assertEqual(response.status_code, 404)

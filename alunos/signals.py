@@ -1,3 +1,4 @@
+from django.db import transaction
 from django.db.models.signals import post_save, m2m_changed
 from django.dispatch import receiver
 from django.utils import timezone
@@ -27,12 +28,22 @@ def incluir_aluno_web_social(sender, instance, created, **kwargs):
     """
     if instance.status == 'concluido' or (instance.status == 'desistente' and instance.chamadas.filter(status_presenca='P').exists()):
         aluno = instance.aluno
-        # Verificar se algum aluno com o mesmo CPF já está na Web Social para garantir 1 por CPF
-        if not WebSocialMember.objects.filter(aluno__cpf=aluno.cpf).exists():
-            WebSocialMember.objects.create(
-                aluno=aluno,
-                ano_inclusao=timezone.now().year
-            )
+        with transaction.atomic():
+            # Trava (select_for_update) todas as linhas de Aluno com esse
+            # CPF — pode haver mais de uma, uma por escola. Fecha a race
+            # condition: duas conclusões de matrícula do mesmo CPF em
+            # escolas diferentes, próximas no tempo, não devem conseguir
+            # criar 2 WebSocialMember (regra é 1 por CPF em todo o sistema).
+            # order_by('pk') mantém a ordem de aquisição de lock consistente
+            # entre transações concorrentes, evitando deadlock.
+            list(Aluno.objects.select_for_update().filter(cpf=aluno.cpf).order_by('pk'))
+
+            # Verificar se algum aluno com o mesmo CPF já está na Web Social para garantir 1 por CPF
+            if not WebSocialMember.objects.filter(aluno__cpf=aluno.cpf).exists():
+                WebSocialMember.objects.create(
+                    aluno=aluno,
+                    ano_inclusao=timezone.now().year
+                )
 
 
 @receiver(m2m_changed, sender=Aluno.cursos_interesse.through)

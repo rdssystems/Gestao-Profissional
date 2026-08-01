@@ -1,3 +1,5 @@
+import logging
+
 from score_config.models import (
     RendaFamiliarFaixa,
     RendaPerCapitaFaixa,
@@ -6,6 +8,8 @@ from score_config.models import (
     TempoMoradiaFaixa,
     TipoMoradiaFaixa
 )
+
+logger = logging.getLogger(__name__)
 
 def _get_score_for_numerical_range(value, model_class, field_name):
     """
@@ -47,49 +51,42 @@ def calcular_score_aluno(aluno):
     Calcula o score total de um aluno com base nas faixas de score configuradas.
     """
     score = 0
-    print(f"--- Calculating score for Aluno: {aluno.nome_completo} (ID: {aluno.pk}) ---")
 
     # 1. Renda Familiar
-    rf_score = _get_score_for_numerical_range(aluno.renda_familiar or 0, RendaFamiliarFaixa, 'valor_maior_que')
-    score += rf_score
-    print(f"Renda Familiar ({aluno.renda_familiar or 0}): {rf_score} points. Total score: {score}")
+    score += _get_score_for_numerical_range(aluno.renda_familiar or 0, RendaFamiliarFaixa, 'valor_maior_que')
 
     # 2. Renda Per Capita
-    rpc_score = _get_score_for_numerical_range(aluno.renda_per_capita or 0, RendaPerCapitaFaixa, 'valor_maior_que')
-    score += rpc_score
-    print(f"Renda Per Capita ({aluno.renda_per_capita or 0}): {rpc_score} points. Total score: {score}")
+    score += _get_score_for_numerical_range(aluno.renda_per_capita or 0, RendaPerCapitaFaixa, 'valor_maior_que')
 
     # 3. Número de Moradores
-    nm_score = _get_score_for_numerical_quantity(aluno.num_moradores or 0, NumeroMoradoresFaixa, 'qtd_maior_ou_igual')
-    score += nm_score
-    print(f"Número de Moradores ({aluno.num_moradores or 0}): {nm_score} points. Total score: {score}")
+    score += _get_score_for_numerical_quantity(aluno.num_moradores or 0, NumeroMoradoresFaixa, 'qtd_maior_ou_igual')
 
     # 4. Membros que Trabalham
-    mqt_score = _get_score_for_numerical_quantity(aluno.quantos_trabalham or 0, MembrosTrabalhamFaixa, 'qtd_maior_ou_igual')
-    score += mqt_score
-    print(f"Membros que Trabalham ({aluno.quantos_trabalham or 0}): {mqt_score} points. Total score: {score}")
+    score += _get_score_for_numerical_quantity(aluno.quantos_trabalham or 0, MembrosTrabalhamFaixa, 'qtd_maior_ou_igual')
 
     # 5. Tempo de Moradia
-    tm_score = 0
     if aluno.tempo_moradia:
         try:
             faixa = TempoMoradiaFaixa.objects.get(titulo=aluno.tempo_moradia)
-            tm_score = faixa.pontos
+            score += faixa.pontos
         except TempoMoradiaFaixa.DoesNotExist:
-            print(f"Tempo de Moradia '{aluno.tempo_moradia}' not found in configuration.")
-        score += tm_score
-    print(f"Tempo de Moradia ('{aluno.tempo_moradia or 'N/A'}'): {tm_score} points. Total score: {score}")
+            # Choice de Aluno.tempo_moradia sem faixa correspondente em
+            # score_config — provável dessincronia entre os dois (ver
+            # docs/auditoria/2026-08-01-arquitetura-codigo.md, item 12).
+            logger.warning(
+                "calcular_score_aluno: Tempo de Moradia '%s' (aluno %s) sem faixa correspondente em score_config.",
+                aluno.tempo_moradia, aluno.pk,
+            )
 
     # 6. Tipo de Moradia
-    tipo_m_score = 0
     if aluno.tipo_moradia:
         try:
             faixa = TipoMoradiaFaixa.objects.get(titulo=aluno.tipo_moradia)
-            tipo_m_score = faixa.pontos
+            score += faixa.pontos
         except TipoMoradiaFaixa.DoesNotExist:
-            print(f"Tipo de Moradia '{aluno.tipo_moradia}' not found in configuration.")
-        score += tipo_m_score
-    print(f"Tipo de Moradia ('{aluno.tipo_moradia or 'N/A'}'): {tipo_m_score} points. Total score: {score}")
+            logger.warning(
+                "calcular_score_aluno: Tipo de Moradia '%s' (aluno %s) sem faixa correspondente em score_config.",
+                aluno.tipo_moradia, aluno.pk,
+            )
 
-    print(f"--- Final score for Aluno {aluno.nome_completo}: {score} ---")
     return score
