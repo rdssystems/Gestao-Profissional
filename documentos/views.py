@@ -9,6 +9,8 @@ from django.http import JsonResponse
 from django.views import View
 from .models import DocumentoUnidade, Pasta
 from escolas.models import Escola
+from core.mixins import AuditLogMixin
+from core.utils import save_audit_log
 
 class HasEscolaOrSuperuserMixin(UserPassesTestMixin):
     def test_func(self):
@@ -109,7 +111,7 @@ class DocumentoListView(LoginRequiredMixin, HasEscolaOrSuperuserMixin, ListView)
                 
         return context
 
-class DocumentoUploadView(LoginRequiredMixin, HasEscolaOrSuperuserMixin, CreateView):
+class DocumentoUploadView(AuditLogMixin, LoginRequiredMixin, HasEscolaOrSuperuserMixin, CreateView):
     model = DocumentoUnidade
     fields = ['arquivo', 'nome', 'categoria', 'escola']
     template_name = 'documentos/documento_form.html'
@@ -134,7 +136,7 @@ class DocumentoUploadView(LoginRequiredMixin, HasEscolaOrSuperuserMixin, CreateV
         messages.success(self.request, "Documento enviado com sucesso!")
         return super().form_valid(form)
 
-class DocumentoDeleteView(LoginRequiredMixin, HasEscolaOrSuperuserMixin, DeleteView):
+class DocumentoDeleteView(AuditLogMixin, LoginRequiredMixin, HasEscolaOrSuperuserMixin, DeleteView):
     model = DocumentoUnidade
     success_url = reverse_lazy('documentos:lista_documentos')
     
@@ -147,14 +149,16 @@ class DocumentoDeleteView(LoginRequiredMixin, HasEscolaOrSuperuserMixin, DeleteV
             return DocumentoUnidade.objects.filter(escola=user.profile.escola, escola__tipo=sistema)
         return DocumentoUnidade.objects.none()
 
-    def delete(self, request, *args, **kwargs):
+    def form_valid(self, form):
+        # Django >= 4.0: DeleteView.post() chama form_valid(), nao mais
+        # delete() — esse metodo (removia o arquivo fisico do disco) nunca
+        # rodava, deixando arquivo orfao a cada exclusao (bug de 2026-08-01).
         obj = self.get_object()
-        # Remover arquivo físico
         if obj.arquivo:
             if os.path.isfile(obj.arquivo.path):
                 os.remove(obj.arquivo.path)
         messages.success(self.request, "Documento removido com sucesso.")
-        return super().delete(request, *args, **kwargs)
+        return super().form_valid(form)
 
 class PastaCreateView(LoginRequiredMixin, UserPassesTestMixin, View):
     def test_func(self):
@@ -174,12 +178,13 @@ class PastaCreateView(LoginRequiredMixin, UserPassesTestMixin, View):
             if escola_id and escola_id != 'todas':
                 escola = get_object_or_404(Escola, id=escola_id, tipo=sistema)
             
-            Pasta.objects.create(
+            pasta = Pasta.objects.create(
                 nome=nome,
                 escola=pasta_pai.escola if pasta_pai else escola,
                 pasta_pai=pasta_pai,
                 criado_por=request.user
             )
+            save_audit_log(request, pasta, 'CREATE', {'nome': nome, 'escola': str(pasta.escola) if pasta.escola else 'Global'})
             messages.success(request, f"Pasta '{nome}' criada com sucesso!")
             
         url = reverse_lazy('documentos:lista_documentos')
@@ -189,7 +194,7 @@ class PastaCreateView(LoginRequiredMixin, UserPassesTestMixin, View):
             return redirect(f"{url}?pasta={pasta_pai_id}")
         return redirect(url)
 
-class PastaDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
+class PastaDeleteView(AuditLogMixin, LoginRequiredMixin, UserPassesTestMixin, DeleteView):
     model = Pasta
     success_url = reverse_lazy('documentos:lista_documentos')
 
@@ -200,9 +205,10 @@ class PastaDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
         sistema = self.request.session.get('sistema', 'cp').upper()
         return Pasta.objects.filter(Q(escola__tipo=sistema) | Q(escola__isnull=True))
 
-    def delete(self, request, *args, **kwargs):
+    def form_valid(self, form):
+        # Ver comentario equivalente em DocumentoDeleteView.form_valid().
         messages.success(self.request, "Pasta removida com sucesso.")
-        return super().delete(request, *args, **kwargs)
+        return super().form_valid(form)
 
 class DocumentoAjaxUploadView(LoginRequiredMixin, HasEscolaOrSuperuserMixin, View):
     def post(self, request, *args, **kwargs):
@@ -258,7 +264,8 @@ class DocumentoAjaxUploadView(LoginRequiredMixin, HasEscolaOrSuperuserMixin, Vie
             uploaded_by=user,
             categoria='outros'
         )
-        
+        save_audit_log(request, doc, 'CREATE', {'nome': doc.nome, 'escola': str(escola) if escola else 'Global'})
+
         return JsonResponse({
             'sucesso': True, 
             'mensagem': 'Upload concluído!',

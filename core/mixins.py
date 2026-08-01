@@ -156,12 +156,27 @@ class AuditLogMixin:
 
     def form_valid(self, form):
         from core.utils import audit_context
-        
+
+        # Django >= 4.0: DeleteView.post() nao chama mais self.delete()
+        # (metodo abaixo, que fica morto) — ele chama self.form_valid(form)
+        # direto, e BaseDeleteView.form_valid() ja deleta self.object.
+        # Precisamos capturar o objeto/detalhes ANTES, porque depois de
+        # deletado o .pk da instancia fica None (bug de 2026-08-01: toda
+        # exclusao via DeleteView + AuditLogMixin gravava um log fantasma
+        # 'UPDATE' com object_id/detalhes nulos, em vez de um log 'DELETE').
+        if isinstance(self, DeleteView):
+            obj = self.get_object()
+            details = {'removido': str(obj)}
+            with audit_context(skip=True):
+                response = super().form_valid(form)
+            self.save_log(obj, 'DELETE', details)
+            return response
+
         # O objeto já foi salvo pelo super().form_valid()
         with audit_context(skip=True):
             response = super().form_valid(form)
             obj = self.object
-        
+
         action = 'UPDATE'
         details = {}
 
@@ -187,8 +202,13 @@ class AuditLogMixin:
         return response
 
     def delete(self, request, *args, **kwargs):
+        # NAO e mais chamado pelo fluxo padrao de DeleteView.post() no
+        # Django >= 4.0 (ver form_valid() acima, onde a exclusao real
+        # acontece agora) — mantido só para views que ainda chamam
+        # self.delete()/super().delete() explicitamente por fora do
+        # form_valid padrao.
         from core.utils import audit_context
-        
+
         # Para DeleteView, precisamos pegar o objeto ANTES de deletar
         obj = self.get_object()
         details = {'removido': str(obj)}

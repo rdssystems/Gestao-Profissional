@@ -33,7 +33,12 @@ class DashboardView(LoginRequiredMixin, TemplateView):
         user = self.request.user
         
         # Obter filtros com defaults seguros
-        escola_id_filter = self.request.GET.get('escola_id')
+        # Guarda o valor bruto (antes de qualquer default) para diferenciar
+        # "usuario nao passou parametro nenhum" de "usuario clicou em
+        # 'Todas as Unidades' explicitamente" — so o segundo caso deve
+        # sobrepor a escola ativa vinda da sessao/navbar (ver uso abaixo).
+        escola_id_param_raw = self.request.GET.get('escola_id')
+        escola_id_filter = escola_id_param_raw
         if not escola_id_filter or escola_id_filter == 'None':
             escola_id_filter = 'all'
         
@@ -74,16 +79,24 @@ class DashboardView(LoginRequiredMixin, TemplateView):
         # (seja por filtro explícito 'all' ou porque a escola ativa na sessão é apenas um fallback automático),
         # limpamos target_escola para que a visão global (de todas as escolas da rede/segmento) seja mostrada.
         if has_global_access:
-            if escola_id_filter == 'all' or active_escola_is_fallback:
+            if escola_id_param_raw == 'all':
+                # Clique explícito em "Todas as Unidades" no filtro da própria página.
                 target_escola = None
-            elif escola_id_filter != 'all':
+            elif escola_id_param_raw:
                 try:
                     if user.is_superuser:
-                        target_escola = Escola.objects.get(pk=escola_id_filter)
+                        target_escola = Escola.objects.get(pk=escola_id_param_raw)
                     else:
-                        target_escola = Escola.objects.get(pk=escola_id_filter, tipo=sistema)
+                        target_escola = Escola.objects.get(pk=escola_id_param_raw, tipo=sistema)
                 except:
                     pass
+            elif active_escola_is_fallback:
+                # Sem parâmetro GET, e a escola ativa é só um fallback automático
+                # (admin de segmento com escola vinculada, sem seleção explícita)
+                # — mantém visão global, como já era.
+                target_escola = None
+            # else: sem parâmetro GET nenhum — mantém target_escola como já
+            # lido de request.active_escola acima (seleção explícita via navbar).
         
         if target_escola:
             aluno_scope = aluno_scope.filter(escola=target_escola)

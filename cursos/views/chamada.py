@@ -24,6 +24,7 @@ from django.forms import inlineformset_factory # Adicionar import
 from ..models import Curso, TipoCurso, Inscricao, RegistroAula, Chamada, Parceiro, EmentaPadrao, AvaliacaoProfessorAluno, AvaliacaoAlunoCurso, ContatoMatricula # Adicionar RegistroAula, Chamada, Parceiro, EmentaPadrao, AvaliacaoProfessorAluno, AvaliacaoAlunoCurso
 from ..forms import CursoForm, InscricaoForm, RegistroAulaForm, ChamadaFormSet, CursoCSVUploadForm, ChamadaForm, ParceiroForm, EmentaPadraoForm # Adicionar ParceiroForm, EmentaPadraoForm
 from core.mixins import StaffRequiredMixin, AuditLogMixin, CoordenadorRequiredMixin
+from core.utils import audit_context, save_audit_log
 
 logger = logging.getLogger(__name__)
 from alunos.models import Aluno
@@ -59,7 +60,7 @@ class ChamadaCursoListView(LoginRequiredMixin, ListView):
 
 # Nova View para Fazer/Editar Chamada
 
-class FazerChamadaView(LoginRequiredMixin, StaffRequiredMixin, View):
+class FazerChamadaView(AuditLogMixin, LoginRequiredMixin, StaffRequiredMixin, View):
     template_name = 'cursos/fazer_chamada.html'
 
     def get(self, request, curso_pk, registro_aula_pk=None):
@@ -212,9 +213,15 @@ class FazerChamadaView(LoginRequiredMixin, StaffRequiredMixin, View):
         formset = ChamadaFormSet(post_data, instance=registro_aula, prefix='chamada') 
 
         if form.is_valid() and formset.is_valid():
+            is_new_registro = registro_aula is None
             registro_aula_instance = form.save(commit=False)
-            registro_aula_instance.curso = curso 
-            registro_aula_instance.save() 
+            registro_aula_instance.curso = curso
+            # RegistroAula esta na lista de models do core/audit_signals.py;
+            # sem audit_context(skip=True) o post_save automatico gravaria
+            # um log generico ALEM do log estruturado que fazemos abaixo
+            # (mesmo bug corrigido em ExcluirRegistroAulaView).
+            with audit_context(skip=True):
+                registro_aula_instance.save()
 
             formset.instance = registro_aula_instance
             
@@ -237,6 +244,19 @@ class FazerChamadaView(LoginRequiredMixin, StaffRequiredMixin, View):
                              # Evitar duplicados para a mesma aula
                              if not Chamada.objects.filter(registro_aula=registro_aula_instance, inscricao=chamada.inscricao).exists():
                                  chamada.save()
+
+            # Log agregado (uma linha por submissão, não uma por aluno).
+            chamadas_salvas = Chamada.objects.filter(registro_aula=registro_aula_instance)
+            self.save_log(
+                registro_aula_instance,
+                'CREATE' if is_new_registro else 'UPDATE',
+                {
+                    'curso': curso.nome,
+                    'data_aula': registro_aula_instance.data_aula.strftime('%d/%m/%Y'),
+                    'presentes': chamadas_salvas.filter(status_presenca='P').count(),
+                    'ausentes': chamadas_salvas.exclude(status_presenca='P').count(),
+                },
+            )
 
             messages.success(request, f"Chamada para o dia {registro_aula_instance.data_aula.strftime('%d/%m/%Y')} salva com sucesso.")
             return redirect('cursos:lista_cursos')
@@ -472,12 +492,16 @@ class ExcluirRegistroAulaView(AuditLogMixin, LoginRequiredMixin, StaffRequiredMi
         # Loga ANTES de deletar (registro.delete() zera o pk da instância).
         self.save_log(registro, 'DELETE', {'registro_aula_excluido': f"{data_formatada} - curso {curso.nome}"})
 
-        registro.delete()
+        # audit_context(skip=True): RegistroAula está na lista de models do
+        # core/audit_signals.py — sem isso, o post_delete automático grava
+        # um SEGUNDO log da mesma exclusão (bug corrigido em 2026-08-01).
+        with audit_context(skip=True):
+            registro.delete()
 
         messages.success(request, f"O registro de presença do dia {data_formatada} para o curso '{curso.nome}' foi removido com sucesso!")
         return redirect('cursos:relatorio_frequencia', curso_pk=curso.pk)
 
-class ChamadaPublicaView(View):
+class ChamadaPublicaView(AuditLogMixin, View):
     template_name = 'cursos/chamada_publica.html'
 
     def get(self, request, token):
@@ -592,17 +616,41 @@ class ChamadaPublicaView(View):
 
             hoje = date.today()
             ids_presentes = request.POST.getlist('presencas')
-            registro, _ = RegistroAula.objects.get_or_create(curso=curso, data_aula=hoje)
+            # RegistroAula esta na lista de models do core/audit_signals.py;
+            # skip=True evita um log generico duplicando o log estruturado
+            # (com nome do professor) que gravamos logo abaixo.
+            with audit_context(skip=True):
+                registro, _ = RegistroAula.objects.get_or_create(curso=curso, data_aula=hoje)
             inscricoes = Inscricao.objects.filter(curso=curso, status='cursando')
-            
+
+            presentes_count = 0
             for insc in inscricoes:
                 status = 'P' if str(insc.id) in ids_presentes else 'A'
+                if status == 'P':
+                    presentes_count += 1
                 Chamada.objects.update_or_create(
                     registro_aula=registro,
                     inscricao=insc,
                     defaults={'status_presenca': status}
                 )
-                
+
+            # Registro sem usuario autenticado (chamada via link publico
+            # compartilhado com professor externo) — a unica rastreabilidade
+            # disponivel e o nome do professor confirmado no login da pagina
+            # e o IP, ambos capturados aqui.
+            self.save_log(
+                registro,
+                'UPDATE',
+                {
+                    'curso': curso.nome,
+                    'professor': curso.nome_professor,
+                    'data_aula': hoje.strftime('%d/%m/%Y'),
+                    'presentes': presentes_count,
+                    'ausentes': inscricoes.count() - presentes_count,
+                    'via': 'link publico (sem login de usuario)',
+                },
+            )
+
             try:
                 channel_layer = get_channel_layer()
                 async_to_sync(channel_layer.group_send)(

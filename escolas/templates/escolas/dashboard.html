@@ -3,6 +3,22 @@
 
 {% block title %}Dashboard - Sistema de Gestão{% endblock %}
 
+{% block extra_css %}
+<style>
+    .info-icon-tooltip {
+        font-size: 0.9rem;
+        color: #94a3b8;
+        cursor: help;
+        transition: color 0.2s;
+        margin-left: 4px;
+    }
+
+    .info-icon-tooltip:hover {
+        color: var(--accent-purple, #7c3aed);
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 
 
@@ -83,7 +99,9 @@
                             <div class="icon-wrapper bg-purple-soft">
                                 <i class="bi bi-calendar-check-fill"></i>
                             </div>
-                            <div class="metric-label">Hoje</div>
+                            <div class="metric-label">Hoje
+                                <i class="bi bi-info-circle info-icon-tooltip" data-bs-toggle="tooltip" data-bs-placement="top" title="Alunos novos cadastrados hoje, somados aos interesses em cursos registrados hoje (descontando os que foram cancelados no mesmo dia)."></i>
+                            </div>
                             <div class="metric-value">{{ escola.kpis.inscricoes_hoje }}</div>
                         </div>
                     </div>
@@ -94,7 +112,9 @@
                             <div class="icon-wrapper bg-blue-soft">
                                 <i class="bi bi-people-fill"></i>
                             </div>
-                            <div class="metric-label">Alunos</div>
+                            <div class="metric-label">Alunos
+                                <i class="bi bi-info-circle info-icon-tooltip" data-bs-toggle="tooltip" data-bs-placement="top" title="Total de alunos cadastrados nesta unidade (ou na rede inteira, na visão geral), independente do status da matrícula."></i>
+                            </div>
                             <div class="metric-value">{{ escola.kpis.total_alunos }}</div>
                         </div>
                     </div>
@@ -105,7 +125,9 @@
                             <div class="icon-wrapper bg-indigo-soft">
                                 <i class="bi bi-person-workspace"></i>
                             </div>
-                            <div class="metric-label">Cursando</div>
+                            <div class="metric-label">Cursando
+                                <i class="bi bi-info-circle info-icon-tooltip" data-bs-toggle="tooltip" data-bs-placement="top" title="Alunos com matrícula ativa (status 'Cursando') em turmas em andamento no período selecionado."></i>
+                            </div>
                             <div class="metric-value">{{ escola.kpis.alunos_cursando }}</div>
                         </div>
                     </div>
@@ -116,7 +138,9 @@
                             <div class="icon-wrapper bg-green-soft">
                                 <i class="bi bi-mortarboard-fill"></i>
                             </div>
-                            <div class="metric-label">Formados</div>
+                            <div class="metric-label">Formados
+                                <i class="bi bi-info-circle info-icon-tooltip" data-bs-toggle="tooltip" data-bs-placement="top" title="Total de matrículas concluídas — um aluno que concluiu mais de um curso é contado mais de uma vez. O número entre parênteses mostra quantos alunos únicos (por CPF) isso representa."></i>
+                            </div>
                             <div class="metric-value d-flex align-items-baseline gap-2">
                                 <span>{{ escola.kpis.alunos_concluintes }}</span>
                                 <span class="text-muted fw-normal" style="font-size: 0.8rem;" title="Alunos formados únicos (por CPF)">({{ escola.kpis.alunos_concluintes_unicos }} únicos)</span>
@@ -130,7 +154,9 @@
                             <div class="icon-wrapper bg-red-soft">
                                 <i class="bi bi-person-dash-fill"></i>
                             </div>
-                            <div class="metric-label">Evasão</div>
+                            <div class="metric-label">Evasão
+                                <i class="bi bi-info-circle info-icon-tooltip" data-bs-toggle="tooltip" data-bs-placement="top" title="Matrículas com status 'Desistente' em turmas atualmente abertas ou em andamento nesta unidade."></i>
+                            </div>
                             <div class="metric-value">{{ escola.kpis.alunos_desistentes }}</div>
                         </div>
                     </div>
@@ -141,7 +167,9 @@
                             <div class="icon-wrapper bg-amber-soft">
                                 <i class="bi bi-book-half"></i>
                             </div>
-                            <div class="metric-label">Ativos</div>
+                            <div class="metric-label">Ativos
+                                <i class="bi bi-info-circle info-icon-tooltip" data-bs-toggle="tooltip" data-bs-placement="top" title="Quantidade de turmas com status 'Aberta' ou 'Em Andamento' nesta unidade no momento."></i>
+                            </div>
                             <div class="metric-value">{{ escola.kpis.cursos_ativos }}</div>
                         </div>
                     </div>
@@ -152,7 +180,9 @@
                             <div class="icon-wrapper bg-slate-soft">
                                 <i class="bi bi-archive-fill"></i>
                             </div>
-                            <div class="metric-label">Finalizados</div>
+                            <div class="metric-label">Finalizados
+                                <i class="bi bi-info-circle info-icon-tooltip" data-bs-toggle="tooltip" data-bs-placement="top" title="Total histórico de turmas com status 'Concluído' nesta unidade (não é filtrado pelo mês selecionado)."></i>
+                            </div>
                             <div class="metric-value">{{ escola.kpis.cursos_concluidos }}</div>
                         </div>
                     </div>
@@ -163,7 +193,9 @@
                     <div class="col-lg-4 mb-4">
                         <div class="premium-card h-100 shadow-sm d-flex flex-column">
                             <div class="feed-header mb-2 border-bottom pb-2">
-                                <h6 class="mb-0 fw-bold"><i class="bi bi-pie-chart-fill text-primary me-2"></i>Taxa de Ocupação</h6>
+                                <h6 class="mb-0 fw-bold"><i class="bi bi-pie-chart-fill text-primary me-2"></i>Taxa de Ocupação
+                                    <i class="bi bi-info-circle info-icon-tooltip" data-bs-toggle="tooltip" data-bs-placement="top" title="Compara o total de vagas oferecidas nas turmas ativas do período com o número de alunos atualmente cursando. Vagas ociosas = vagas totais − alunos cursando."></i>
+                                </h6>
                             </div>
                             <div id="chart-rosca-{{ escola.id }}" class="flex-grow-1 d-flex justify-content-center align-items-center" style="min-height: 280px; width: 100%;"></div>
                         </div>
@@ -172,7 +204,9 @@
                     <div class="col-lg-4 mb-4">
                         <div class="premium-card h-100 shadow-sm d-flex flex-column">
                             <div class="feed-header mb-2 border-bottom pb-2">
-                                <h6 class="mb-0 fw-bold"><i class="bi bi-bar-chart-steps text-info me-2"></i>Top Frequências</h6>
+                                <h6 class="mb-0 fw-bold"><i class="bi bi-bar-chart-steps text-info me-2"></i>Top Frequências
+                                    <i class="bi bi-info-circle info-icon-tooltip" data-bs-toggle="tooltip" data-bs-placement="top" title="Percentual de presença (chamadas marcadas como 'Presente' sobre o total de chamadas registradas) em cada turma ativa. Mostra as 10 turmas com maior assiduidade."></i>
+                                </h6>
                             </div>
                             <div id="chart-assiduidade-{{ escola.id }}" class="flex-grow-1 d-flex justify-content-center align-items-center" style="min-height: 280px; width: 100%;"></div>
                         </div>
@@ -181,7 +215,9 @@
                     <div class="col-lg-4 mb-4">
                         <div class="premium-card h-100 shadow-sm d-flex flex-column">
                             <div class="feed-header mb-2 border-bottom pb-2">
-                                <h6 class="mb-0 fw-bold" style="color: #db2777;"><i class="bi bi-people-fill me-2"></i>Perfil Alunos Cursando</h6>
+                                <h6 class="mb-0 fw-bold" style="color: #db2777;"><i class="bi bi-people-fill me-2"></i>Perfil Alunos Cursando
+                                    <i class="bi bi-info-circle info-icon-tooltip" data-bs-toggle="tooltip" data-bs-placement="top" title="Distribuição por sexo dos alunos com matrícula 'Cursando' em turmas ativas, com a idade média calculada a partir da data de nascimento."></i>
+                                </h6>
                             </div>
                             <div id="chart-perfil-{{ escola.id }}" class="flex-grow-1 d-flex justify-content-center align-items-center" style="min-height: 280px; width: 100%;"></div>
                         </div>
@@ -265,7 +301,13 @@
 document.addEventListener('DOMContentLoaded', function() {
     const escolasDados = {{ escolas_dados_json|safe }};
     const sistemaAtual = "{{ request.session.sistema }}".toLowerCase();
-    
+
+    // Inicializar Tooltips do Bootstrap (icones "!" dos indicadores)
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+
     escolasDados.forEach(function(escola) {
         
         // 1. Gráfico Ocupação (Rosca)

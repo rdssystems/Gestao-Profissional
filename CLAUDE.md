@@ -142,6 +142,23 @@ Vários serviços ficam/ficavam expostos na internet via IPv6. O que falta:
    - Alternativa preferida quando possível: rebind das portas Docker para
      Tailscale/localhost no compose do repo (persistente, sem risco de lockout).
 
+## Segurança — checklist obrigatório para toda view nova
+O Django **não protege rota nenhuma sozinho**. `urls.py` só mapeia URL → view;
+qualquer pessoa pode requisitar qualquer URL cadastrada, autenticada ou não.
+Quem decide se aquilo exige login é **cada view individualmente**, via
+decorator (`@login_required`) ou mixin (`LoginRequiredMixin`,
+`StaffRequiredMixin`/`CoordenadorRequiredMixin` em `core/mixins.py`). Se o
+mixin for esquecido, a view fica exposta sem nenhum aviso — nem erro, nem log
+estranho, só funciona normalmente para qualquer um que descubra a URL.
+
+Foi exatamente esse padrão de esquecimento que causou os achados críticos das
+auditorias de 2026-07-18/08-01 (PII exposta em `escolas/views.py`, escrita
+não-autenticada em `cursos/views.py`, vazamento entre escolas em
+`publico/views.py`). **Antes de mergear qualquer view nova, perguntar
+explicitamente: "essa daqui devia mesmo ser pública, ou falta mixin?"** —
+isso vale tanto para views novas quanto para revisão de views existentes que
+forem tocadas por qualquer motivo (refactor, bugfix, etc.).
+
 ## Modo de trabalho (restrição do ambiente)
 O harness **bloqueia comandos que alteram estado na VPS** (sudo, ALTER, deploy).
 Padrão que funciona: **Claude monta/valida scripts (com auto-rollback); o usuário

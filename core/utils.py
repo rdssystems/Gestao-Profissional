@@ -75,3 +75,29 @@ def register_attempt(request, key, window_seconds):
         cache.incr(cache_key)
     except ValueError:
         cache.set(cache_key, 1, timeout=window_seconds)
+
+
+def save_audit_log(request, obj, action, details=None):
+    """Equivalente de AuditLogMixin.save_log() para views baseadas em
+    função (que não podem herdar o mixin). `obj` pode ser None para ações
+    em massa sem um objeto único associado (ex.: um .update() em lote)."""
+    import json
+    import logging
+    from django.contrib.contenttypes.models import ContentType
+    from django.core.serializers.json import DjangoJSONEncoder
+
+    logger = logging.getLogger(__name__)
+    from core.models import AuditLog
+
+    user = request.user if request.user.is_authenticated else None
+    try:
+        AuditLog.objects.create(
+            usuario=user,
+            acao=action,
+            content_type=ContentType.objects.get_for_model(obj) if obj is not None else None,
+            object_id=str(obj.pk) if obj is not None and obj.pk else None,
+            detalhes=json.dumps(details, cls=DjangoJSONEncoder, ensure_ascii=False) if details else None,
+            ip_address=get_client_ip(request),
+        )
+    except Exception as e:
+        logger.warning("Erro ao salvar log de auditoria: %s", e)

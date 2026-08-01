@@ -16,6 +16,7 @@ from alunos.models import Aluno
 from alunos.forms import AlunoForm
 from .models import BlocoConteudo, CursoEmentaPublico
 from .forms import BlocoConteudoForm, CursoEmentaPublicoForm
+from core.mixins import AuditLogMixin
 
 
 def generate_qr_svg(url):
@@ -230,7 +231,7 @@ class BlocoListView(UditechAccessMixin, ListView):
         return context
 
 
-class BlocoCreateView(UditechAccessMixin, CreateView):
+class BlocoCreateView(AuditLogMixin, UditechAccessMixin, CreateView):
     model = BlocoConteudo
     form_class = BlocoConteudoForm
     template_name = 'publico/bloco_form.html'
@@ -253,7 +254,7 @@ class BlocoCreateView(UditechAccessMixin, CreateView):
         return context
 
 
-class BlocoUpdateView(UditechAccessMixin, UpdateView):
+class BlocoUpdateView(AuditLogMixin, UditechAccessMixin, UpdateView):
     model = BlocoConteudo
     form_class = BlocoConteudoForm
     template_name = 'publico/bloco_form.html'
@@ -271,7 +272,7 @@ class BlocoUpdateView(UditechAccessMixin, UpdateView):
         return context
 
 
-class BlocoDeleteView(UditechAccessMixin, DeleteView):
+class BlocoDeleteView(AuditLogMixin, UditechAccessMixin, DeleteView):
     model = BlocoConteudo
     template_name = 'publico/bloco_confirm_delete.html'
 
@@ -293,7 +294,7 @@ class CursoEmentaListView(UditechAccessMixin, ListView):
     template_name = 'publico/ementa_list.html'
     context_object_name = 'ementas'
 
-class CursoEmentaCreateView(UditechAccessMixin, CreateView):
+class CursoEmentaCreateView(AuditLogMixin, UditechAccessMixin, CreateView):
     model = CursoEmentaPublico
     form_class = CursoEmentaPublicoForm
     template_name = 'publico/ementa_form.html'
@@ -303,7 +304,7 @@ class CursoEmentaCreateView(UditechAccessMixin, CreateView):
         messages.success(self.request, 'Curso/Ementa criado com sucesso!')
         return super().form_valid(form)
 
-class CursoEmentaUpdateView(UditechAccessMixin, UpdateView):
+class CursoEmentaUpdateView(AuditLogMixin, UditechAccessMixin, UpdateView):
     model = CursoEmentaPublico
     form_class = CursoEmentaPublicoForm
     template_name = 'publico/ementa_form.html'
@@ -313,7 +314,7 @@ class CursoEmentaUpdateView(UditechAccessMixin, UpdateView):
         messages.success(self.request, 'Curso/Ementa atualizado com sucesso!')
         return super().form_valid(form)
 
-class CursoEmentaDeleteView(UditechAccessMixin, DeleteView):
+class CursoEmentaDeleteView(AuditLogMixin, UditechAccessMixin, DeleteView):
     model = CursoEmentaPublico
     template_name = 'publico/ementa_confirm_delete.html'
     success_url = reverse_lazy('publico:ementa_list')

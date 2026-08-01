@@ -106,16 +106,15 @@ class UserDeleteView(AuditLogMixin, LoginRequiredMixin, PermissionRequiredMixin,
     permission_required = 'auth.delete_user'
     success_url = reverse_lazy('usuarios:lista_usuarios')
 
-    def delete(self, request, *args, **kwargs):
+    def form_valid(self, form):
+        # Django >= 4.0: DeleteView.post() chama form_valid(), nao mais
+        # delete() (o comentario antigo aqui estava errado desde alguma
+        # atualizacao do Django — a mensagem de sucesso nunca era exibida).
+        # super().form_valid() encadeia para AuditLogMixin.form_valid(),
+        # que ja grava o log 'DELETE' corretamente (bug de 2026-08-01).
         obj = self.get_object()
-
-        # super().delete() chama o delete() do AuditLogMixin (MRO), que já
-        # grava o log — audit_context(skip=True) evita gravar duplicado.
-        from core.utils import audit_context
-        with audit_context(skip=True):
-            response = super().delete(request, *args, **kwargs)
-
-        messages.success(request, f"Usuário '{obj.username}' excluído com sucesso.")
+        response = super().form_valid(form)
+        messages.success(self.request, f"Usuário '{obj.username}' excluído com sucesso.")
         return response
 
     def dispatch(self, request, *args, **kwargs):

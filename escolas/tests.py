@@ -179,3 +179,43 @@ class AlunosCursosPorEscolaListViewTest(TestCase):
         url = reverse('escolas:alunos_da_escola', args=[self.escola_a.pk])
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
+
+
+class DashboardCarrosselEscopoTest(TestCase):
+    """
+    Regressão do bug de 2026-08-01: um admin geral que selecionava uma
+    escola específica pelo trocador de contexto da navbar ainda via o
+    carrossel do Dashboard com TODAS as escolas da rede, porque a ausência
+    do parâmetro ?escola_id= na URL (todo carregamento normal da página)
+    era tratada como se fosse um clique explícito em "Todas as Unidades",
+    sobrescrevendo a escola ativa da sessão.
+    """
+    def setUp(self):
+        self.escola_a = Escola.objects.create(nome='Escola A', email='a@escola-a.com', tipo='CP')
+        self.escola_b = Escola.objects.create(nome='Escola B', email='b@escola-b.com', tipo='CP')
+
+        self.superuser = User.objects.create_superuser(
+            username='admin_dash', password='password123', email='admin_dash@example.com'
+        )
+
+        self.client.login(username='admin_dash', password='password123')
+        self.client.post(
+            reverse('escolas:trocar_contexto'),
+            data={'escola_id': self.escola_a.pk},
+        )
+
+    def test_dashboard_respeita_escola_ativa_sem_query_param(self):
+        """Sem ?escola_id= na URL, deve mostrar só a escola ativa da sessão."""
+        response = self.client.get(reverse('escolas:dashboard'))
+        self.assertEqual(response.status_code, 200)
+        nomes = [e['nome'] for e in response.context['escolas_dados']]
+        self.assertEqual(nomes, [self.escola_a.nome])
+
+    def test_dashboard_ver_global_explicito_ainda_funciona(self):
+        """?escola_id=all explícito continua ativando a visão agregada da
+        rede (card "Visão Geral da Rede", só aparece quando há mais de uma
+        escola no escopo) — em vez de ficar preso na escola ativa da sessão."""
+        response = self.client.get(reverse('escolas:dashboard'), {'escola_id': 'all'})
+        self.assertEqual(response.status_code, 200)
+        nomes = {e['nome'] for e in response.context['escolas_dados']}
+        self.assertIn('🌐 Visão Geral da Rede', nomes)

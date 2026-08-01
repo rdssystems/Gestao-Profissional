@@ -10,6 +10,7 @@ from django.db.models import Prefetch, Exists, OuterRef # Import Exists and Oute
 from django.views.generic import ListView, View
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from core.models import AuditLog, Aviso, Profile
+from core.utils import save_audit_log
 from django.contrib.auth.models import User
 from django.contrib import messages # Adicionado o import para messages
 from django.contrib.auth.views import LoginView
@@ -34,7 +35,8 @@ def gerenciar_avisos(request):
         titulo = request.POST.get('titulo')
         conteudo = request.POST.get('conteudo')
         if titulo and conteudo:
-            Aviso.objects.create(titulo=titulo, conteudo=conteudo)
+            aviso = Aviso.objects.create(titulo=titulo, conteudo=conteudo)
+            save_audit_log(request, aviso, 'CREATE', {'titulo': titulo})
             messages.success(request, "Atualização postada com sucesso!")
             return redirect('core:gerenciar_avisos')
     
@@ -67,6 +69,7 @@ def gerenciar_email_destinatarios(request):
                     }
                 )
                 if created:
+                    save_audit_log(request, obj, 'CREATE', {'nome': nome, 'email': email})
                     messages.success(request, f"✅ {nome} ({email}) adicionado com sucesso!")
                 else:
                     messages.warning(request, f"⚠️ O e-mail {email} já estava cadastrado.")
@@ -85,6 +88,7 @@ def gerenciar_email_destinatarios(request):
                 dest.receber_sine = not dest.receber_sine
             dest.save()
             status_pref = "ativado" if getattr(dest, f'receber_{pref}') else "desativado"
+            save_audit_log(request, dest, 'UPDATE', {'preferencia': pref, 'status': status_pref})
             messages.info(request, f"Recebimento de dados de {pref.upper()} para {dest.nome} {status_pref}.")
 
         elif action == 'toggle':
@@ -93,12 +97,14 @@ def gerenciar_email_destinatarios(request):
             dest.ativo = not dest.ativo
             dest.save()
             status = "ativado" if dest.ativo else "desativado"
+            save_audit_log(request, dest, 'UPDATE', {'ativo': status})
             messages.info(request, f"E-mail de {dest.nome} {status}.")
 
         elif action == 'delete':
             pk = request.POST.get('pk')
             dest = get_object_or_404(EmailDestinatario, pk=pk)
             nome = dest.nome
+            save_audit_log(request, dest, 'DELETE', {'nome': nome, 'email': dest.email})
             dest.delete()
             messages.success(request, f"🗑️ {nome} removido da lista.")
 
@@ -115,6 +121,7 @@ def gerenciar_email_destinatarios(request):
             agendamento.ativo = 'ativo' in request.POST
             agendamento.atualizado_por = request.user
             agendamento.save()
+            save_audit_log(request, agendamento, 'UPDATE', {'horario_envio': horario, 'ativo': agendamento.ativo})
             messages.success(request, "⏰ Agendamento salvo com sucesso!")
 
         return redirect('core:gerenciar_email_destinatarios')
@@ -320,6 +327,7 @@ def limpar_agenda_cursos_view(request):
             ).filter(has_inscricoes=False)
             
             count = cursos_para_excluir.update(status='Arquivado')
+            save_audit_log(request, None, 'UPDATE', {'acao': 'limpar_agenda', 'modelo': 'Curso', 'quantidade': count, 'escola': escola_do_usuario.nome})
             messages.success(request, f"{count} cursos 'Aberta' sem inscrições foram ARQUIVADOS da agenda da escola {escola_do_usuario.nome}.")
         elif request.user.is_superuser:
             cursos_para_excluir = Curso.objects.filter(
@@ -331,6 +339,7 @@ def limpar_agenda_cursos_view(request):
             ).filter(has_inscricoes=False)
             
             count = cursos_para_excluir.update(status='Arquivado')
+            save_audit_log(request, None, 'UPDATE', {'acao': 'limpar_agenda', 'modelo': 'Curso', 'quantidade': count, 'escola': 'todas'})
             messages.success(request, f"{count} cursos 'Aberta' sem inscrições foram ARQUIVADOS de todas as agendas.")
         else:
             messages.error(request, "Permissão negada para esta ação.")
