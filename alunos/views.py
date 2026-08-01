@@ -387,7 +387,7 @@ class AlunoCadastroSucessoView(StaffRequiredMixin, DetailView):
         
         # Gera o link se o aluno tiver número válido
         if aluno.whatsapp_link:
-             context['whatsapp_link'] = f"https://wa.me/{aluno.whatsapp_link}?text={mensagem_encoded}"
+             context['whatsapp_link'] = f"whatsapp://send?phone={aluno.whatsapp_link}&text={mensagem_encoded}"
         
         return context
 

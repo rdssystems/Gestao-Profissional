@@ -101,7 +101,7 @@
                         </thead>
                         <tbody>
                             {% for insc in inscricoes %}
-                            <tr class="aluno-row" data-id="{{ insc.pk }}" data-nome="{{ insc.aluno.nome_completo }}" data-telefone="{{ insc.aluno.telefone_principal|default:''|apenas_numeros }}">
+                            <tr class="aluno-row" data-id="{{ insc.pk }}" data-nome="{{ insc.aluno.nome_completo }}" data-telefone="{{ insc.aluno.whatsapp|default:insc.aluno.telefone_principal|apenas_numeros }}">
                                 <td class="ps-4">
                                     <div class="fw-bold">{{ insc.aluno.nome_completo }}</div>
                                     <div class="text-muted small">CPF: {{ insc.aluno.cpf_formatado }}</div>
@@ -434,7 +434,7 @@ _{LINK}_
             .replace(/{ESCOLA}/g, cursoInfo.escola)
             .replace(/{LINK}/g, cursoInfo.link);
             
-        const url = `https://api.whatsapp.com/send?phone=55${student.telefone}&text=${encodeURIComponent(msg)}`;
+        const url = `whatsapp://send?phone=55${student.telefone}&text=${encodeURIComponent(msg)}`;
         window.open(url, '_blank');
         
         document.getElementById('btnProximoWhatsApp').disabled = false;

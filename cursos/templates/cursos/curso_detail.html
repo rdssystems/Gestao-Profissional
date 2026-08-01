@@ -188,7 +188,7 @@ document.addEventListener('DOMContentLoaded', function() {
             <div>
                 {{ inscricao.aluno.nome_completo }}
                 {% if inscricao.aluno.whatsapp_link %}
-                <a href="https://wa.me/{{ inscricao.aluno.whatsapp_link }}" target="_blank" class="text-success ms-1"
+                <a href="whatsapp://send?phone={{ inscricao.aluno.whatsapp_link }}" target="_blank" class="text-success ms-1"
                     title="WhatsApp">
                     <i class="bi bi-whatsapp"></i>
                 </a>

@@ -133,7 +133,7 @@
                 <td class="fw-medium text-dark">
                     {{ aluno.nome_completo }}
                     {% if aluno.whatsapp_link %}
-                    <a href="https://wa.me/{{ aluno.whatsapp_link }}" target="_blank" class="text-success ms-1"
+                    <a href="whatsapp://send?phone={{ aluno.whatsapp_link }}" target="_blank" class="text-success ms-1"
                         title="WhatsApp">
                         <i class="bi bi-whatsapp"></i>
                     </a>

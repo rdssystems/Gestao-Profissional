@@ -228,7 +228,7 @@
                                 {% endif %}
                             </div>
                             {% if inscricao.aluno.whatsapp_link %}
-                            <a href="https://wa.me/{{ inscricao.aluno.whatsapp_link }}" target="_blank" class="text-success small text-decoration-none" title="WhatsApp">
+                            <a href="whatsapp://send?phone={{ inscricao.aluno.whatsapp_link }}" target="_blank" class="text-success small text-decoration-none" title="WhatsApp">
                                 <i class="bi bi-whatsapp"></i> Contato
                             </a>
                             {% endif %}

@@ -108,11 +108,11 @@
                                 </thead>
                                 <tbody>
                                     {% for chamada in chamadas %}
-                                    <tr class="aluno-row" data-id="{{ chamada.id }}" data-nome="{{ chamada.inscricao.aluno.nome_completo }}" data-telefone="{{ chamada.inscricao.aluno.telefone_principal|default:''|apenas_numeros }}">
+                                    <tr class="aluno-row" data-id="{{ chamada.id }}" data-nome="{{ chamada.inscricao.aluno.nome_completo }}" data-telefone="{{ chamada.inscricao.aluno.whatsapp|default:chamada.inscricao.aluno.telefone_principal|apenas_numeros }}">
                                         <td class="fw-bold text-dark">
                                             {{ chamada.inscricao.aluno.nome_completo }}
                                             {% if chamada.inscricao.aluno.whatsapp_link %}
-                                            <a href="https://wa.me/{{ chamada.inscricao.aluno.whatsapp_link }}" target="_blank" class="text-success ms-1" title="Falar no WhatsApp">
+                                            <a href="whatsapp://send?phone={{ chamada.inscricao.aluno.whatsapp_link }}" target="_blank" class="text-success ms-1" title="Falar no WhatsApp">
                                                 <i class="bi bi-whatsapp"></i>
                                             </a>
                                             {% endif %}
@@ -318,7 +318,7 @@
         
         let msg = template.replace(/{NOME}/g, student.nome);
             
-        const url = `https://api.whatsapp.com/send?phone=55${student.telefone}&text=${encodeURIComponent(msg)}`;
+        const url = `whatsapp://send?phone=55${student.telefone}&text=${encodeURIComponent(msg)}`;
         window.open(url, '_blank');
         
         document.getElementById('btnProximoWhatsApp').disabled = false;

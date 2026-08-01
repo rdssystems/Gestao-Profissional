@@ -78,9 +78,9 @@
                         </td>
                         <td>{{ inscricao.aluno.cpf }}</td>
                         <td>
-                            {{ inscricao.aluno.telefone_principal }}
-                            {% if inscricao.aluno.telefone_principal %}
-                            <a href="https://wa.me/55{{ inscricao.aluno.telefone_principal|apenas_numeros }}"
+                            {{ inscricao.aluno.whatsapp|default:inscricao.aluno.telefone_principal }}
+                            {% if inscricao.aluno.whatsapp_link %}
+                            <a href="whatsapp://send?phone={{ inscricao.aluno.whatsapp_link }}"
                                 target="_blank" class="text-success ms-1" title="Enviar WhatsApp">
                                 <i class="bi bi-whatsapp"></i>
                             </a>
@@ -174,7 +174,7 @@
                 </thead>
                 <tbody>
                     {% for aluno in alunos_sugeridos %}
-                    <tr class="aluno-row" data-id="{{ aluno.pk }}" data-nome="{{ aluno.nome_completo }}" data-telefone="{{ aluno.whatsapp|apenas_numeros }}">
+                    <tr class="aluno-row" data-id="{{ aluno.pk }}" data-nome="{{ aluno.nome_completo }}" data-telefone="{{ aluno.whatsapp|default:aluno.telefone_principal|apenas_numeros }}">
 
                         <td class="text-center">
                             <input type="checkbox" class="form-check-input aluno-select" value="{{ aluno.pk }}">
@@ -186,15 +186,17 @@
 
                         <td>{{ aluno.cpf }}</td>
                         <td>
-                            {% if aluno.whatsapp and aluno.whatsapp != 'None' and aluno.whatsapp != 'none' %}
-                                {{ aluno.whatsapp }}
-                                <a href="https://wa.me/55{{ aluno.whatsapp|apenas_numeros }}" target="_blank"
+                            {% with telefone=aluno.whatsapp|default:aluno.telefone_principal %}
+                            {% if telefone and telefone != 'None' and telefone != 'none' %}
+                                {{ telefone }}
+                                <a href="whatsapp://send?phone=55{{ telefone|apenas_numeros }}" target="_blank"
                                     class="text-success ms-1" title="Enviar WhatsApp">
                                     <i class="bi bi-whatsapp"></i>
                                 </a>
                             {% else %}
                                 <span class="text-muted small">-</span>
                             {% endif %}
+                            {% endwith %}
                         </td>
                         <td>
                             {% if aluno.turno_interesse %}
@@ -512,9 +514,9 @@ Gostaria de garantir a sua vaga?`;
             .replace(/{TURNO}/g, cursoInfo.turno)
             .replace(/{HORARIO}/g, cursoInfo.horario);
             
-        const url = `https://api.whatsapp.com/send?phone=55${student.telefone}&text=${encodeURIComponent(msg)}`;
+        const url = `whatsapp://send?phone=55${student.telefone}&text=${encodeURIComponent(msg)}`;
         window.open(url, '_blank');
-        
+
         document.getElementById('btnProximoWhatsApp').disabled = false;
     }
 
