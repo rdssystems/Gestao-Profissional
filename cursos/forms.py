@@ -14,7 +14,10 @@ class CursoForm(forms.ModelForm):
         widgets = {
             'escola': forms.Select(attrs={'class': 'form-select form-select-premium'}),
             'tipo_curso': forms.Select(attrs={'class': 'form-select form-select-premium'}),
-            'nome': forms.TextInput(attrs={'class': 'form-control form-control-premium'}),
+            # readonly (nao disabled): campo preenchido automaticamente pelo
+            # JS de curso_form.html ao escolher o Tipo de Curso — disabled
+            # faria o navegador nao enviar o valor no POST, quebrando o save.
+            'nome': forms.TextInput(attrs={'class': 'form-control form-control-premium', 'readonly': 'readonly'}),
             'nome_professor': forms.TextInput(attrs={'class': 'form-control form-control-premium', 'placeholder': 'Opcional'}),
             'telefone_professor': forms.TextInput(attrs={'class': 'form-control form-control-premium', 'placeholder': 'Ex: (11) 99999-9999'}),
             'parceiro': forms.Select(attrs={'class': 'form-select form-select-premium'}),

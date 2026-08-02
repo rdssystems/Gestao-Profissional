@@ -1,6 +1,24 @@
 {% extends "base.html" %}
+{% load auth_extras %}
 
 {% block title %}Controle Diário - Visão Administrativa{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Grid do SINE tem 12 cards (mais que o .dash-kpi-grid padrao, feito
+       pra 7 KPIs) - override so das colunas nos breakpoints maiores. */
+    .dash-kpi-grid--sine { grid-template-columns: repeat(2, 1fr); }
+    @media (min-width: 576px) { .dash-kpi-grid--sine { grid-template-columns: repeat(3, 1fr); } }
+    @media (min-width: 992px) { .dash-kpi-grid--sine { grid-template-columns: repeat(4, 1fr); } }
+    @media (min-width: 1400px) { .dash-kpi-grid--sine { grid-template-columns: repeat(6, 1fr); } }
+
+    .cd-unidade-row { margin-bottom: 1.1rem; }
+    .cd-unidade-row:last-child { margin-bottom: 0; }
+    .cd-unidade-row__nome { font-size: 0.85rem; font-weight: 700; color: #334155; margin-bottom: 0.35rem; }
+    .cd-unidade-row .dash-bar-row { margin-bottom: 0.4rem; }
+    .cd-unidade-row .dash-bar-row:last-child { margin-bottom: 0; }
+</style>
+{% endblock %}
 
 {% block content %}
 <div class="container-fluid px-1 px-md-3 mt-4 mb-5">
@@ -184,7 +202,8 @@
             </div>
         </div>
 
-        <!-- Registros SINE -->
+        <!-- Registros SINE (so admin de verdade, nao admin_cp/admin_uditech) -->
+        {% if user|is_super_admin %}
         <div class="card border-0 shadow-sm rounded-4 mb-5">
             <div class="card-header bg-success bg-gradient text-white py-3 rounded-top-4 d-flex justify-content-between align-items-center">
                 <h5 class="mb-0 fw-bold">
@@ -197,6 +216,58 @@
 
             <div class="card-body p-0">
                 {% if sine_relatorio %}
+                    <div class="dash-kpi-grid dash-kpi-grid--sine m-4">
+                        <div class="dash-kpi-card">
+                            <div class="dash-kpi-card__label">Atend. Trabalhador</div>
+                            <div class="dash-kpi-card__value">{{ sine_relatorio.atendimento_trabalhador }}</div>
+                            <div class="dash-kpi-card__meta">+{{ sine_relatorio.atendimento_trabalhador_online }} on-line</div>
+                        </div>
+                        <div class="dash-kpi-card">
+                            <div class="dash-kpi-card__label">Atend. Empregador</div>
+                            <div class="dash-kpi-card__value">{{ sine_relatorio.atendimento_empregador }}</div>
+                            <div class="dash-kpi-card__meta">+{{ sine_relatorio.atendimento_empregador_online }} on-line</div>
+                        </div>
+                        <div class="dash-kpi-card">
+                            <div class="dash-kpi-card__label">Seguro Desemprego</div>
+                            <div class="dash-kpi-card__value">{{ sine_relatorio.seguro_desemprego }}</div>
+                        </div>
+                        <div class="dash-kpi-card">
+                            <div class="dash-kpi-card__label">CTPS Digital</div>
+                            <div class="dash-kpi-card__value">{{ sine_relatorio.ctps_digital }}</div>
+                        </div>
+                        <div class="dash-kpi-card">
+                            <div class="dash-kpi-card__label">Vagas Captadas</div>
+                            <div class="dash-kpi-card__value">{{ sine_relatorio.vagas_captadas }}</div>
+                        </div>
+                        <div class="dash-kpi-card">
+                            <div class="dash-kpi-card__label">Currículos</div>
+                            <div class="dash-kpi-card__value">{{ sine_relatorio.curriculos }}</div>
+                        </div>
+                        <div class="dash-kpi-card">
+                            <div class="dash-kpi-card__label">Entrevistados</div>
+                            <div class="dash-kpi-card__value">{{ sine_relatorio.entrevistados }}</div>
+                        </div>
+                        <div class="dash-kpi-card">
+                            <div class="dash-kpi-card__label">Processos Seletivos</div>
+                            <div class="dash-kpi-card__value">{{ sine_relatorio.processo_seletivo }}</div>
+                        </div>
+                        <div class="dash-kpi-card">
+                            <div class="dash-kpi-card__label">Orientação Prof.</div>
+                            <div class="dash-kpi-card__value">{{ sine_relatorio.orientacao_profissional }}</div>
+                        </div>
+                        <div class="dash-kpi-card">
+                            <div class="dash-kpi-card__label">Lig. Recebidas</div>
+                            <div class="dash-kpi-card__value">{{ sine_relatorio.ligacoes_recebidas }}</div>
+                        </div>
+                        <div class="dash-kpi-card">
+                            <div class="dash-kpi-card__label">Lig. Realizadas</div>
+                            <div class="dash-kpi-card__value">{{ sine_relatorio.ligacoes_realizadas }}</div>
+                        </div>
+                        <div class="dash-kpi-card" style="background: var(--bg-green-soft);">
+                            <div class="dash-kpi-card__label">Total Procedimentos</div>
+                            <div class="dash-kpi-card__value">{{ sine_relatorio.total_procedimentos }}</div>
+                        </div>
+                    </div>
                     <div class="table-responsive">
                         <table class="table table-hover table-bordered align-middle mb-0">
                             <thead class="table-light text-center small text-uppercase">
@@ -273,43 +344,116 @@
                 {% endif %}
             </div>
         </div>
+        {% endif %}
     </div>
 
     <!-- Visualização em Dashboard (Escondida por padrão) -->
     <div id="chart-view" style="display: none;">
         <div class="row g-4 mb-5">
-            <!-- Gráfico Comparativo Principal -->
-            <div class="col-12 col-lg-8">
+            <!-- Inscrições vs Atendimentos por Unidade -->
+            <div class="col-12 col-lg-7">
                 <div class="card border-0 shadow-sm rounded-4 h-100">
-                    <div class="card-header bg-white py-3">
+                    <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
                         <h6 class="mb-0 fw-bold text-primary">Inscrições vs Atendimentos por Unidade</h6>
+                        <div class="d-flex gap-3" style="font-size: 0.8rem;">
+                            <span><span class="dash-donut-legend__dot" style="background: var(--brand-primary);"></span>Atendimentos</span>
+                            <span><span class="dash-donut-legend__dot" style="background: #10b981;"></span>Inscrições</span>
+                        </div>
                     </div>
-                    <div class="card-body p-4">
-                        <canvas id="conversionChart" height="250"></canvas>
+                    <div class="card-body p-4" style="max-height: 460px; overflow-y: auto;">
+                        {% for u in unidades_chart %}
+                        <div class="cd-unidade-row">
+                            <div class="cd-unidade-row__nome">{{ u.nome }}</div>
+                            <div class="dash-bar-row">
+                                <div class="dash-bar-row__top">
+                                    <span>Atendimentos</span>
+                                    <strong>{{ u.atendimento }}</strong>
+                                </div>
+                                <div class="dash-bar-track">
+                                    <div class="dash-bar-fill" style="width: {{ u.atendimento_pct }}%;"></div>
+                                </div>
+                            </div>
+                            <div class="dash-bar-row">
+                                <div class="dash-bar-row__top">
+                                    <span>Inscrições</span>
+                                    <strong>{{ u.inscricoes }}</strong>
+                                </div>
+                                <div class="dash-bar-track">
+                                    <div class="dash-bar-fill" style="width: {{ u.inscricoes_pct }}%; background: #10b981;"></div>
+                                </div>
+                            </div>
+                        </div>
+                        {% empty %}
+                        <p class="text-muted small text-center mb-0">Nenhum registro para a data e filtros selecionados.</p>
+                        {% endfor %}
                     </div>
                 </div>
             </div>
 
-            <!-- Gráfico de Inscrições por Escola -->
-            <div class="col-12 col-lg-4">
+            <!-- Inscrições (% Impacto) - ranking, substitui o donut de 9 fatias -->
+            <div class="col-12 col-lg-5">
                 <div class="card border-0 shadow-sm rounded-4 h-100">
                     <div class="card-header bg-white py-3">
                         <h6 class="mb-0 fw-bold text-primary">Inscrições (% Impacto)</h6>
                     </div>
-                    <div class="card-body p-4 d-flex align-items-center">
-                        <canvas id="impactChart"></canvas>
+                    <div class="card-body p-4" style="max-height: 460px; overflow-y: auto;">
+                        {% for u in unidades_impacto_ordenado %}
+                        <div class="dash-bar-row">
+                            <div class="dash-bar-row__top">
+                                <span>{{ forloop.counter }}. {{ u.nome }}</span>
+                                <strong>{{ u.inscricoes }} ({{ u.impacto_pct }}%)</strong>
+                            </div>
+                            <div class="dash-bar-track">
+                                <div class="dash-bar-fill" style="width: {{ u.impacto_pct }}%;"></div>
+                            </div>
+                        </div>
+                        {% empty %}
+                        <p class="text-muted small text-center mb-0">Nenhum registro para a data e filtros selecionados.</p>
+                        {% endfor %}
                     </div>
                 </div>
             </div>
 
-            <!-- Gráfico de Volume de Contatos (Telecom) -->
+            <!-- Volume de Comunicação (Ligações) -->
             <div class="col-12">
                 <div class="card border-0 shadow-sm rounded-4">
-                    <div class="card-header bg-white py-3">
+                    <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
                         <h6 class="mb-0 fw-bold text-primary">Volume de Comunicação (Ligações)</h6>
+                        <div class="d-flex gap-3" style="font-size: 0.8rem;">
+                            <span><span class="dash-donut-legend__dot" style="background: #6366f1;"></span>Recebidas</span>
+                            <span><span class="dash-donut-legend__dot" style="background: #8b5cf6;"></span>Realizadas</span>
+                        </div>
                     </div>
                     <div class="card-body p-4">
-                        <canvas id="telecomChart" height="100"></canvas>
+                        <div class="row g-4">
+                            {% for u in unidades_chart %}
+                            <div class="col-12 col-md-6 col-xl-4">
+                                <div class="cd-unidade-row">
+                                    <div class="cd-unidade-row__nome">{{ u.nome }}</div>
+                                    <div class="dash-bar-row">
+                                        <div class="dash-bar-row__top">
+                                            <span>Recebidas</span>
+                                            <strong>{{ u.lig_recebidas }}</strong>
+                                        </div>
+                                        <div class="dash-bar-track">
+                                            <div class="dash-bar-fill" style="width: {{ u.lig_recebidas_pct }}%; background: #6366f1;"></div>
+                                        </div>
+                                    </div>
+                                    <div class="dash-bar-row">
+                                        <div class="dash-bar-row__top">
+                                            <span>Realizadas</span>
+                                            <strong>{{ u.lig_realizadas }}</strong>
+                                        </div>
+                                        <div class="dash-bar-track">
+                                            <div class="dash-bar-fill" style="width: {{ u.lig_realizadas_pct }}%; background: #8b5cf6;"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% empty %}
+                            <p class="text-muted small text-center mb-0">Nenhum registro para a data e filtros selecionados.</p>
+                            {% endfor %}
+                        </div>
                     </div>
                 </div>
             </div>
@@ -319,12 +463,9 @@
 </div>
 {% endblock %}
 
+
 {% block extra_js %}
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
 <script>
-    // Registrar o plugin globalmente
-    Chart.register(ChartDataLabels);
     function switchView(view) {
         const tableView = document.getElementById('table-view');
         const chartView = document.getElementById('chart-view');
@@ -341,138 +482,7 @@
             chartView.style.display = 'block';
             tableBtn.classList.remove('active');
             chartBtn.classList.add('active');
-            renderCharts();
         }
-    }
-
-    let chartsInitialized = false;
-
-    function renderCharts() {
-        if (chartsInitialized) return;
-        
-        const labels = [{% for c in controles_diarios %}'{{ c.escola.nome }}',{% endfor %}];
-        const dataAtendimento = [{% for c in controles_diarios %}{{ c.atendimento }},{% endfor %}];
-        const dataInscricoes = [{% for c in controles_diarios %}{{ c.inscricoes }},{% endfor %}];
-        const dataLigRecebidas = [{% for c in controles_diarios %}{{ c.ligacoes_recebidas }},{% endfor %}];
-        const dataLigRealizadas = [{% for c in controles_diarios %}{{ c.ligacoes_realizadas }},{% endfor %}];
-
-        // Opções Globais para Plugin Datalabels
-        const globalDatalabelOptions = {
-            color: '#1e293b',
-            display: true,
-            font: { weight: 'bold', size: 12 },
-            anchor: 'end',
-            align: 'top',
-            offset: 4,
-            formatter: (value) => value > 0 ? value : ''
-        };
-
-        // 1. Gráfico Inscrições vs Atendimento (Barra)
-        new Chart(document.getElementById('conversionChart'), {
-            type: 'bar',
-            data: {
-                labels: labels,
-                datasets: [
-                    {
-                        label: 'Atendimentos',
-                        data: dataAtendimento,
-                        backgroundColor: 'rgba(37, 99, 235, 0.1)',
-                        borderColor: '#2563eb',
-                        borderWidth: 2,
-                        borderRadius: 6,
-                        datalabels: globalDatalabelOptions
-                    },
-                    {
-                        label: 'Inscrições',
-                        data: dataInscricoes,
-                        backgroundColor: '#10b981',
-                        borderColor: '#10b981',
-                        borderWidth: 1,
-                        borderRadius: 6,
-                        datalabels: { ...globalDatalabelOptions, color: '#065f46' }
-                    }
-                ]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: { 
-                    legend: { position: 'top', labels: { usePointStyle: true, font: { weight: '600' } } },
-                    tooltip: { enabled: true }
-                },
-                scales: { 
-                    y: { beginAtZero: true, grid: { display: false }, ticks: { display: false } },
-                    x: { grid: { display: false } }
-                }
-            }
-        });
-
-        // 2. Gráfico de Impacto (Donut)
-        new Chart(document.getElementById('impactChart'), {
-            type: 'doughnut',
-            data: {
-                labels: labels,
-                datasets: [{
-                    data: dataInscricoes,
-                    backgroundColor: ['#2563eb', '#10b981', '#f59e0b', '#ef4444', '#6366f1', '#a855f7'],
-                    hoverOffset: 20
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: { position: 'bottom', labels: { boxWidth: 12, usePointStyle: true } },
-                    datalabels: {
-                        color: '#fff',
-                        font: { weight: 'bold', size: 14 },
-                        formatter: (value, ctx) => {
-                            let sum = ctx.chart.data.datasets[0].data.reduce((a, b) => a + b, 0);
-                            let percentage = (value * 100 / sum).toFixed(0) + "%";
-                            return value > 0 ? percentage : '';
-                        }
-                    }
-                },
-                cutout: '70%'
-            }
-        });
-
-        // 3. Gráfico de Telecom (Barras Agrupadas)
-        new Chart(document.getElementById('telecomChart'), {
-            type: 'bar',
-            data: {
-                labels: labels,
-                datasets: [
-                    {
-                        label: 'Ligações Recebidas',
-                        data: dataLigRecebidas,
-                        backgroundColor: '#6366f1',
-                        borderRadius: 5,
-                        datalabels: { ...globalDatalabelOptions, color: '#4338ca' }
-                    },
-                    {
-                        label: 'Ligações Realizadas',
-                        data: dataLigRealizadas,
-                        backgroundColor: '#8b5cf6',
-                        borderRadius: 5,
-                        datalabels: { ...globalDatalabelOptions, color: '#6d28d9' }
-                    }
-                ]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: { position: 'top', labels: { usePointStyle: true } }
-                },
-                scales: {
-                    y: { beginAtZero: true, grid: { display: false }, ticks: { display: false } },
-                    x: { grid: { display: false } }
-                }
-            }
-        });
-
-        chartsInitialized = true;
     }
 </script>
 {% endblock %}

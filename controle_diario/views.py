@@ -98,8 +98,47 @@ def controle_diario_admin_view(request):
         total_ligacoes_realizadas=Sum('ligacoes_realizadas'),
     )
 
-    # Buscar dados do SINE para a data
-    sine_relatorio = RelatorioDiarioSine.objects.filter(data=data_selecionada).first()
+    # Buscar dados do SINE para a data - so pra admin de verdade (nao
+    # admin_cp/admin_uditech, que tambem passam no @user_passes_test acima
+    # mas nao devem ver indicadores do SINE).
+    is_super_admin = request.user.is_superuser or (
+        hasattr(request.user, 'profile') and request.user.profile.nivel_acesso == 'SUPERUSER'
+    )
+    sine_relatorio = RelatorioDiarioSine.objects.filter(data=data_selecionada).first() if is_super_admin else None
+
+    # Dados pre-calculados pro Dashboard v2 (barras/ranking em CSS puro,
+    # sem Chart.js): percentuais prontos do Python, igual ao redesign do
+    # Dashboard principal (escolas/views.py) — mesmo motivo: menos JS, mais
+    # facil de ler com poucas ou muitas unidades, sem estourar a paleta de
+    # cores fixa que o donut antigo usava (só 6 cores pra ate 9 fatias).
+    controles_list = list(controles_diarios_qs)
+    max_val_principal = max(
+        [max(c.atendimento, c.inscricoes) for c in controles_list], default=0
+    )
+    max_val_telecom = max(
+        [max(c.ligacoes_recebidas, c.ligacoes_realizadas) for c in controles_list], default=0
+    )
+    total_inscricoes_impacto = sum(c.inscricoes for c in controles_list)
+
+    def pct(numerador, denominador):
+        return int((numerador / denominador) * 100) if denominador else 0
+
+    unidades_chart = [
+        {
+            'nome': c.escola.nome,
+            'atendimento': c.atendimento,
+            'atendimento_pct': pct(c.atendimento, max_val_principal),
+            'inscricoes': c.inscricoes,
+            'inscricoes_pct': pct(c.inscricoes, max_val_principal),
+            'impacto_pct': pct(c.inscricoes, total_inscricoes_impacto),
+            'lig_recebidas': c.ligacoes_recebidas,
+            'lig_recebidas_pct': pct(c.ligacoes_recebidas, max_val_telecom),
+            'lig_realizadas': c.ligacoes_realizadas,
+            'lig_realizadas_pct': pct(c.ligacoes_realizadas, max_val_telecom),
+        }
+        for c in controles_list
+    ]
+    unidades_impacto_ordenado = sorted(unidades_chart, key=lambda u: u['inscricoes'], reverse=True)
 
     context = {
         'controles_diarios': controles_diarios_qs,
@@ -108,6 +147,8 @@ def controle_diario_admin_view(request):
         'escola_id_selecionada': escola_id,
         'todas_escolas': todas_escolas,
         'sine_relatorio': sine_relatorio,
+        'unidades_chart': unidades_chart,
+        'unidades_impacto_ordenado': unidades_impacto_ordenado,
     }
     return render(request, 'controle_diario/controle_diario_admin.html', context)
 
