@@ -52,7 +52,12 @@ def log_interesse_change(sender, instance, action, reverse, model, pk_set, **kwa
         return
     from core.utils import get_current_user
     usuario = get_current_user()
-    hoje = timezone.now().date()
+    # timezone.localdate() (nao timezone.now().date()): now() e sempre UTC
+    # mesmo com TIME_ZONE=America/Sao_Paulo, entao .date() pegava o dia em
+    # UTC — nas ultimas ~3h de cada dia local (21h-23h59 em SP) isso ja e
+    # o dia seguinte em UTC, e o InteresseLog nascia com data de amanha,
+    # sumindo do card "Hoje" justamente na janela em que foi criado.
+    hoje = timezone.localdate()
     acao = 'add' if action == 'post_add' else 'remove'
     for tipo_curso_id in pk_set or []:
         InteresseLog.objects.create(

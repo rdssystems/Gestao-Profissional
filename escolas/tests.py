@@ -3,6 +3,7 @@ from datetime import date, timedelta
 from django.test import TestCase
 from django.contrib.auth.models import User
 from django.urls import reverse
+from django.utils import timezone
 from .models import Escola
 
 class EscolaListViewTest(TestCase):
@@ -320,3 +321,79 @@ class DashboardQueryOptimizationTest(TestCase):
         # mais o card global (mais 2). Depois da otimizacao deve ser O(1),
         # nao O(numero de cursos). Regressao: falha se voltar a crescer por curso.
         self.assertLessEqual(len(chamada_queries), 4, f"queries de Chamada: {len(chamada_queries)}")
+
+
+class DashboardKpiHojeTest(TestCase):
+    """
+    Regressão de 2026-08-01: selecionar cursos de interesse no próprio
+    formulário de cadastro do aluno dispara InteresseLog(acao='add') (sinal
+    m2m_changed em alunos/signals.py) — o card "Hoje" somava o aluno novo
+    E o(s) InteresseLog do mesmo cadastro, contando 1 inscrição como 2 (ou
+    mais, se o aluno marcou vários cursos). Correção: excluir do card
+    InteresseLog de alunos cujo data_criacao é hoje (já contados via
+    "aluno novo"), mantendo a contagem via InteresseLog só para quem já
+    era aluno antes de hoje e adicionou um interesse novo agora.
+    """
+
+    def setUp(self):
+        from cursos.models import TipoCurso
+        from alunos.models import Aluno
+
+        self.escola = Escola.objects.create(nome='Escola Hoje', email='hoje@example.com', tipo='CP')
+        self.superuser = User.objects.create_superuser(
+            username='admin_hoje', password='x', email='admin_hoje@example.com'
+        )
+        self.tipo_1 = TipoCurso.objects.create(escola=self.escola, nome='Informática')
+        self.tipo_2 = TipoCurso.objects.create(escola=self.escola, nome='Administração')
+        self.client.login(username='admin_hoje', password='x')
+
+    def test_aluno_novo_com_varios_interesses_conta_uma_vez_so(self):
+        from alunos.models import Aluno
+
+        aluno_novo = Aluno.objects.create(
+            escola=self.escola, nome_completo='Aluno Novo Hoje', cpf='33333333301', data_nascimento='2000-01-01'
+        )
+        # Cadastro marcando 2 cursos de interesse de uma vez, como no
+        # formulário público/interno — dispara 2 linhas de InteresseLog.
+        aluno_novo.cursos_interesse.set([self.tipo_1, self.tipo_2])
+
+        response = self.client.get(reverse('escolas:dashboard'), {'escola_id': 'all'})
+        self.assertEqual(response.status_code, 200)
+        dados = next(e for e in response.context['escolas_dados'] if e['nome'] == 'Escola Hoje')
+        self.assertEqual(dados['kpis']['inscricoes_hoje'], 1)
+
+    def test_aluno_existente_com_interesse_novo_hoje_conta(self):
+        from alunos.models import Aluno
+
+        aluno_antigo = Aluno.objects.create(
+            escola=self.escola, nome_completo='Aluno de Ontem', cpf='33333333302', data_nascimento='2000-01-01'
+        )
+        # Backdate: simula aluno cadastrado antes de hoje (data_criacao é
+        # auto_now_add, só dá pra ajustar depois via update()).
+        Aluno.objects.filter(pk=aluno_antigo.pk).update(data_criacao=timezone.now() - timedelta(days=5))
+
+        aluno_antigo.cursos_interesse.set([self.tipo_1])
+
+        response = self.client.get(reverse('escolas:dashboard'), {'escola_id': 'all'})
+        self.assertEqual(response.status_code, 200)
+        dados = next(e for e in response.context['escolas_dados'] if e['nome'] == 'Escola Hoje')
+        self.assertEqual(dados['kpis']['inscricoes_hoje'], 1)
+
+    def test_aluno_novo_e_aluno_existente_com_interesse_somam_dois(self):
+        from alunos.models import Aluno
+
+        aluno_novo = Aluno.objects.create(
+            escola=self.escola, nome_completo='Aluno Novo Hoje 2', cpf='33333333303', data_nascimento='2000-01-01'
+        )
+        aluno_novo.cursos_interesse.set([self.tipo_1, self.tipo_2])
+
+        aluno_antigo = Aluno.objects.create(
+            escola=self.escola, nome_completo='Aluno de Ontem 2', cpf='33333333304', data_nascimento='2000-01-01'
+        )
+        Aluno.objects.filter(pk=aluno_antigo.pk).update(data_criacao=timezone.now() - timedelta(days=5))
+        aluno_antigo.cursos_interesse.set([self.tipo_1])
+
+        response = self.client.get(reverse('escolas:dashboard'), {'escola_id': 'all'})
+        self.assertEqual(response.status_code, 200)
+        dados = next(e for e in response.context['escolas_dados'] if e['nome'] == 'Escola Hoje')
+        self.assertEqual(dados['kpis']['inscricoes_hoje'], 2)

@@ -1,4 +1,3 @@
-import json
 from django.http import Http404
 from django.shortcuts import render, get_object_or_404, redirect
 from django.views import View
@@ -220,6 +219,13 @@ class DashboardView(LoginRequiredMixin, TemplateView):
                     idades.append(hoje.year - al.data_nascimento.year - ((hoje.month, hoje.day) < (al.data_nascimento.month, al.data_nascimento.day)))
             return int(sum(idades) / len(idades)) if idades else 0
 
+        def pct(numerador, denominador):
+            """Percentual inteiro seguro (0 se denominador for 0) — usado
+            pelos cards do Dashboard v2 (donuts em CSS conic-gradient, sem
+            JS/ApexCharts, o calculo do percentual precisa vir pronto do
+            Python)."""
+            return int((numerador / denominador) * 100) if denominador else 0
+
         # Estatisticas de Chamada (presentes/total) de TODOS os cursos ativos
         # do escopo, numa unica query agrupada por curso — antes disso, o
         # loop de assiduidade abaixo rodava 2 queries de Chamada por curso
@@ -269,9 +275,11 @@ class DashboardView(LoginRequiredMixin, TemplateView):
             for sc in escolas_chart:
                 acumulado = stats_por_escola_g.get(sc.id)
                 if acumulado and acumulado['total'] > 0:
-                    pct = int((acumulado['presentes'] / acumulado['total']) * 100)
+                    # Nome local diferente de pct() de proposito, mesma pegadinha
+                    # de escopo do Python corrigida no loop por escola abaixo.
+                    pct_escola = int((acumulado['presentes'] / acumulado['total']) * 100)
                     assiduidade_labels_g.append(f"{sc.nome}")
-                    assiduidade_series_g.append(pct)
+                    assiduidade_series_g.append(pct_escola)
             if assiduidade_series_g:
                 a_paired_g = sorted(zip(assiduidade_labels_g, assiduidade_series_g), key=lambda x: x[1], reverse=True)[:10]
                 assiduidade_labels_g, assiduidade_series_g = zip(*a_paired_g)
@@ -285,7 +293,14 @@ class DashboardView(LoginRequiredMixin, TemplateView):
             # Cálculo KPI Hoje Global
             count_novos_alunos_g = aluno_scope.filter(data_criacao__date=today).count()
 
-            interes_logs_qs = InteresseLog.objects.filter(data=today)
+            # exclude(aluno__data_criacao__date=today): selecionar cursos de
+            # interesse no proprio formulario de cadastro do aluno dispara o
+            # mesmo InteresseLog(acao='add') de quem já é aluno e adiciona um
+            # interesse novo depois — sem esse filtro, um cadastro novo com
+            # interesse marcado contava 2x em "Hoje" (1 pelo aluno criado, 1+
+            # pelo(s) InteresseLog). O aluno novo já é contado via
+            # count_novos_alunos_g, independente de quantos cursos marcou.
+            interes_logs_qs = InteresseLog.objects.filter(data=today).exclude(aluno__data_criacao__date=today)
             if not user.is_superuser:
                 interes_logs_qs = interes_logs_qs.filter(aluno__escola__tipo=sistema)
 
@@ -301,6 +316,9 @@ class DashboardView(LoginRequiredMixin, TemplateView):
 
             count_interesses_g = count_interesses_add_g - removes_cancelados_g
             kpi_hoje_g = count_novos_alunos_g + count_interesses_g
+
+            tot_masc_g = masc_query_g.count()
+            tot_fem_g = fem_query_g.count()
 
             escolas_dados.append({
                 'id': 'global',
@@ -318,16 +336,24 @@ class DashboardView(LoginRequiredMixin, TemplateView):
                 'ocupacao': {
                     'vagas_total': vagas_g,
                     'labels': ['Cursando', 'Ociosas'],
-                    'series': [kpi_alunos_cursando_g, vagas_ociosas_g]
+                    'series': [kpi_alunos_cursando_g, vagas_ociosas_g],
+                    # min(100, ...): turmas podem ficar com mais alunos "cursando"
+                    # do que "vagas" cadastradas (vaga configurada errado, ou
+                    # matricula acima do limite) — sem o teto, o donut em CSS
+                    # (conic-gradient) recebe um stop tipo "305%" e quebra.
+                    'pct': min(100, pct(kpi_alunos_cursando_g, vagas_g)),
                 },
                 'assiduidade': {
                     'labels': assiduidade_labels_g,
-                    'series': assiduidade_series_g
+                    'series': assiduidade_series_g,
+                    'itens': list(zip(assiduidade_labels_g, assiduidade_series_g)),
                 },
                 'perfil': {
-                    'series': [masc_query_g.count(), fem_query_g.count()],
+                    'series': [tot_masc_g, tot_fem_g],
                     'labels': ['Masculino', 'Feminino'],
-                    'idade_media': [calcular_media_idade(masc_query_g), calcular_media_idade(fem_query_g)]
+                    'idade_media': [calcular_media_idade(masc_query_g), calcular_media_idade(fem_query_g)],
+                    'pct_masc': pct(tot_masc_g, tot_masc_g + tot_fem_g),
+                    'pct_fem': pct(tot_fem_g, tot_masc_g + tot_fem_g),
                 }
             })
         
@@ -348,9 +374,14 @@ class DashboardView(LoginRequiredMixin, TemplateView):
             for curs in esc_cursos_ativos:
                 stats = chamada_stats_by_curso.get(curs.id)
                 if stats and stats['total'] > 0:
-                    pct = int((stats['presentes'] / stats['total']) * 100)
+                    # Nome local diferente de pct() de propósito: pct() é a
+                    # funcao auxiliar definida acima, reatribuir o mesmo nome
+                    # aqui a um int a sombrearia pro resto da funcao inteira
+                    # (mesma pegadinha de escopo do Python corrigida no bug
+                    # do 'Q' redundante mais acima neste arquivo).
+                    pct_curso = int((stats['presentes'] / stats['total']) * 100)
                     assiduidade_labels.append(curs.nome) # limit length in JS or python?
-                    assiduidade_series.append(pct)
+                    assiduidade_series.append(pct_curso)
             
             # Odenar e limitar aos 10 cursos para não explodir o card
             if assiduidade_series:
@@ -380,7 +411,9 @@ class DashboardView(LoginRequiredMixin, TemplateView):
             # Cálculo KPI Hoje Individual (Escola)
             count_novos_alunos = aluno_scope.filter(escola=esc, data_criacao__date=today).count()
 
-            interes_logs_esc = InteresseLog.objects.filter(data=today, aluno__escola=esc)
+            # Mesmo ajuste do bloco global acima: exclui InteresseLog de
+            # alunos criados hoje, pra não contar 2x o mesmo cadastro novo.
+            interes_logs_esc = InteresseLog.objects.filter(data=today, aluno__escola=esc).exclude(aluno__data_criacao__date=today)
             count_interesses_add = interes_logs_esc.filter(acao='add').count()
 
             removes_cancelados = interes_logs_esc.filter(acao='remove').filter(
@@ -420,22 +453,25 @@ class DashboardView(LoginRequiredMixin, TemplateView):
                     'ocupacao': {
                         'vagas_total': vagas,
                         'labels': ['Cursando', 'Ociosas'],
-                        'series': [cursando, vagas_ociosas]
+                        'series': [cursando, vagas_ociosas],
+                        'pct': min(100, pct(cursando, vagas)),
                     },
                     'assiduidade': {
                         'labels': assiduidade_labels,
-                        'series': assiduidade_series
+                        'series': assiduidade_series,
+                        'itens': list(zip(assiduidade_labels, assiduidade_series)),
                     },
                     'perfil': {
                         'series': [tot_masc, tot_fem],
                         'labels': ['Masculino', 'Feminino'],
-                        'idade_media': [media_idade_m, media_idade_f]
+                        'idade_media': [media_idade_m, media_idade_f],
+                        'pct_masc': pct(tot_masc, tot_masc + tot_fem),
+                        'pct_fem': pct(tot_fem, tot_masc + tot_fem),
                     }
                 })
  
         context['escolas_dados'] = escolas_dados
-        context['escolas_dados_json'] = json.dumps(escolas_dados)
- 
+
         if user.is_superuser:
             context['todas_escolas'] = Escola.objects.all().order_by('nome')
         else:

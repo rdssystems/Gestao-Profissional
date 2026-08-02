@@ -553,3 +553,36 @@ class AlunoIdorRegressionTest(TestCase):
         arquivo = SimpleUploadedFile('doc.pdf', b'%PDF-1.4', content_type='application/pdf')
         response = self.client.post(url, data={'arquivo': arquivo, 'nome': 'doc'})
         self.assertEqual(response.status_code, 404)
+
+
+class InteresseLogSignalTimezoneTest(TestCase):
+    """
+    Regressão de 2026-08-01: o sinal m2m_changed que grava InteresseLog
+    (alunos/signals.py, log_interesse_change) usava timezone.now().date()
+    — e timezone.now() é sempre UTC, mesmo com TIME_ZONE=America/Sao_Paulo.
+    Entre 21h e 23h59 no horário de SP o relógio em UTC já virou o dia
+    seguinte, então o log nascia com a data de amanhã e sumia do card
+    "Hoje" do Dashboard bem na janela em que foi criado. Corrigido para
+    timezone.localdate().
+    """
+
+    def setUp(self):
+        from cursos.models import TipoCurso
+        self.escola = Escola.objects.create(nome='Escola TZ', email='tz@example.com', tipo='CP')
+        self.tipo = TipoCurso.objects.create(escola=self.escola, nome='Curso TZ')
+        self.aluno = Aluno.objects.create(
+            escola=self.escola, nome_completo='Aluno TZ', cpf='88888888801', data_nascimento='2000-01-01'
+        )
+
+    def test_interesse_log_usa_data_local_perto_da_virada_utc(self):
+        from datetime import datetime, timezone as dt_timezone, date
+        from unittest.mock import patch
+        from .models import InteresseLog
+
+        # 22h de 15/06/2026 em Sao Paulo (UTC-3) = 01h de 16/06/2026 em UTC.
+        utc_instant = datetime(2026, 6, 16, 1, 0, 0, tzinfo=dt_timezone.utc)
+        with patch('django.utils.timezone.now', return_value=utc_instant):
+            self.aluno.cursos_interesse.set([self.tipo])
+
+        log = InteresseLog.objects.get(aluno=self.aluno, tipo_curso=self.tipo)
+        self.assertEqual(log.data, date(2026, 6, 15))

@@ -35,7 +35,7 @@
         <div class="d-flex flex-column flex-md-row gap-3 align-items-md-center">
             {% if user.is_superuser %}
             <!-- Filtros Integrados -->
-            <form method="GET" action="{% url 'escolas:dashboard' %}" class="d-flex flex-wrap flex-sm-nowrap gap-2 align-items-center m-0">
+            <form method="GET" action="{% url 'escolas:dashboard' %}" class="dash-filters d-flex flex-wrap flex-sm-nowrap gap-2 align-items-center m-0">
                 <select class="form-select form-select-premium shadow-sm py-2 pe-4" name="escola_id" style="min-width: 180px; font-size: 0.9rem;">
                     {% if selected_escola_id == 'all' %}
                     <option value="all" selected>Todas as Unidades</option>
@@ -92,134 +92,147 @@
                 <h5 class="text-center text-primary fw-bold mb-4" style="letter-spacing: 0.5px;">{{ escola.nome }}</h5>
 
                 <!-- Grid de Métricas da Escola -->
-                <div class="row g-4 mb-4">
+                <div class="dash-kpi-grid mb-4">
                     <!-- Inscrições do Dia -->
-                    <div class="col-6 col-md-4 col-xl">
-                        <div class="premium-card h-100">
-                            <div class="icon-wrapper bg-purple-soft">
-                                <i class="bi bi-calendar-check-fill"></i>
-                            </div>
-                            <div class="metric-label">Hoje
-                                <i class="bi bi-info-circle info-icon-tooltip" data-bs-toggle="tooltip" data-bs-placement="top" title="Alunos novos cadastrados hoje, somados aos interesses em cursos registrados hoje (descontando os que foram cancelados no mesmo dia)."></i>
-                            </div>
-                            <div class="metric-value">{{ escola.kpis.inscricoes_hoje }}</div>
+                    <div class="dash-kpi-card">
+                        <i class="bi bi-info-circle dash-kpi-card__help" data-bs-toggle="tooltip" data-bs-placement="top" title="Alunos novos cadastrados hoje, somados aos interesses em cursos registrados hoje (descontando os que foram cancelados no mesmo dia)."></i>
+                        <div class="icon-wrapper bg-purple-soft mb-2">
+                            <i class="bi bi-calendar-check-fill"></i>
                         </div>
+                        <div class="dash-kpi-card__label">Hoje</div>
+                        <div class="dash-kpi-card__value">{{ escola.kpis.inscricoes_hoje }}</div>
                     </div>
 
                     <!-- Alunos Cadastrados -->
-                    <div class="col-6 col-md-4 col-xl">
-                        <div class="premium-card h-100">
-                            <div class="icon-wrapper bg-blue-soft">
-                                <i class="bi bi-people-fill"></i>
-                            </div>
-                            <div class="metric-label">Alunos
-                                <i class="bi bi-info-circle info-icon-tooltip" data-bs-toggle="tooltip" data-bs-placement="top" title="Total de alunos cadastrados nesta unidade (ou na rede inteira, na visão geral), independente do status da matrícula."></i>
-                            </div>
-                            <div class="metric-value">{{ escola.kpis.total_alunos }}</div>
+                    <div class="dash-kpi-card">
+                        <i class="bi bi-info-circle dash-kpi-card__help" data-bs-toggle="tooltip" data-bs-placement="top" title="Total de alunos cadastrados nesta unidade (ou na rede inteira, na visão geral), independente do status da matrícula."></i>
+                        <div class="icon-wrapper bg-blue-soft mb-2">
+                            <i class="bi bi-people-fill"></i>
                         </div>
+                        <div class="dash-kpi-card__label">Alunos</div>
+                        <div class="dash-kpi-card__value">{{ escola.kpis.total_alunos }}</div>
                     </div>
 
                     <!-- Alunos Cursando -->
-                    <div class="col-6 col-md-4 col-xl">
-                        <div class="premium-card h-100">
-                            <div class="icon-wrapper bg-indigo-soft">
-                                <i class="bi bi-person-workspace"></i>
-                            </div>
-                            <div class="metric-label">Cursando
-                                <i class="bi bi-info-circle info-icon-tooltip" data-bs-toggle="tooltip" data-bs-placement="top" title="Alunos com matrícula ativa (status 'Cursando') em turmas em andamento no período selecionado."></i>
-                            </div>
-                            <div class="metric-value">{{ escola.kpis.alunos_cursando }}</div>
+                    <div class="dash-kpi-card">
+                        <i class="bi bi-info-circle dash-kpi-card__help" data-bs-toggle="tooltip" data-bs-placement="top" title="Alunos com matrícula ativa (status 'Cursando') em turmas em andamento no período selecionado."></i>
+                        <div class="icon-wrapper bg-indigo-soft mb-2">
+                            <i class="bi bi-person-workspace"></i>
                         </div>
+                        <div class="dash-kpi-card__label">Cursando</div>
+                        <div class="dash-kpi-card__value">{{ escola.kpis.alunos_cursando }}</div>
                     </div>
 
                     <!-- Alunos Concluintes -->
-                    <div class="col-6 col-md-4 col-xl">
-                        <div class="premium-card h-100">
-                            <div class="icon-wrapper bg-green-soft">
-                                <i class="bi bi-mortarboard-fill"></i>
-                            </div>
-                            <div class="metric-label">Formados
-                                <i class="bi bi-info-circle info-icon-tooltip" data-bs-toggle="tooltip" data-bs-placement="top" title="Total de matrículas concluídas — um aluno que concluiu mais de um curso é contado mais de uma vez. O número entre parênteses mostra quantos alunos únicos (por CPF) isso representa."></i>
-                            </div>
-                            <div class="metric-value d-flex align-items-baseline gap-2">
-                                <span>{{ escola.kpis.alunos_concluintes }}</span>
-                                <span class="text-muted fw-normal" style="font-size: 0.8rem;" title="Alunos formados únicos (por CPF)">({{ escola.kpis.alunos_concluintes_unicos }} únicos)</span>
-                            </div>
+                    <div class="dash-kpi-card">
+                        <i class="bi bi-info-circle dash-kpi-card__help" data-bs-toggle="tooltip" data-bs-placement="top" title="Total de matrículas concluídas — um aluno que concluiu mais de um curso é contado mais de uma vez. O número entre parênteses mostra quantos alunos únicos (por CPF) isso representa."></i>
+                        <div class="icon-wrapper bg-green-soft mb-2">
+                            <i class="bi bi-mortarboard-fill"></i>
                         </div>
+                        <div class="dash-kpi-card__label">Formados</div>
+                        <div class="dash-kpi-card__value">{{ escola.kpis.alunos_concluintes }}</div>
+                        <div class="dash-kpi-card__meta">{{ escola.kpis.alunos_concluintes_unicos }} únicos (CPF)</div>
                     </div>
 
                     <!-- Alunos Desistentes -->
-                    <div class="col-6 col-md-4 col-xl">
-                        <div class="premium-card h-100">
-                            <div class="icon-wrapper bg-red-soft">
-                                <i class="bi bi-person-dash-fill"></i>
-                            </div>
-                            <div class="metric-label">Evasão
-                                <i class="bi bi-info-circle info-icon-tooltip" data-bs-toggle="tooltip" data-bs-placement="top" title="Matrículas com status 'Desistente' em turmas atualmente abertas ou em andamento nesta unidade."></i>
-                            </div>
-                            <div class="metric-value">{{ escola.kpis.alunos_desistentes }}</div>
+                    <div class="dash-kpi-card">
+                        <i class="bi bi-info-circle dash-kpi-card__help" data-bs-toggle="tooltip" data-bs-placement="top" title="Matrículas com status 'Desistente' em turmas atualmente abertas ou em andamento nesta unidade."></i>
+                        <div class="icon-wrapper bg-red-soft mb-2">
+                            <i class="bi bi-person-dash-fill"></i>
                         </div>
+                        <div class="dash-kpi-card__label">Evasão</div>
+                        <div class="dash-kpi-card__value {% if escola.kpis.alunos_desistentes > 0 %}text-danger{% endif %}">{{ escola.kpis.alunos_desistentes }}</div>
                     </div>
 
                     <!-- Cursos Ativos -->
-                    <div class="col-6 col-md-4 col-xl">
-                        <div class="premium-card h-100">
-                            <div class="icon-wrapper bg-amber-soft">
-                                <i class="bi bi-book-half"></i>
-                            </div>
-                            <div class="metric-label">Ativos
-                                <i class="bi bi-info-circle info-icon-tooltip" data-bs-toggle="tooltip" data-bs-placement="top" title="Quantidade de turmas com status 'Aberta' ou 'Em Andamento' nesta unidade no momento."></i>
-                            </div>
-                            <div class="metric-value">{{ escola.kpis.cursos_ativos }}</div>
+                    <div class="dash-kpi-card">
+                        <i class="bi bi-info-circle dash-kpi-card__help" data-bs-toggle="tooltip" data-bs-placement="top" title="Quantidade de turmas com status 'Aberta' ou 'Em Andamento' nesta unidade no momento."></i>
+                        <div class="icon-wrapper bg-amber-soft mb-2">
+                            <i class="bi bi-book-half"></i>
                         </div>
+                        <div class="dash-kpi-card__label">Ativos</div>
+                        <div class="dash-kpi-card__value">{{ escola.kpis.cursos_ativos }}</div>
                     </div>
 
                     <!-- Cursos Concluídos -->
-                    <div class="col-6 col-md-4 col-xl">
-                        <div class="premium-card h-100">
-                            <div class="icon-wrapper bg-slate-soft">
-                                <i class="bi bi-archive-fill"></i>
-                            </div>
-                            <div class="metric-label">Finalizados
-                                <i class="bi bi-info-circle info-icon-tooltip" data-bs-toggle="tooltip" data-bs-placement="top" title="Total histórico de turmas com status 'Concluído' nesta unidade (não é filtrado pelo mês selecionado)."></i>
-                            </div>
-                            <div class="metric-value">{{ escola.kpis.cursos_concluidos }}</div>
+                    <div class="dash-kpi-card">
+                        <i class="bi bi-info-circle dash-kpi-card__help" data-bs-toggle="tooltip" data-bs-placement="top" title="Total histórico de turmas com status 'Concluído' nesta unidade (não é filtrado pelo mês selecionado)."></i>
+                        <div class="icon-wrapper bg-slate-soft mb-2">
+                            <i class="bi bi-archive-fill"></i>
                         </div>
+                        <div class="dash-kpi-card__label">Finalizados</div>
+                        <div class="dash-kpi-card__value">{{ escola.kpis.cursos_concluidos }}</div>
                     </div>
                 </div>
 
-                <div class="row">
+                <div class="row g-4">
                     <!-- Ocupacao -->
-                    <div class="col-lg-4 mb-4">
-                        <div class="premium-card h-100 shadow-sm d-flex flex-column">
-                            <div class="feed-header mb-2 border-bottom pb-2">
-                                <h6 class="mb-0 fw-bold"><i class="bi bi-pie-chart-fill text-primary me-2"></i>Taxa de Ocupação
-                                    <i class="bi bi-info-circle info-icon-tooltip" data-bs-toggle="tooltip" data-bs-placement="top" title="Compara o total de vagas oferecidas nas turmas ativas do período com o número de alunos atualmente cursando. Vagas ociosas = vagas totais − alunos cursando."></i>
-                                </h6>
+                    <div class="col-lg-4">
+                        <div class="dash-chart-card d-flex flex-column">
+                            <h6 class="dash-chart-card__title mb-0"><i class="bi bi-pie-chart-fill text-primary me-2"></i>Taxa de Ocupação
+                                <i class="bi bi-info-circle info-icon-tooltip" data-bs-toggle="tooltip" data-bs-placement="top" title="Compara o total de vagas oferecidas nas turmas ativas do período com o número de alunos atualmente cursando. Vagas ociosas = vagas totais − alunos cursando."></i>
+                            </h6>
+                            {% if escola.ocupacao.vagas_total > 0 or escola.ocupacao.series.0 > 0 %}
+                            <div class="dash-donut" style="background: conic-gradient(var(--brand-primary) 0% {{ escola.ocupacao.pct }}%, var(--accent-gold) {{ escola.ocupacao.pct }}% 100%);">
+                                <div class="dash-donut__center">
+                                    <span class="dash-donut__value">{{ escola.ocupacao.pct }}%</span>
+                                    <span class="dash-donut__label">Ocupação</span>
+                                </div>
                             </div>
-                            <div id="chart-rosca-{{ escola.id }}" class="flex-grow-1 d-flex justify-content-center align-items-center" style="min-height: 280px; width: 100%;"></div>
+                            <div class="dash-donut-legend">
+                                <span><span class="dash-donut-legend__dot" style="background: var(--brand-primary);"></span>Cursando ({{ escola.ocupacao.series.0 }})</span>
+                                <span><span class="dash-donut-legend__dot" style="background: var(--accent-gold);"></span>Ociosas ({{ escola.ocupacao.series.1 }})</span>
+                            </div>
+                            {% else %}
+                            <p class="text-muted small text-center mb-0 flex-grow-1 d-flex align-items-center justify-content-center">Sem dados de ocupação.</p>
+                            {% endif %}
                         </div>
                     </div>
                     <!-- Assiduidade -->
-                    <div class="col-lg-4 mb-4">
-                        <div class="premium-card h-100 shadow-sm d-flex flex-column">
-                            <div class="feed-header mb-2 border-bottom pb-2">
-                                <h6 class="mb-0 fw-bold"><i class="bi bi-bar-chart-steps text-info me-2"></i>Top Frequências
-                                    <i class="bi bi-info-circle info-icon-tooltip" data-bs-toggle="tooltip" data-bs-placement="top" title="Percentual de presença (chamadas marcadas como 'Presente' sobre o total de chamadas registradas) em cada turma ativa. Mostra as 10 turmas com maior assiduidade."></i>
-                                </h6>
+                    <div class="col-lg-4">
+                        <div class="dash-chart-card d-flex flex-column">
+                            <h6 class="dash-chart-card__title mb-0"><i class="bi bi-bar-chart-steps text-info me-2"></i>Top Frequências
+                                <i class="bi bi-info-circle info-icon-tooltip" data-bs-toggle="tooltip" data-bs-placement="top" title="Percentual de presença (chamadas marcadas como 'Presente' sobre o total de chamadas registradas) em cada turma ativa. Mostra as 10 turmas com maior assiduidade."></i>
+                            </h6>
+                            {% if escola.assiduidade.itens %}
+                            <div class="dash-bars flex-grow-1">
+                                {% for label, valor in escola.assiduidade.itens %}
+                                <div class="dash-bar-row">
+                                    <div class="dash-bar-row__top">
+                                        <span>{{ label|truncatechars:24 }}</span>
+                                        <strong>{{ valor }}%</strong>
+                                    </div>
+                                    <div class="dash-bar-track">
+                                        <div class="dash-bar-fill" style="width: {{ valor }}%;"></div>
+                                    </div>
+                                </div>
+                                {% endfor %}
                             </div>
-                            <div id="chart-assiduidade-{{ escola.id }}" class="flex-grow-1 d-flex justify-content-center align-items-center" style="min-height: 280px; width: 100%;"></div>
+                            {% else %}
+                            <p class="text-muted small text-center mb-0 flex-grow-1 d-flex align-items-center justify-content-center">Sem registros de frequência.</p>
+                            {% endif %}
                         </div>
                     </div>
                     <!-- Perfil Demografico Donut -->
-                    <div class="col-lg-4 mb-4">
-                        <div class="premium-card h-100 shadow-sm d-flex flex-column">
-                            <div class="feed-header mb-2 border-bottom pb-2">
-                                <h6 class="mb-0 fw-bold" style="color: #db2777;"><i class="bi bi-people-fill me-2"></i>Perfil Alunos Cursando
-                                    <i class="bi bi-info-circle info-icon-tooltip" data-bs-toggle="tooltip" data-bs-placement="top" title="Distribuição por sexo dos alunos com matrícula 'Cursando' em turmas ativas, com a idade média calculada a partir da data de nascimento."></i>
-                                </h6>
+                    <div class="col-lg-4">
+                        <div class="dash-chart-card d-flex flex-column">
+                            <h6 class="dash-chart-card__title mb-0" style="color: #db2777;"><i class="bi bi-people-fill me-2"></i>Perfil Alunos Cursando
+                                <i class="bi bi-info-circle info-icon-tooltip" data-bs-toggle="tooltip" data-bs-placement="top" title="Distribuição por sexo dos alunos com matrícula 'Cursando' em turmas ativas, com a idade média calculada a partir da data de nascimento."></i>
+                            </h6>
+                            {% if escola.perfil.pct_masc > 0 or escola.perfil.pct_fem > 0 %}
+                            <div class="dash-donut" style="background: conic-gradient(var(--brand-primary) 0% {{ escola.perfil.pct_masc }}%, #ec4899 {{ escola.perfil.pct_masc }}% 100%);">
+                                <div class="dash-donut__center">
+                                    <span class="dash-donut__value">{{ escola.perfil.series.0|add:escola.perfil.series.1 }}</span>
+                                    <span class="dash-donut__label">Alunos</span>
+                                </div>
                             </div>
-                            <div id="chart-perfil-{{ escola.id }}" class="flex-grow-1 d-flex justify-content-center align-items-center" style="min-height: 280px; width: 100%;"></div>
+                            <div class="dash-donut-legend flex-wrap">
+                                <span><span class="dash-donut-legend__dot" style="background: var(--brand-primary);"></span>Masc. {{ escola.perfil.series.0 }} ({{ escola.perfil.pct_masc }}%){% if escola.perfil.idade_media.0 %} · {{ escola.perfil.idade_media.0 }} anos{% endif %}</span>
+                                <span><span class="dash-donut-legend__dot" style="background: #ec4899;"></span>Fem. {{ escola.perfil.series.1 }} ({{ escola.perfil.pct_fem }}%){% if escola.perfil.idade_media.1 %} · {{ escola.perfil.idade_media.1 }} anos{% endif %}</span>
+                            </div>
+                            {% else %}
+                            <p class="text-muted small text-center mb-0 flex-grow-1 d-flex align-items-center justify-content-center">Sem dados de alunos.</p>
+                            {% endif %}
                         </div>
                     </div>
                 </div>
@@ -296,184 +309,12 @@
 {% endblock %}
 
 {% block extra_js %}
-<script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const escolasDados = {{ escolas_dados_json|safe }};
-    const sistemaAtual = "{{ request.session.sistema }}".toLowerCase();
-
     // Inicializar Tooltips do Bootstrap (icones "!" dos indicadores)
     var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
     tooltipTriggerList.map(function (tooltipTriggerEl) {
         return new bootstrap.Tooltip(tooltipTriggerEl);
-    });
-
-    escolasDados.forEach(function(escola) {
-        
-        // 1. Gráfico Ocupação (Rosca)
-        if(escola.ocupacao.vagas_total > 0 || escola.ocupacao.series[0] > 0) {
-            let roscaColors = ['#198754', '#d3d8e3'];
-            let labelColor = '#8898aa';
-            let valueColor = '#4C5B7A';
-            
-            if (sistemaAtual === 'uditech') {
-                roscaColors = ['#18529D', '#F1B514']; // Azul Uditech e Amarelo da Paleta
-                labelColor = '#18529D';
-                valueColor = '#0E3262';
-            }
-
-            var optionsRosca = {
-                series: escola.ocupacao.series,
-                labels: escola.ocupacao.labels,
-                chart: { type: 'donut', height: 280, fontFamily: 'Inter, sans-serif' },
-                colors: roscaColors,
-                plotOptions: {
-                    pie: {
-                        donut: {
-                            size: '72%',
-                            labels: {
-                                show: true,
-                                name: { show: true, color: labelColor, fontSize: '13px' },
-                                value: { show: true, color: valueColor, fontSize: '24px', fontWeight: 600 },
-                                total: {
-                                    show: true, showAlways: true, label: 'Total Vagas', color: labelColor,
-                                    formatter: function (w) { return escola.ocupacao.vagas_total }
-                                }
-                            }
-                        }
-                    }
-                },
-                dataLabels: { 
-                    enabled: true,
-                    formatter: function (val, opts) {
-                        return opts.w.globals.seriesTotals[opts.seriesIndex];
-                    },
-                    style: { fontSize: '12px', fontWeight: 'bold' },
-                    dropShadow: { enabled: true, top: 1, left: 1, blur: 2, opacity: 0.6 }
-                },
-                legend: { position: 'bottom', markers: { radius: 12 } },
-                tooltip: { theme: 'light' }
-            };
-            new ApexCharts(document.querySelector("#chart-rosca-" + escola.id), optionsRosca).render();
-        } else {
-            document.querySelector("#chart-rosca-" + escola.id).innerHTML = "<p class='text-muted small'>Sem dados de ocupação.</p>";
-        }
-
-        // 2. Gráfico Assiduidade (Barra Horizontal)
-        if(escola.assiduidade.series.length > 0) {
-            let barColors = ['#0dcaf0'];
-            let barFill = { type: 'solid' };
-            
-            if (sistemaAtual === 'uditech') {
-                barColors = ['#18529D'];
-                barFill = {
-                    type: 'gradient',
-                    gradient: {
-                        type: 'horizontal',
-                        gradientToColors: ['#00D0FF'], // Fim do degradê (ciano brilhante)
-                        shadeIntensity: 0.6,
-                        opacityFrom: 0.95,
-                        opacityTo: 0.95,
-                        stops: [0, 100]
-                    }
-                };
-            }
-
-            var optionsAssiduidade = {
-                series: [{ name: 'Assiduidade (%)', data: escola.assiduidade.series }],
-                chart: { type: 'bar', height: 280, fontFamily: 'Inter, sans-serif', toolbar: {show: false} },
-                colors: barColors,
-                fill: barFill,
-                plotOptions: {
-                    bar: {
-                        horizontal: true, barHeight: '50%', borderRadius: 4, borderRadiusApplication: 'end',
-                        dataLabels: { position: 'top' }
-                    }
-                },
-                dataLabels: {
-                    enabled: true, offsetX: 20, style: { fontSize: '10px', colors: ['#5c6873'] },
-                    formatter: function(val) { return val + "%" }
-                },
-                stroke: { show: true, width: 1, colors: ['transparent'] },
-                xaxis: { 
-                    categories: escola.assiduidade.labels,
-                    labels: { style: { colors: '#8898aa', fontSize: '12px' } }, max: 100 
-                },
-                yaxis: { labels: { style: { colors: '#4C5B7A', fontSize: '11px', fontWeight: 500 }, maxWidth: 150 } },
-                tooltip: { theme: 'light', y: { formatter: function(val) { return val + "%" } } }
-            };
-            new ApexCharts(document.querySelector("#chart-assiduidade-" + escola.id), optionsAssiduidade).render();
-        } else {
-            document.querySelector("#chart-assiduidade-" + escola.id).innerHTML = "<p class='text-muted small'>Sem registros de frequência.</p>";
-        }
-
-        // 3. Gráfico Donut - Perfil Demográfico
-        var sumPerfil = escola.perfil.series.reduce((a, b) => a + b, 0);
-        if(sumPerfil > 0) {
-            let perfilColors = ['#3b82f6', '#ec4899'];
-            let titleColor = '#1e293b';
-            
-            if (sistemaAtual === 'uditech') {
-                perfilColors = ['#2563eb', '#f43f5e']; // Azul vibrante e Sunset Rose
-                titleColor = '#0E3262';
-            }
-
-            var optionsPerfil = {
-                series: escola.perfil.series,
-                chart: { type: 'donut', height: 280, fontFamily: 'Inter, sans-serif' },
-                labels: escola.perfil.labels,
-                colors: perfilColors,
-                plotOptions: {
-                    pie: {
-                        donut: {
-                            size: '65%',
-                            labels: {
-                                show: true,
-                                name: { show: true, offsetY: -10 },
-                                value: { show: true, offsetY: 5, fontSize: '24px', fontWeight: 600, color: titleColor },
-                                total: { 
-                                    show: true, showAlways: false, label: 'Média de Idade', 
-                                    formatter: function (w) { 
-                                        var m_idade = escola.perfil.idade_media[0];
-                                        var f_idade = escola.perfil.idade_media[1];
-                                        if (m_idade && f_idade) return Math.round((m_idade + f_idade)/2) + ' Anos';
-                                        return (m_idade || f_idade) + ' Anos';
-                                    } 
-                                }
-                            }
-                        }
-                    }
-                },
-                tooltip: { 
-                    theme: 'light', 
-                    custom: function({series, seriesIndex, dataPointIndex, w}) {
-                        var label = w.globals.labels[seriesIndex];
-                        var students = series[seriesIndex];
-                        var age = escola.perfil.idade_media[seriesIndex];
-                        var color = w.globals.colors[seriesIndex];
-                        return '<div style="padding: 10px; font-family: Inter;">' +
-                               '<span style="color:' + color + '">●</span> <strong>' + label + '</strong><br/>' +
-                               '<span style="font-size: 11px;">Alunos: <b>' + students + '</b></span><br/>' +
-                               '<span style="font-size: 11px;">Idade Média: <b>' + age + ' anos</b></span>' +
-                               '</div>';
-                    }
-                },
-                dataLabels: { 
-                    enabled: true,
-                    formatter: function (val, opts) {
-                        var amount = opts.w.globals.seriesTotals[opts.seriesIndex];
-                        return amount + " (" + val.toFixed(1) + "%)";
-                    },
-                    style: { fontSize: '11px', fontWeight: 'bold' },
-                    dropShadow: { enabled: true, top: 1, left: 1, blur: 2, opacity: 0.6 }
-                },
-                legend: { position: 'bottom', markers: { radius: 12 } }
-            };
-            new ApexCharts(document.querySelector("#chart-perfil-" + escola.id), optionsPerfil).render();
-        } else {
-            document.querySelector("#chart-perfil-" + escola.id).innerHTML = "<p class='text-muted small'>Sem dados de alunos.</p>";
-        }
-
     });
 
     // Controle de Pause/Play do Carrossel com Barra de Progresso
