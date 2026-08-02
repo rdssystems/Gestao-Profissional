@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% load static %}
 {% load auth_extras %}
+{% load my_filters %}
 
 {% block title %}Detalhes do Curso: {{ curso.nome }}{% endblock %}
 
@@ -131,7 +132,12 @@
         <i class="bi bi-star-half"></i> Avaliação
     </a>
 
-    <button type="button" 
+    <button type="button" class="btn btn-action-premium text-white" style="background-color: #16a34a;"
+            onclick="openWhatsappModalTurma()">
+        <i class="bi bi-whatsapp"></i> Contatar Turma
+    </button>
+
+    <button type="button"
             class="btn btn-action-premium text-white btn-exportar-alunos" 
             style="background-color: #1e293b;"
             data-bs-toggle="modal" 
@@ -171,6 +177,128 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 });
+
+// --- WhatsApp Broadcast Flow (Contatar Turma - so alunos 'cursando') ---
+let whatsappSelectedStudentsTurma = [];
+let whatsappCurrentIndexTurma = 0;
+
+function openWhatsappModalTurma() {
+    const modalEl = document.getElementById('whatsappModalTurma');
+    const modal = new bootstrap.Modal(modalEl);
+
+    whatsappSelectedStudentsTurma = [];
+    const rows = document.querySelectorAll('.aluno-row-turma');
+
+    if (rows.length === 0) {
+        alert('Não há alunos cursando neste curso para enviar mensagens.');
+        return;
+    }
+
+    rows.forEach(row => {
+        whatsappSelectedStudentsTurma.push({
+            id: row.dataset.id,
+            nome: row.dataset.nome,
+            telefone: row.dataset.telefone || ''
+        });
+    });
+
+    const defaultTemplate = `Olá, {NOME}! Tudo bem?
+
+Aqui é da equipe do curso *{CURSO}* na *{ESCOLA}*.
+
+`;
+
+    document.getElementById('whatsappTemplateTurma').value = defaultTemplate;
+    whatsappCurrentIndexTurma = 0;
+
+    renderWhatsappStudentsListTurma();
+
+    document.getElementById('btnEnviarWhatsAppTurma').disabled = false;
+    document.getElementById('btnProximoWhatsAppTurma').disabled = true;
+
+    modal.show();
+}
+
+function renderWhatsappStudentsListTurma() {
+    const listContainer = document.getElementById('whatsappStudentsListTurma');
+    listContainer.innerHTML = '';
+
+    document.getElementById('whatsappProgressBadgeTurma').textContent = `${whatsappCurrentIndexTurma}/${whatsappSelectedStudentsTurma.length}`;
+
+    whatsappSelectedStudentsTurma.forEach((student, idx) => {
+        const item = document.createElement('div');
+        item.className = 'list-group-item d-flex justify-content-between align-items-center py-2 px-3';
+        if (idx === whatsappCurrentIndexTurma) {
+            item.classList.add('bg-primary-subtle', 'text-primary-emphasis', 'fw-bold', 'border-start', 'border-primary', 'border-3');
+        }
+
+        let badgeHtml = '';
+        if (idx < whatsappCurrentIndexTurma) {
+            badgeHtml = '<span class="badge bg-success"><i class="bi bi-check-lg"></i> Feito</span>';
+        } else if (idx === whatsappCurrentIndexTurma) {
+            badgeHtml = '<span class="badge bg-primary">Atual</span>';
+        } else {
+            badgeHtml = '<span class="badge bg-secondary text-white-50">Pendente</span>';
+        }
+
+        const formattedPhone = student.telefone ? `(${student.telefone.substring(0, 2)}) ${student.telefone.substring(2)}` : 'Sem telefone';
+
+        item.innerHTML = `
+            <div>
+                <div class="mb-0 text-dark" style="font-size: 0.95rem;">${student.nome}</div>
+                <small class="text-muted" style="font-size: 0.8rem;">${formattedPhone}</small>
+            </div>
+            <div>${badgeHtml}</div>
+        `;
+        listContainer.appendChild(item);
+    });
+
+    const currentItem = listContainer.children[whatsappCurrentIndexTurma];
+    if (currentItem) {
+        currentItem.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+}
+
+function sendCurrentStudentTurma() {
+    if (whatsappCurrentIndexTurma >= whatsappSelectedStudentsTurma.length) return;
+
+    const student = whatsappSelectedStudentsTurma[whatsappCurrentIndexTurma];
+    if (!student.telefone) {
+        alert(`O aluno ${student.nome} não possui telefone cadastrado.`);
+        document.getElementById('btnProximoWhatsAppTurma').disabled = false;
+        return;
+    }
+
+    const template = document.getElementById('whatsappTemplateTurma').value;
+    const cursoInfo = {
+        nome: "{{ curso.nome|escapejs }}",
+        escola: "{{ curso.escola.nome|escapejs }}"
+    };
+
+    let msg = template
+        .replace(/{NOME}/g, student.nome)
+        .replace(/{CURSO}/g, cursoInfo.nome)
+        .replace(/{ESCOLA}/g, cursoInfo.escola);
+
+    const url = `whatsapp://send?phone=55${student.telefone}&text=${encodeURIComponent(msg)}`;
+    window.open(url, '_blank');
+
+    document.getElementById('btnProximoWhatsAppTurma').disabled = false;
+}
+
+function nextStudentTurma() {
+    if (whatsappCurrentIndexTurma < whatsappSelectedStudentsTurma.length - 1) {
+        whatsappCurrentIndexTurma++;
+        renderWhatsappStudentsListTurma();
+        sendCurrentStudentTurma();
+    } else {
+        whatsappCurrentIndexTurma++;
+        renderWhatsappStudentsListTurma();
+        alert('Disparo concluído para todos os alunos cursando!');
+        document.getElementById('btnEnviarWhatsAppTurma').disabled = true;
+        document.getElementById('btnProximoWhatsAppTurma').disabled = true;
+    }
+}
 </script>
 {% endblock %}
 
@@ -183,7 +311,12 @@ document.addEventListener('DOMContentLoaded', function() {
     <ul class="list-group list-group-flush">
 
         {% for inscricao in curso.inscricao_set.all %}
-        <li class="list-group-item d-flex justify-content-between align-items-center py-3">
+        <li class="list-group-item d-flex justify-content-between align-items-center py-3{% if inscricao.status == 'cursando' %} aluno-row-turma{% endif %}"
+            {% if inscricao.status == 'cursando' %}
+            data-id="{{ inscricao.pk }}"
+            data-nome="{{ inscricao.aluno.nome_completo }}"
+            data-telefone="{{ inscricao.aluno.whatsapp|default:inscricao.aluno.telefone_principal|apenas_numeros }}"
+            {% endif %}>
 
             <div>
                 {{ inscricao.aluno.nome_completo }}
@@ -250,6 +383,56 @@ document.addEventListener('DOMContentLoaded', function() {
 {% else %}
 <p class="text-muted">Nenhum aluno inscrito neste curso.</p>
 {% endif %}
+
+<!-- Modal de Contatar Turma (WhatsApp) - so alunos com inscricao 'cursando' -->
+<div class="modal fade" id="whatsappModalTurma" tabindex="-1" aria-labelledby="whatsappModalTurmaLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 20px; overflow: hidden;">
+            <div class="modal-header bg-success text-white border-0 py-3">
+                <h5 class="modal-title fw-bold d-flex align-items-center" id="whatsappModalTurmaLabel">
+                    <i class="bi bi-whatsapp me-2"></i> Contatar Turma
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <div class="row g-4">
+                    <!-- Coluna do Template e Controle -->
+                    <div class="col-md-7 border-end">
+                        <h6 class="fw-bold text-secondary mb-3">Mensagem a ser enviada:</h6>
+                        <textarea id="whatsappTemplateTurma" class="form-control mb-3" rows="8" style="resize: vertical; font-size: 0.95rem;"></textarea>
+
+                        <div class="alert alert-light border small text-muted mb-3 py-2 px-3">
+                            <strong>Tags disponíveis:</strong><br>
+                            <span class="badge bg-light text-dark border me-1">{NOME}</span> Nome do aluno<br>
+                            <span class="badge bg-light text-dark border me-1">{CURSO}</span> Nome do curso<br>
+                            <span class="badge bg-light text-dark border me-1">{ESCOLA}</span> Escola do curso
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="button" id="btnEnviarWhatsAppTurma" class="btn btn-success fw-bold shadow-sm" onclick="sendCurrentStudentTurma()">
+                                <i class="bi bi-whatsapp me-2"></i> Abrir Conversa no WhatsApp
+                            </button>
+                            <button type="button" id="btnProximoWhatsAppTurma" class="btn btn-outline-primary fw-bold shadow-sm" onclick="nextStudentTurma()" disabled>
+                                <i class="bi bi-arrow-right-short fs-5 align-middle me-1"></i> Próximo Aluno
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Coluna da Lista de Alunos -->
+                    <div class="col-md-5">
+                        <h6 class="fw-bold text-secondary mb-3 d-flex justify-content-between align-items-center">
+                            Alunos Cursando
+                            <span id="whatsappProgressBadgeTurma" class="badge bg-light text-dark border small">0/0</span>
+                        </h6>
+                        <div id="whatsappStudentsListTurma" style="max-height: 320px; overflow-y: auto; border-radius: 8px; border: 1px solid #dee2e6;" class="list-group list-group-flush">
+                            <!-- Preenchido dinamicamente via JS -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 
 <!-- Modal de Exportação -->
 <div class="modal fade" id="exportarModal" tabindex="-1" aria-labelledby="exportarModalLabel" aria-hidden="true">
