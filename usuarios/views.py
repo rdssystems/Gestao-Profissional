@@ -56,14 +56,36 @@ class EscopoUsuarioMixin:
         return usuarios_gerenciaveis_por(self.request.user)
 
 
-class UserListView(LoginRequiredMixin, PermissionRequiredMixin, EscopoUsuarioMixin, ListView):
+class UserManagementPermissionMixin(PermissionRequiredMixin):
+    """
+    auth.<add|view|change|delete>_user (Coordenador ganha via Group,
+    core/group_permissions.py) OU administrador de segmento (perfil SEM
+    escola vinculada e nivel_acesso ADMIN_CP/ADMIN_UDITECH) — esse segundo
+    caso nunca teve Django Permission nenhuma associada (nivel_acesso nao
+    e ligado a Group em lugar nenhum do codigo), entao ficava bloqueado
+    nesta tela mesmo sendo o admin daquele sistema inteiro. O escopo (só
+    escolas do proprio sistema) já era calculado corretamente por
+    usuarios_gerenciaveis_por() e UserCreationForm — só faltava passar
+    daqui.
+    """
+    def has_permission(self):
+        if super().has_permission():
+            return True
+        profile = getattr(self.request.user, 'profile', None)
+        return bool(
+            profile and not profile.escola
+            and profile.nivel_acesso in ['ADMIN_CP', 'ADMIN_UDITECH']
+        )
+
+
+class UserListView(LoginRequiredMixin, UserManagementPermissionMixin, EscopoUsuarioMixin, ListView):
     model = User
     template_name = 'usuarios/user_list.html'
     context_object_name = 'usuarios'
     permission_required = 'auth.view_user'
 
 
-class UserCreateView(AuditLogMixin, LoginRequiredMixin, PermissionRequiredMixin, SuccessMessageMixin, CreateView):
+class UserCreateView(AuditLogMixin, LoginRequiredMixin, UserManagementPermissionMixin, SuccessMessageMixin, CreateView):
     form_class = UserCreationForm
     template_name = 'usuarios/user_form.html'
     success_url = reverse_lazy('usuarios:lista_usuarios')
@@ -80,7 +102,7 @@ class UserCreateView(AuditLogMixin, LoginRequiredMixin, PermissionRequiredMixin,
         context['title'] = 'Criar Novo Usuário'
         return context
 
-class UserUpdateView(AuditLogMixin, LoginRequiredMixin, PermissionRequiredMixin, EscopoUsuarioMixin, SuccessMessageMixin, UpdateView):
+class UserUpdateView(AuditLogMixin, LoginRequiredMixin, UserManagementPermissionMixin, EscopoUsuarioMixin, SuccessMessageMixin, UpdateView):
     model = User
     form_class = UserCreationForm # Reusing UserCreationForm for editing
     template_name = 'usuarios/user_form.html' # Reusing the same form template
@@ -99,7 +121,7 @@ class UserUpdateView(AuditLogMixin, LoginRequiredMixin, PermissionRequiredMixin,
         context['title'] = f'Editar Usuário: {self.object.username}'
         return context
 
-class UserDeleteView(AuditLogMixin, LoginRequiredMixin, PermissionRequiredMixin, EscopoUsuarioMixin, DeleteView):
+class UserDeleteView(AuditLogMixin, LoginRequiredMixin, UserManagementPermissionMixin, EscopoUsuarioMixin, DeleteView):
     model = User
     template_name = 'usuarios/user_confirm_delete.html' # Template for confirmation
     context_object_name = 'user'

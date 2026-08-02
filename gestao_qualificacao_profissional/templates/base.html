@@ -646,14 +646,16 @@
                                 <hr class="dropdown-divider">
                             </li>
 
-                            {% if user.is_superuser or user|has_group:'Coordenador' %}
+                            {% if user|is_global_admin or user|has_group:'Coordenador' %}
                             <li><h6 class="dropdown-header text-uppercase smaller fw-bold text-muted">Administração</h6></li>
                             {% if user.is_superuser %}
                              <li><a class="dropdown-item" href="{% url 'score_config:configurar' %}"><i class="bi bi-sliders me-2"></i> Configuração de Score</a></li>
                             {% endif %}
-                            <!-- Coordenador tambem gerencia usuarios (add_user/change_user/view_user
-                                 no grupo) — a view/form ja restringe ao escopo da propria escola;
-                                 antes o link so aparecia pra superuser, sem nenhum caminho na UI. -->
+                            <!-- Coordenador (grupo, add_user/change_user/view_user) e admin_cp/
+                                 admin_uditech (nivel_acesso, sem Django Permission nenhuma) tambem
+                                 gerenciam usuarios — a view/form ja restringe ao escopo certo
+                                 (propria escola pro Coordenador, proprio sistema pro admin de
+                                 segmento). Ver usuarios/views.py UserManagementPermissionMixin. -->
                             <li><a class="dropdown-item" href="{% url 'usuarios:lista_usuarios' %}"><i class="bi bi-people me-2"></i> Usuários</a></li>
                             {% if user.is_superuser %}
                             <li><a class="dropdown-item" href="{% url 'core:gerenciar_email_destinatarios' %}"><i class="bi bi-envelope-at me-2 text-primary"></i> Envio de E-mail</a></li>
