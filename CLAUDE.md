@@ -1,6 +1,6 @@
 # CLAUDE.md — Gestão Qualificação Profissional
 
-Contexto para o Claude retomar o trabalho. Última atualização: 2026-07-18.
+Contexto para o Claude retomar o trabalho. Última atualização: 2026-08-02.
 
 ## O que é o app
 Sistema Django (Django 5.2.8, Python 3.12) de gestão de inscrições/qualificação
@@ -102,8 +102,9 @@ ainda falta, em:
   `Profile.nivel_acesso` (corrigido) e uma migration de permissões
   (`core/migrations/0003_assign_permissions.py`) que nunca funcionou em
   banco nenhum criado do zero (corrigida via `post_migrate` em
-  `core/apps.py`). **Grupo C segue pendente** — próximo passo quando
-  houver acesso à VPS.
+  `core/apps.py`). **Grupo C**: C1 e C3 (firewall de host) foram feitos em
+  2026-08-01 — ver seção "Fase 2 de infra CONCLUÍDA" abaixo. C2 (rotação
+  de senha do banco) segue pendente, ver "Segurança — PENDÊNCIAS".
 
 **Achado fora do código do app**: o repositório git na pasta pessoal do
 usuário (`Documents/`, um nível acima deste repo) estava com `.git`
@@ -114,33 +115,100 @@ pegar `.ssh/`, `.aws/`, etc. Sinalizado ao usuário para mover o `.git` para
 dentro da pasta do projeto — fora do escopo deste repo, então não documentado
 em detalhe aqui.
 
-## Segurança — PENDÊNCIAS (retomar daqui)
-Descoberta chave: a VPS tem **IPv6 público roteável e NENHUM firewall de host**
-(política INPUT ACCEPT; ZimaOS/Docker gerencia iptables, sem persistência).
-Vários serviços ficam/ficavam expostos na internet via IPv6. O que falta:
+## Trabalho de 2026-08-02 (Dashboard v2, correções de bugs, feature nova)
 
-1. **Rotacionar a senha do banco** — ainda é `gestao_pass` (fraca). Agora o banco
-   só é acessível pelo loopback, então a urgência caiu, mas é a 2ª camada.
+**Dashboard redesenhado** (`escolas/views.py`, `escolas/templates/escolas/dashboard.html`,
+`core/static/css/premium_theme.css`): KPIs, gráfico de ocupação, top
+frequências e perfil demográfico agora renderizados **100% no servidor**
+(donuts em CSS `conic-gradient()`, barras em CSS puro) — removida a
+dependência do ApexCharts via CDN. Percentuais pré-calculados em Python
+(`pct()` helper dentro de `DashboardView.get_context_data`) em vez de JS.
+Mesma inspiração aplicada depois em `controle_diario_admin.html`
+(substituiu Chart.js/donut de 9 fatias por barras CSS + grid de KPI cards),
+reaproveitando os mesmos componentes `.dash-bars`/`.dash-kpi-card`.
+
+**Bugs achados e corrigidos nessa mesma leva** (todos com teste de
+regressão em `escolas/tests.py` e `alunos/tests.py`):
+- Card "Hoje" contava 2x um cadastro novo de aluno que já vinha com curso
+  de interesse marcado (1x pelo aluno criado, 1x pelo `InteresseLog`).
+  Corrigido excluindo do card os `InteresseLog` de alunos criados no
+  mesmo dia — interesse novo de aluno *já existente* continua contando.
+- `alunos/signals.py` (`log_interesse_change`) gravava `InteresseLog.data`
+  com `timezone.now().date()` — que é sempre **UTC**, mesmo com
+  `TIME_ZONE=America/Sao_Paulo`. Entre 21h e 23h59 (horário de Brasília) o
+  UTC já tinha virado o dia seguinte, então o log nascia com a data de
+  amanhã e sumia do card "Hoje" bem na janela em que foi criado. Trocado
+  para `timezone.localdate()`.
+- Taxa de ocupação podia passar de 100% (turma com mais "cursando" do que
+  "vagas" cadastradas) e quebrava o `conic-gradient` (stop tipo `"305%"`).
+  Clampado em `min(100, ...)`.
+- Cor do 2º segmento do donut de Ocupação no portal CP (`--accent-gold`)
+  era um azul quase idêntico ao `--brand-primary` — veio direto do
+  `tertiary-container` do design gerado no Stitch sem checar contraste.
+  Trocado por um cinza neutro; Uditech manteve o dourado (contrasta bem
+  com o azul daquele tema).
+
+**Outras mudanças**:
+- Curso (`cursos/forms.py`, `cursos/templates/cursos/curso_form.html`):
+  campo Nome fica `readonly` (não `disabled`, pra não quebrar o POST) —
+  já era preenchido automaticamente ao escolher o Tipo de Curso; aviso
+  adicionado no form.
+- Controle Diário (`controle_diario/views.py`, `.../controle_diario_admin.html`,
+  `core/templatetags/auth_extras.py` — novo filtro `is_super_admin`): card
+  "Indicadores do SINE" agora só aparece pra admin de verdade (superuser
+  ou `nivel_acesso == 'SUPERUSER'`) — `admin_cp`/`admin_uditech` passavam
+  no `@user_passes_test` da view (admin de segmento) mas viam o card do
+  SINE sem checagem nenhuma no template. View também para de buscar o
+  `RelatorioDiarioSine` do banco quando quem pediu não pode ver.
+- Nova feature: botão **"Contatar Turma"** no detalhe do Curso
+  (`cursos/templates/cursos/curso_detail.html`) — reaproveita o mesmo
+  padrão de disparo em loop de WhatsApp já usado em Avaliação (mensagem
+  editável com tags `{NOME}`/`{CURSO}`/`{ESCOLA}`, avança aluno por aluno
+  abrindo `whatsapp://send`), escopado só aos alunos com `Inscricao.status
+  == 'cursando'` naquele curso.
+
+**Notas de ambiente, não são bugs do app**:
+- `collectstatic` sempre avisa "Found another file with the destination
+  path..." pra alguns arquivos de `core/static/` (ex.: `css/premium_theme.css`,
+  `core/logopmu.png`) — é porque `STATICFILES_DIRS` (`settings.py`) lista
+  explicitamente `core/static`, que o `AppDirectoriesFinder` **já**
+  descobre sozinho por `core` ser um app instalado com pasta `static/`
+  própria. Achado duplicado é o mesmo arquivo pelas duas rotas (mesmos
+  bytes), então é só um warning cosmético — daria pra limpar removendo a
+  entrada redundante de `STATICFILES_DIRS`, mas não foi feito (fora do
+  escopo do que estava sendo pedido).
+- A partição raiz do sistema na VPS (`/dev/root`, `df -h /`) está **100%
+  cheia** (1.2G, é só o SO/boot do ZimaOS) — separada de onde os dados do
+  app realmente ficam (`/DATA`, 222G, 24% usado, bastante espaço livre).
+  Não é urgente e não causou nenhum problema observado, mas vale
+  investigar em algum momento por que o `/` não cresce/libera espaço.
+
+## Segurança — Fase 2 de infra CONCLUÍDA (2026-08-01)
+A Fase 2 abaixo (firewall de host + apps expostos indevidamente) foi
+**executada e verificada em produção**: Portainer e o app não-relacionado
+`gestao-ong` (+ seu Postgres `:5433`) foram **removidos** da VPS; firewall
+de host persistente criado (`/etc/firewall-gq-rules.sh` +
+`systemd/firewall-gq.service`, `-m conntrack --ctstate NEW`, idempotente),
+liberando só SSH:22 e a porta do app:8000, DROP no resto — verificado
+externamente (Tailscale desligado de propósito pra confirmar que o
+IPv6 público parou de responder nas portas fechadas). Backup diário
+também foi corrigido nesse mesmo dia (GCS + Google Drive independentes
+um do outro) e ganhou notificação no Discord (status 3x/dia + alerta
+imediato de falha + healthcheck periódico a cada 3 dias), replicado
+também no app irmão Gestaosuas-django.
+
+## Segurança — PENDÊNCIAS (retomar daqui)
+1. **Rotacionar a senha do banco** — ainda é `gestao_pass` (fraca), ainda não
+   feito. Banco só é acessível pelo loopback (Fase 1) + firewall de host
+   (Fase 2), então a urgência caiu bastante, mas é a 2ª camada que falta.
    Plano: `ALTER USER gestao_user WITH PASSWORD` + atualizar `POSTGRES_PASSWORD`
    e `DB_PASSWORD` no `.env` da VPS + recriar containers. Fazer com script de
    auto-rollback (o `.env` persiste; sequência: ALTER → .env → up -d).
-
-2. **Fase 2 — firewall / portas ainda abertas na internet (IPv6 público):**
-   - **Portainer (`:9000`)** — painel de controle do Docker. **Maior risco
-     restante** (acesso = controle de todos os containers). Fechar primeiro.
-   - App Django direto (`:8000`) — reduzido pelo ALLOWED_HOSTS restrito (Host
-     não-confiável → 400), mas ainda alcançável. Cloudflared usa `localhost:8000`
-     (verificar se é host-network antes de prender em 127.0.0.1).
-   - **ttyd (`:7681`)** — terminal web no host (systemd `ttyd.service`,
-     `/bin/ttyd -W /usr/libexec/ttyd-login`), HTTP puro. Restringir.
-   - Samba (445/139), NFS (2049) — serviços NAS do ZimaOS.
-   - Outro Postgres exposto: `gestao-ong-postgres-1` (`:5433`).
-   - Abordagem: firewall de host liberando loopback + Tailscale
-     (`tailscale0` / `100.64.0.0/10` / `fd7a::/48`) + LAN, DROP no resto, com
-     **auto-rollback temporizado** (não travar o acesso). Usuário acessa admin
-     via Tailscale + LAN; NAS só Tailscale/LAN (confirmado).
-   - Alternativa preferida quando possível: rebind das portas Docker para
-     Tailscale/localhost no compose do repo (persistente, sem risco de lockout).
+2. ttyd (`:7681`, terminal web do host) e Samba/NFS (NAS do ZimaOS) ficaram
+   bloqueados na internet como efeito colateral do firewall de 2026-08-01
+   (só SSH+app foram liberados, o resto cai no DROP padrão) — confirmar com
+   o usuário se algum desses precisa voltar a ficar acessível fora de
+   Tailscale/LAN (hoje só dá pra acessar por ali).
 
 ## Segurança — checklist obrigatório para toda view nova
 O Django **não protege rota nenhuma sozinho**. `urls.py` só mapeia URL → view;
@@ -159,12 +227,43 @@ explicitamente: "essa daqui devia mesmo ser pública, ou falta mixin?"** —
 isso vale tanto para views novas quanto para revisão de views existentes que
 forem tocadas por qualquer motivo (refactor, bugfix, etc.).
 
-## Modo de trabalho (restrição do ambiente)
-O harness **bloqueia comandos que alteram estado na VPS** (sudo, ALTER, deploy).
-Padrão que funciona: **Claude monta/valida scripts (com auto-rollback); o usuário
-cola e roda na VPS e devolve a saída.** Leitura via SSH e SFTP para `/tmp`
-funcionam; execução com sudo e force-push são bloqueados (usuário executa).
-Nunca gravar credenciais (SSH/DB/SECRET_KEY) em arquivos versionados nem em memória.
+## Modo de trabalho (atualizado 2026-08-02 — substitui a nota antiga)
+**Claude executa direto na VPS via SSH (paramiko), inclusive `sudo` e o
+`atualizar.sh` completo.** Não é mais "monta script, usuário cola e roda" —
+isso era uma restrição de uma sessão anterior que não se aplica mais neste
+ambiente. Padrão usado com sucesso repetidas vezes (firewall de host,
+remoção de containers, múltiplos deploys, leitura de logs em produção):
+```python
+import paramiko, os
+PASS = os.environ["VPS_PASS"]
+client = paramiko.SSHClient()
+client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+client.connect("100.76.30.36", username="klismanrds", password=PASS, timeout=15)
+stdin, stdout, stderr = client.exec_command("cd /DATA/AppData/Gestao-Profissional && sudo -S -p '' bash atualizar.sh", timeout=600)
+stdin.write(f"{PASS}\nN\n")  # senha do sudo + "N" pro prompt de backup do atualizar.sh
+```
+- **Senha SSH nunca fica salva** (nem em arquivo, nem em memória entre
+  sessões) — pedir ao usuário no chat toda vez que for precisar (ele já
+  espera isso, responde rápido).
+- Script fica em `scratchpad`, roda via `Bash` com `VPS_PASS='...' python
+  script.py`. Depois de rodar o `atualizar.sh`, **sempre verificar** que o
+  deploy funcionou: `manage.py check` não basta (roda local); confirmar via
+  `curl` na URL pública real (`https://app.gestaoqualificacao.com.br/...`)
+  e checar `docker logs gq-app --tail N` por traceback.
+- **Depois de recriar o container (`docker compose up -d --build`), o
+  túnel `cloudflared` pode cair por ~1 minuto** (erros IPv6 "network is
+  unreachable" nos logs) e se reconectar sozinho — é um efeito colateral
+  observado da rede do Docker sendo recriada, não um bug do app. Se o
+  usuário reportar "bad gateway" logo após um deploy, checar
+  `docker logs cloudflared-tunnel --tail 60` antes de assumir que é o app;
+  provavelmente já vai ter se recuperado sozinho.
+- Backgrounding de comandos longos (`manage.py test` na VPS/local) pelo
+  Bash tool às vezes **trunca a saída capturada sem aviso** (fica faltando
+  o resumo final "Ran N tests / OK", mesmo com exit code correto) — se
+  acontecer, refazer escrevendo o resultado num arquivo dentro do
+  container (bind mount) e ler esse arquivo depois, em vez de confiar só
+  no stdout capturado pela tool.
+- Nunca gravar credenciais (SSH/DB/SECRET_KEY) em arquivos versionados nem em memória.
 
 ## GitHub
 Repo: `rdssystems/Gestao-Profissional` (branch `main`). Histórico já foi

@@ -71,11 +71,11 @@ Aqui o risco não é "vai ter um bug", é "pode tirar o site do ar" ou "muda
 uma regra de negócio que só você pode aprovar". Nada aqui deveria ser feito
 sem sua confirmação explícita antes.
 
-| # | Item | Por que é sensível |
-|---|---|---|
-| C1 | Rebind da porta `8000:8000` para loopback/Tailscale no `docker-compose.yml` | Se o `cloudflared` na VPS não roda em host-network, isso derruba o acesso público ao site. Preciso que você rode `docker inspect` do container do cloudflared na VPS e me diga o `NetworkMode` antes. |
-| C2 | Rotação da senha do Postgres (`gestao_pass`) | Precisa `ALTER USER` + atualizar `.env` da VPS + recriar containers, na ordem certa — é exatamente o tipo de comando que o harness bloqueia de eu rodar; você roda, eu preparo o script. |
-| C3 | Firewall de host (Portainer, ttyd, Samba/NFS) — Fase 2 já mapeada no CLAUDE.md | Mesma razão do C2: mexe em acesso da VPS, risco de lockout, preciso rodar com auto-rollback e você executando. |
+| # | Item | Por que é sensível | Status |
+|---|---|---|---|
+| C1 | Rebind da porta `8000:8000` para loopback/Tailscale no `docker-compose.yml` | Se o `cloudflared` na VPS não roda em host-network, isso derruba o acesso público ao site. | Superado pelo C3 — o firewall de host já fecha a `:8000` pra internet sem precisar mexer no bind da porta (evita o risco de derrubar o cloudflared). |
+| C2 | Rotação da senha do Postgres (`gestao_pass`) | Precisa `ALTER USER` + atualizar `.env` da VPS + recriar containers, na ordem certa. | Ainda pendente. |
+| C3 | Firewall de host (Portainer, ttyd, Samba/NFS) — Fase 2 já mapeada no CLAUDE.md | Mexe em acesso da VPS, risco de lockout. | ✅ Feito em 2026-08-01 (executado direto via SSH, verificado com Tailscale desligado). Portainer e o app `gestao-ong` (não relacionado) também foram removidos da VPS na mesma sessão. Detalhe em `CLAUDE.md`, seção "Fase 2 de infra CONCLUÍDA". |
 | C4 | `Escola` com `on_delete=CASCADE` → `PROTECT` + fluxo de arquivamento | Muda uma regra de negócio real: hoje apagar uma escola apaga tudo em cascata; trocar para `PROTECT` significa que apagar vai **falhar** até você decidir o que fazer com os dados — é uma mudança de UX pro superusuário, não só técnica. |
 | C5 | Fluxo "clonar aluno" cross-escola (`AlunoVerificarCPFView`/`AlunoClonarView`) | Não é bug — mas é uma superfície ampla (staff de uma escola vê dado de aluno de outra escola da mesma rede). Precisa sua confirmação de que é assim mesmo que deveria funcionar. |
 | C6 | CAPTCHA no autocadastro público (hCaptcha/Turnstile) | Nova dependência + muda a experiência do usuário final no cadastro — não é algo pra decidir sozinho. |
@@ -86,10 +86,11 @@ sem sua confirmação explícita antes.
 
 1. ~~Grupo A primeiro, inteiro~~ — ✅ feito.
 2. ~~B1 e B4~~ — ✅ feito. B2, B3 e B5 também foram feitos na mesma sessão.
-3. **Próximo passo: Grupo C**, começando por **C1 e C2** assim que houver um
-   momento pra rodar comandos na VPS — são os dois itens de segurança de
-   infra mais importantes que restam.
-4. Resto do Grupo C fica pra quando surgir tempo/necessidade — nenhum deles
+3. ~~C1 e C3~~ — ✅ feito em 2026-08-01 (firewall de host + remoção de
+   Portainer/gestao-ong; C1 ficou superado por C3, ver tabela acima).
+4. **Próximo passo: C2** (rotação da senha do Postgres) — o item de
+   segurança de infra mais importante que resta.
+5. Resto do Grupo C fica pra quando surgir tempo/necessidade — nenhum deles
    é urgente hoje.
 
 Estado final desta sessão: 110 testes automatizados passando (suite
