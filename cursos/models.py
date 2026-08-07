@@ -144,6 +144,15 @@ class Inscricao(models.Model):
     data_conclusao = models.DateTimeField(null=True, blank=True, verbose_name="Data de Conclusão")
     data_desistencia = models.DateTimeField(null=True, blank=True, verbose_name="Data de Desistência")
 
+    def clean(self):
+        super().clean()
+        from django.core.exceptions import ValidationError
+        if self.status == 'desistente' and self.pk:
+            if not self.chamadas.filter(status_presenca='P').exists():
+                raise ValidationError({
+                    'status': 'Só é permitido alterar o status para Desistente se o aluno tiver pelo menos uma presença registrada nas aulas. Alunos que nunca participaram devem ser excluídos do curso.'
+                })
+
     def save(self, *args, **kwargs):
         from django.utils import timezone
         

@@ -91,6 +91,15 @@ class UpdateInscricaoStatusView(AuditLogMixin, LoginRequiredMixin, StaffRequired
         
         novo_status = request.POST.get('status')
         if novo_status in ['concluido', 'desistente', 'cursando']:
+            if novo_status == 'desistente':
+                tem_presenca = inscricao.chamadas.filter(status_presenca='P').exists()
+                if not tem_presenca:
+                    messages.error(
+                        request,
+                        f"Não é possível marcar '{inscricao.aluno.nome_completo}' como desistente pois o aluno não possui nenhuma presença registrada nas listas de frequência. Só pode ser marcado como desistente quem já participou ao menos uma vez das aulas. Quem nunca participou deve ser excluído do curso se não for continuar."
+                    )
+                    return redirect('cursos:detalhe_curso', pk=inscricao.curso.pk)
+
             inscricao.status = novo_status
             from core.utils import audit_context
             with audit_context(skip=True):

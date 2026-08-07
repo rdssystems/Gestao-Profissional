@@ -183,17 +183,18 @@ class CursoDetailView(LoginRequiredMixin, DetailView):
         sistema = self.request.session.get('sistema', 'cp').upper()
         active_escola = getattr(self.request, 'active_escola', None)
         is_segment_admin = hasattr(user, 'profile') and user.profile.nivel_acesso in ['ADMIN_CP', 'ADMIN_UDITECH']
+        qs = Curso.objects.prefetch_related('inscricao_set__aluno', 'inscricao_set__chamadas')
         if user.is_superuser:
             if active_escola:
-                return Curso.objects.filter(escola=active_escola)
-            return Curso.objects.all()
+                return qs.filter(escola=active_escola)
+            return qs.all()
         if is_segment_admin:
             if active_escola:
-                return Curso.objects.filter(escola=active_escola, escola__tipo=sistema)
-            return Curso.objects.filter(escola__tipo=sistema)
+                return qs.filter(escola=active_escola, escola__tipo=sistema)
+            return qs.filter(escola__tipo=sistema)
         
         if active_escola:
-            return Curso.objects.filter(escola=active_escola, escola__tipo=sistema)
+            return qs.filter(escola=active_escola, escola__tipo=sistema)
             
         return Curso.objects.none()
 
