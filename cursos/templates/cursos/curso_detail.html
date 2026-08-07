@@ -300,6 +300,31 @@ function nextStudentTurma() {
     }
 }
 </script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.form-marcar-desistente').forEach(function(form) {
+        form.addEventListener('submit', function(e) {
+            const presencas = parseInt(this.dataset.presencas || '0', 10);
+            const nomeAluno = this.dataset.aluno || 'o aluno';
+            if (presencas < 1) {
+                e.preventDefault();
+                if (typeof Swal !== 'undefined') {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Ação não permitida',
+                        html: `Não é possível marcar <b>${nomeAluno}</b> como desistente pois o aluno não possui nenhuma presença registrada nas listas de frequência.<br><br>Só pode ser marcado como desistente quem já participou ao menos uma vez das aulas. Quem nunca participou deve ser <b>excluído do curso</b> se não for continuar.`,
+                        confirmButtonColor: '#0d6efd',
+                        confirmButtonText: 'Entendi'
+                    });
+                } else {
+                    alert(`Não é possível marcar ${nomeAluno} como desistente pois o aluno não possui nenhuma presença registrada nas listas de frequência. Só pode ser marcado como desistente quem já participou ao menos uma vez das aulas. Quem nunca participou deve ser excluído do curso se não for continuar.`);
+                }
+            }
+        });
+    });
+});
+</script>
 {% endblock %}
 
 
@@ -705,32 +730,4 @@ function nextStudentTurma() {
     </div>
 </div>
 
-{% endblock %}
-
-{% block extra_js %}
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    document.querySelectorAll('.form-marcar-desistente').forEach(function(form) {
-        form.addEventListener('submit', function(e) {
-            const presencas = parseInt(this.dataset.presencas || '0', 10);
-            const nomeAluno = this.dataset.aluno || 'o aluno';
-            if (presencas < 1) {
-                e.preventDefault();
-                if (typeof Swal !== 'undefined') {
-                    Swal.fire({
-                        icon: 'warning',
-                        title: 'Ação não permitida',
-                        html: `Não é possível marcar <b>${nomeAluno}</b> como desistente pois o aluno não possui nenhuma presença registrada nas listas de frequência.<br><br>Só pode ser marcado como desistente quem já participou ao menos uma vez das aulas. Quem nunca participou deve ser <b>excluído do curso</b> se não for continuar.`,
-                        confirmButtonColor: '#0d6efd',
-                        confirmButtonText: 'Entendi'
-                    });
-                } else {
-                    alert(`Não é possível marcar ${nomeAluno} como desistente pois o aluno não possui nenhuma presença registrada nas listas de frequência. Só pode ser marcado como desistente quem já participou ao menos uma vez das aulas. Quem nunca participou deve ser excluído do curso se não for continuar.`);
-                }
-            }
-        });
-    });
-});
-</script>
 {% endblock %}
